@@ -132,7 +132,7 @@ def load_mods(hashes: Set[str]) -> frozenset[Mod]:
 
     mods = set()
     for project in projects:
-        versions = GameVersion.from_list(project["versions"])
+        versions = GameVersion.from_list(project["game_versions"])
         mods.add(Mod(project["id"], project["title"], project["slug"], versions))
 
     return frozenset(mods)
@@ -209,10 +209,10 @@ def mrcheck(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None
 def main() -> None:  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument("mrpack_file")
-    parser.add_argument("--check-verison", action="append", default=[])
+    parser.add_argument("--check-version", action="append", default=[])
     parser.add_argument("--csv", action="store_true")
     args = parser.parse_args()
-    mrcheck(args.check_version, args.mrcheck_file, args.csv)
+    mrcheck(args.check_version, args.mrpack_file, args.csv)
 
 
 if __name__ == "__main__":  # pragma: no cover

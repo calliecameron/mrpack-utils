@@ -136,8 +136,8 @@ def test_load_mods() -> None:
             'https://api.modrinth.com/v2/projects?ids=["bar", "foo"]',
             complete_qs=True,
             json=[
-                {"id": "abcd", "title": "Foo", "slug": "foo", "versions": ["1.19.2", "1.20"]},
-                {"id": "fedc", "title": "Bar", "slug": "bar", "versions": ["1.19.4"]},
+                {"id": "abcd", "title": "Foo", "slug": "foo", "game_versions": ["1.19.2", "1.20"]},
+                {"id": "fedc", "title": "Bar", "slug": "bar", "game_versions": ["1.19.4"]},
             ],
         )
         mods = sorted(load_mods(hashes))
@@ -255,8 +255,8 @@ def test_mrcheck(capsys: pytest.CaptureFixture[str]) -> None:
             'https://api.modrinth.com/v2/projects?ids=["bar", "foo"]',
             complete_qs=True,
             json=[
-                {"id": "abcd", "title": "Foo", "slug": "foo", "versions": ["1.19.2", "1.20"]},
-                {"id": "fedc", "title": "Bar", "slug": "bar", "versions": ["1.19.4"]},
+                {"id": "abcd", "title": "Foo", "slug": "foo", "game_versions": ["1.19.2", "1.20"]},
+                {"id": "fedc", "title": "Bar", "slug": "bar", "game_versions": ["1.19.4"]},
             ],
         )
         mrcheck(["1.20"], "testdata/test.mrpack", True)
