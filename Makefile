@@ -21,4 +21,4 @@ testdata/test.mrpack: testdata/modrinth.index.json
 
 .PHONY: clean
 clean:
-	rm -rf *~ __pycache_ testdata/test.mrpack_
+	rm -rf *~ __pycache__ testdata/test.mrpack
