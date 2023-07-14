@@ -1,0 +1,21 @@
+{
+    "formatVersion": 1,
+    "game": "minecraft",
+    "files": [
+        {
+            "path": "mods/foo.jar",
+            "hashes": {
+                "sha512": "abcd"
+            }
+        },
+        {
+            "path": "mods/bar.jar",
+            "hashes": {
+                "sha512": "fedc"
+            }
+        }
+    ],
+    "dependencies": {
+        "minecraft": "1.19.4"
+    }
+}

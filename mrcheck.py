@@ -7,11 +7,14 @@ import json
 import re
 import sys
 import zipfile
-from collections.abc import Set
-from typing import cast
+from collections.abc import Mapping, Sequence, Set
 
 import requests
 import tabulate
+
+
+class MrpackException(Exception):
+    pass
 
 
 @functools.total_ordering
@@ -40,7 +43,7 @@ class GameVersion:
         return ".".join(str(segment) for segment in self._version)
 
     @staticmethod
-    def from_list(versions: list[str]) -> "frozenset[GameVersion]":
+    def from_list(versions: Sequence[str]) -> "frozenset[GameVersion]":
         # We deliberately skip over any versions that don't parse
         out = set()
         for version in versions:
@@ -83,6 +86,10 @@ class Mod:
         return self._link
 
     @property
+    def game_versions(self) -> frozenset[GameVersion]:
+        return self._game_versions
+
+    @property
     def latest_game_version(self) -> GameVersion:
         return self._latest_game_version
 
@@ -90,14 +97,21 @@ class Mod:
         return version in self._game_versions
 
 
-def load_mrpack(mrpack: str) -> tuple[frozenset[Mod], GameVersion]:
-    with zipfile.ZipFile(mrpack) as z:
-        with z.open("modrinth.index.json") as f:
-            j = json.load(f)
+def load_mrpack(mrpack: str) -> tuple[frozenset[str], GameVersion]:
+    try:
+        with zipfile.ZipFile(mrpack) as z:
+            with z.open("modrinth.index.json") as f:
+                j = json.load(f)
 
-    game_version = GameVersion(j["dependencies"]["minecraft"])
-    hashes = frozenset(file["hashes"]["sha512"] for file in j["files"])
+        return (
+            frozenset(file["hashes"]["sha512"] for file in j["files"]),
+            GameVersion(j["dependencies"]["minecraft"]),
+        )
+    except Exception as e:
+        raise MrpackException("Failed to load mrpack file: " + str(e)) from e
 
+
+def load_mods(hashes: Set[str]) -> frozenset[Mod]:
     versions_response = requests.post(
         "https://api.modrinth.com/v2/version_files",
         json={"hashes": sorted(hashes), "algorithm": "sha512"},
@@ -121,11 +135,11 @@ def load_mrpack(mrpack: str) -> tuple[frozenset[Mod], GameVersion]:
         versions = GameVersion.from_list(project["versions"])
         mods.add(Mod(project["id"], project["title"], project["slug"], versions))
 
-    return frozenset(mods), game_version
+    return frozenset(mods)
 
 
-Table = list[tuple[str, ...]]
-IncompatibleMods = dict[GameVersion, Set[Mod]]
+Table = Sequence[tuple[str, ...]]
+IncompatibleMods = Mapping[GameVersion, Set[Mod]]
 
 
 def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, IncompatibleMods]:
@@ -147,21 +161,23 @@ def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, 
                 incompatible[version].add(mod)
         table.append(tuple(row))
 
-    return table, cast(IncompatibleMods, incompatible)
+    return table, {version: frozenset(incompatible[version]) for version in incompatible}
 
 
 def write_csv(table: Table) -> None:
     csv.writer(sys.stdout).writerows(table)
 
 
-def write(
-    table: Table,
+def write_table(table: Table) -> None:
+    print(tabulate.tabulate(table, headers="firstrow", tablefmt="github"))
+
+
+def write_incompatible(
+    num_mods: int,
     game_versions: Set[GameVersion],
     mrpack_game_version: GameVersion,
     incompatible: IncompatibleMods,
 ) -> None:
-    num_mods = len(table) - 1
-    print(tabulate.tabulate(table, headers="firstrow", tablefmt="github"))
     print("\nModpack game version: " + str(mrpack_game_version))
 
     for version in sorted(game_versions):
@@ -175,24 +191,29 @@ def write(
             print("  All mods are compatible with this version")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("mrpack_file")
-    parser.add_argument("--check", action="append", default=[])
-    parser.add_argument("--csv", action="store_true")
-    args = parser.parse_args()
-
-    game_versions = set(GameVersion(version) for version in args.check)
-    mods, mrpack_game_version = load_mrpack(args.mrpack_file)
+def mrcheck(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
+    game_versions = set(GameVersion(version) for version in versions)
+    hashes, mrpack_game_version = load_mrpack(mrpack_file)
     game_versions.add(mrpack_game_version)
+    mods = load_mods(hashes)
 
     table, incompatible = make_table(mods, game_versions)
 
-    if args.csv:
+    if output_csv:
         write_csv(table)
     else:
-        write(table, game_versions, mrpack_game_version, incompatible)
+        write_table(table)
+        write_incompatible(len(table) - 1, game_versions, mrpack_game_version, incompatible)
 
 
-if __name__ == "__main__":
+def main() -> None:  # pragma: no cover
+    parser = argparse.ArgumentParser()
+    parser.add_argument("mrpack_file")
+    parser.add_argument("--check-verison", action="append", default=[])
+    parser.add_argument("--csv", action="store_true")
+    args = parser.parse_args()
+    mrcheck(args.check_version, args.mrcheck_file, args.csv)
+
+
+if __name__ == "__main__":  # pragma: no cover
     main()
