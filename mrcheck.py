@@ -39,6 +39,17 @@ class GameVersion:
     def __repr__(self) -> str:
         return ".".join(str(segment) for segment in self._version)
 
+    @staticmethod
+    def from_list(versions: list[str]) -> "frozenset[GameVersion]":
+        # We deliberately skip over any versions that don't parse
+        out = set()
+        for version in versions:
+            try:
+                out.add(GameVersion(version))
+            except ValueError:
+                pass
+        return frozenset(out)
+
 
 @functools.total_ordering
 class Mod:
@@ -107,13 +118,8 @@ def load_mrpack(mrpack: str) -> tuple[frozenset[Mod], GameVersion]:
 
     mods = set()
     for project in projects:
-        versions = set()
-        for version in project["game_versions"]:
-            try:
-                versions.add(GameVersion(version))
-            except ValueError:
-                pass
-        mods.add(Mod(project["id"], project["title"], project["slug"], frozenset(versions)))
+        versions = GameVersion.from_list(project["versions"])
+        mods.add(Mod(project["id"], project["title"], project["slug"], versions))
 
     return frozenset(mods), game_version
 
