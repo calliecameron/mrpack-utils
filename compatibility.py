@@ -13,10 +13,6 @@ import requests
 import tabulate
 
 
-class ModpackException(Exception):
-    pass
-
-
 @functools.total_ordering
 class GameVersion:
     def __init__(self, version: str) -> None:
@@ -97,45 +93,63 @@ class Mod:
         return version in self._game_versions
 
 
-def load_mrpack(mrpack: str) -> tuple[frozenset[str], GameVersion]:
-    try:
-        with zipfile.ZipFile(mrpack) as z:
-            with z.open("modrinth.index.json") as f:
-                j = json.load(f)
+class ModpackException(Exception):
+    pass
 
-        return (
-            frozenset(file["hashes"]["sha512"] for file in j["files"]),
-            GameVersion(j["dependencies"]["minecraft"]),
+
+class Modpack:
+    def __init__(self, mod_hashes: Set[str], game_version: GameVersion) -> None:
+        super().__init__()
+        self._mod_hashes = frozenset(mod_hashes)
+        self._game_version = game_version
+
+    @property
+    def mod_hashes(self) -> frozenset[str]:
+        return self._mod_hashes
+
+    @property
+    def game_version(self) -> GameVersion:
+        return self._game_version
+
+    def load_mods(self) -> frozenset[Mod]:
+        versions_response = requests.post(
+            "https://api.modrinth.com/v2/version_files",
+            json={"hashes": sorted(self._mod_hashes), "algorithm": "sha512"},
+            timeout=10,
         )
-    except Exception as e:
-        raise ModpackException("Failed to load mrpack file: " + str(e)) from e
+        versions_response.raise_for_status()
+        versions = versions_response.json()
 
+        ids = set(versions[hash]["project_id"] for hash in versions)
 
-def load_mods(hashes: Set[str]) -> frozenset[Mod]:
-    versions_response = requests.post(
-        "https://api.modrinth.com/v2/version_files",
-        json={"hashes": sorted(hashes), "algorithm": "sha512"},
-        timeout=10,
-    )
-    versions_response.raise_for_status()
-    versions = versions_response.json()
+        projects_response = requests.get(
+            "https://api.modrinth.com/v2/projects",
+            {"ids": "[" + ", ".join('"%s"' % id for id in sorted(ids)) + "]"},
+            timeout=10,
+        )
+        projects_response.raise_for_status()
+        projects = projects_response.json()
 
-    ids = set(versions[hash]["project_id"] for hash in versions)
+        mods = set()
+        for project in projects:
+            versions = GameVersion.from_list(project["game_versions"])
+            mods.add(Mod(project["id"], project["title"], project["slug"], versions))
 
-    projects_response = requests.get(
-        "https://api.modrinth.com/v2/projects",
-        {"ids": "[" + ", ".join('"%s"' % id for id in sorted(ids)) + "]"},
-        timeout=10,
-    )
-    projects_response.raise_for_status()
-    projects = projects_response.json()
+        return frozenset(mods)
 
-    mods = set()
-    for project in projects:
-        versions = GameVersion.from_list(project["game_versions"])
-        mods.add(Mod(project["id"], project["title"], project["slug"], versions))
+    @staticmethod
+    def from_file(filename: str) -> "Modpack":
+        try:
+            with zipfile.ZipFile(filename) as z:
+                with z.open("modrinth.index.json") as f:
+                    j = json.load(f)
 
-    return frozenset(mods)
+            return Modpack(
+                frozenset(file["hashes"]["sha512"] for file in j["files"]),
+                GameVersion(j["dependencies"]["minecraft"]),
+            )
+        except Exception as e:
+            raise ModpackException("Failed to load mrpack file: " + str(e)) from e
 
 
 Table = Sequence[tuple[str, ...]]
@@ -193,9 +207,9 @@ def write_incompatible(
 
 def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
     game_versions = set(GameVersion(version) for version in versions)
-    hashes, mrpack_game_version = load_mrpack(mrpack_file)
-    game_versions.add(mrpack_game_version)
-    mods = load_mods(hashes)
+    modpack = Modpack.from_file(mrpack_file)
+    game_versions.add(modpack.game_version)
+    mods = modpack.load_mods()
 
     table, incompatible = make_table(mods, game_versions)
 
@@ -203,7 +217,7 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
         write_csv(table)
     else:
         write_table(table)
-        write_incompatible(len(table) - 1, game_versions, mrpack_game_version, incompatible)
+        write_incompatible(len(table) - 1, game_versions, modpack.game_version, incompatible)
 
 
 def main() -> None:  # pragma: no cover

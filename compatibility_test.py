@@ -4,10 +4,9 @@ import requests_mock
 from compatibility import (
     GameVersion,
     Mod,
+    Modpack,
     ModpackException,
     check_compatibility,
-    load_mods,
-    load_mrpack,
     make_table,
     write_csv,
     write_incompatible,
@@ -109,46 +108,51 @@ class TestMod:
             ) < "foo"
 
 
-def test_load_mrpack() -> None:
-    assert load_mrpack("testdata/test.mrpack") == (
-        frozenset(["abcd", "fedc"]),
-        GameVersion("1.19.4"),
-    )
-    with pytest.raises(ModpackException):
-        load_mrpack("testdata/modrinth.index.json")
+class TestModpack:
+    def test_from_file(self) -> None:
+        m = Modpack.from_file("testdata/test.mrpack")
+        assert m.mod_hashes == frozenset(["abcd", "fedc"])
+        assert m.game_version == GameVersion("1.19.4")
 
+        with pytest.raises(ModpackException):
+            Modpack.from_file("testdata/modrinth.index.json")
 
-def test_load_mods() -> None:
-    hashes = frozenset(["abcd", "fedc"])
-    with requests_mock.Mocker() as m:
-        m.post(
-            "https://api.modrinth.com/v2/version_files",
-            json={
-                "abcd": {
-                    "project_id": "foo",
+    def test_load_mods(self) -> None:
+        modpack = Modpack(frozenset(["abcd", "fedc"]), GameVersion("1.19.4"))
+        with requests_mock.Mocker() as m:
+            m.post(
+                "https://api.modrinth.com/v2/version_files",
+                json={
+                    "abcd": {
+                        "project_id": "foo",
+                    },
+                    "fedc": {
+                        "project_id": "bar",
+                    },
                 },
-                "fedc": {
-                    "project_id": "bar",
-                },
-            },
-        )
-        m.get(
-            'https://api.modrinth.com/v2/projects?ids=["bar", "foo"]',
-            complete_qs=True,
-            json=[
-                {"id": "abcd", "title": "Foo", "slug": "foo", "game_versions": ["1.19.2", "1.20"]},
-                {"id": "fedc", "title": "Bar", "slug": "bar", "game_versions": ["1.19.4"]},
-            ],
-        )
-        mods = sorted(load_mods(hashes))
+            )
+            m.get(
+                'https://api.modrinth.com/v2/projects?ids=["bar", "foo"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "abcd",
+                        "title": "Foo",
+                        "slug": "foo",
+                        "game_versions": ["1.19.2", "1.20"],
+                    },
+                    {"id": "fedc", "title": "Bar", "slug": "bar", "game_versions": ["1.19.4"]},
+                ],
+            )
+            mods = sorted(modpack.load_mods())
 
-    assert len(mods) == 2
-    assert mods[0].name == "Bar"
-    assert mods[0].link == "https://modrinth.com/mod/bar"
-    assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
-    assert mods[1].name == "Foo"
-    assert mods[1].link == "https://modrinth.com/mod/foo"
-    assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
+        assert len(mods) == 2
+        assert mods[0].name == "Bar"
+        assert mods[0].link == "https://modrinth.com/mod/bar"
+        assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
+        assert mods[1].name == "Foo"
+        assert mods[1].link == "https://modrinth.com/mod/foo"
+        assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
 
 
 def test_make_table() -> None:
@@ -238,7 +242,7 @@ For version 1.20:
     )
 
 
-def test_mrcheck(capsys: pytest.CaptureFixture[str]) -> None:
+def test_check_compatibility(capsys: pytest.CaptureFixture[str]) -> None:
     with requests_mock.Mocker() as m:
         m.post(
             "https://api.modrinth.com/v2/version_files",
