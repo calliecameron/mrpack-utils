@@ -11,7 +11,7 @@ lint:
 
 .PHONY: test
 test: testdata
-	pytest --cov-report=term-missing --cov=mrcheck mrcheck_test.py
+	pytest --cov-report=term-missing --cov=compatibility compatibility_test.py
 
 .PHONY: testdata
 testdata: testdata/test.mrpack

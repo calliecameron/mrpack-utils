@@ -1,14 +1,14 @@
 import pytest
 import requests_mock
 
-from mrcheck import (
+from compatibility import (
     GameVersion,
     Mod,
-    MrpackException,
+    ModpackException,
+    check_compatibility,
     load_mods,
     load_mrpack,
     make_table,
-    mrcheck,
     write_csv,
     write_incompatible,
     write_table,
@@ -114,7 +114,7 @@ def test_load_mrpack() -> None:
         frozenset(["abcd", "fedc"]),
         GameVersion("1.19.4"),
     )
-    with pytest.raises(MrpackException):
+    with pytest.raises(ModpackException):
         load_mrpack("testdata/modrinth.index.json")
 
 
@@ -259,7 +259,7 @@ def test_mrcheck(capsys: pytest.CaptureFixture[str]) -> None:
                 {"id": "fedc", "title": "Bar", "slug": "bar", "game_versions": ["1.19.4"]},
             ],
         )
-        mrcheck(["1.20"], "testdata/test.mrpack", True)
+        check_compatibility(["1.20"], "testdata/test.mrpack", True)
         assert (
             capsys.readouterr().out
             == """Name,Link,Latest game version,1.19.4,1.20\r
@@ -268,7 +268,7 @@ Foo,https://modrinth.com/mod/foo,1.20,no,yes\r
 """
         )
 
-        mrcheck(["1.20"], "testdata/test.mrpack", False)
+        check_compatibility(["1.20"], "testdata/test.mrpack", False)
         assert (
             capsys.readouterr().out
             # pylint: disable=line-too-long

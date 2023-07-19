@@ -13,7 +13,7 @@ import requests
 import tabulate
 
 
-class MrpackException(Exception):
+class ModpackException(Exception):
     pass
 
 
@@ -108,7 +108,7 @@ def load_mrpack(mrpack: str) -> tuple[frozenset[str], GameVersion]:
             GameVersion(j["dependencies"]["minecraft"]),
         )
     except Exception as e:
-        raise MrpackException("Failed to load mrpack file: " + str(e)) from e
+        raise ModpackException("Failed to load mrpack file: " + str(e)) from e
 
 
 def load_mods(hashes: Set[str]) -> frozenset[Mod]:
@@ -191,7 +191,7 @@ def write_incompatible(
             print("  All mods are compatible with this version")
 
 
-def mrcheck(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
+def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
     game_versions = set(GameVersion(version) for version in versions)
     hashes, mrpack_game_version = load_mrpack(mrpack_file)
     game_versions.add(mrpack_game_version)
@@ -212,7 +212,7 @@ def main() -> None:  # pragma: no cover
     parser.add_argument("--check-version", action="append", default=[])
     parser.add_argument("--csv", action="store_true")
     args = parser.parse_args()
-    mrcheck(args.check_version, args.mrpack_file, args.csv)
+    check_compatibility(args.check_version, args.mrpack_file, args.csv)
 
 
 if __name__ == "__main__":  # pragma: no cover
