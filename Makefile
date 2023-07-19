@@ -17,7 +17,7 @@ test: testdata
 testdata: testdata/test.mrpack
 
 testdata/test.mrpack: testdata/modrinth.index.json
-	cd testdata && zip test.mrpack modrinth.index.json
+	cd testdata && zip test.mrpack modrinth.index.json overrides/mods/* client-overrides/mods/* server-overrides/mods/*
 
 .PHONY: clean
 clean:

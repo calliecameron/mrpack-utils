@@ -11,6 +11,7 @@ from compatibility import (
     write_csv,
     write_incompatible,
     write_table,
+    write_unknown,
 )
 
 # pylint: disable=disallowed-name
@@ -113,12 +114,13 @@ class TestModpack:
         m = Modpack.from_file("testdata/test.mrpack")
         assert m.mod_hashes == frozenset(["abcd", "fedc"])
         assert m.game_version == GameVersion("1.19.4")
+        assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
 
         with pytest.raises(ModpackException):
             Modpack.from_file("testdata/modrinth.index.json")
 
     def test_load_mods(self) -> None:
-        modpack = Modpack(frozenset(["abcd", "fedc"]), GameVersion("1.19.4"))
+        modpack = Modpack(frozenset(["abcd", "fedc"]), GameVersion("1.19.4"), frozenset())
         with requests_mock.Mocker() as m:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
@@ -205,6 +207,21 @@ def test_write_table(capsys: pytest.CaptureFixture[str]) -> None:
     )
 
 
+def test_write_unknown(capsys: pytest.CaptureFixture[str]) -> None:
+    write_unknown(frozenset())
+    assert capsys.readouterr().out == ""
+
+    write_unknown(frozenset(["foo", "bar"]))
+    assert (
+        capsys.readouterr().out
+        == """
+Unknown mods (probably from CurseForge) - must be checked manually:
+  bar
+  foo
+"""
+    )
+
+
 def test_write_incompatible(capsys: pytest.CaptureFixture[str]) -> None:
     foo = Mod("abcd", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
     bar = Mod("fedc", "Bar", "bar", frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]))
@@ -280,6 +297,11 @@ Foo,https://modrinth.com/mod/foo,1.20,no,yes\r
 |--------|------------------------------|-----------------------|----------|--------|
 | Bar    | https://modrinth.com/mod/bar | 1.19.4                | yes      | no     |
 | Foo    | https://modrinth.com/mod/foo | 1.20                  | no       | yes    |
+
+Unknown mods (probably from CurseForge) - must be checked manually:
+  bar-1.0.0.jar
+  baz-1.0.0.jar
+  foo-1.2.3.jar
 
 Modpack game version: 1.19.4
 

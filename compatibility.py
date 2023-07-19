@@ -4,6 +4,7 @@ import argparse
 import csv
 import functools
 import json
+import pathlib
 import re
 import sys
 import zipfile
@@ -98,10 +99,13 @@ class ModpackException(Exception):
 
 
 class Modpack:
-    def __init__(self, mod_hashes: Set[str], game_version: GameVersion) -> None:
+    def __init__(
+        self, mod_hashes: Set[str], game_version: GameVersion, unknown_mods: Set[str]
+    ) -> None:
         super().__init__()
         self._mod_hashes = frozenset(mod_hashes)
         self._game_version = game_version
+        self._unknown_mods = frozenset(unknown_mods)
 
     @property
     def mod_hashes(self) -> frozenset[str]:
@@ -110,6 +114,10 @@ class Modpack:
     @property
     def game_version(self) -> GameVersion:
         return self._game_version
+
+    @property
+    def unknown_mods(self) -> frozenset[str]:
+        return self._unknown_mods
 
     def load_mods(self) -> frozenset[Mod]:
         versions_response = requests.post(
@@ -144,9 +152,20 @@ class Modpack:
                 with z.open("modrinth.index.json") as f:
                     j = json.load(f)
 
+                unknown_mods = set()
+                for file in z.namelist():
+                    path = pathlib.PurePath(file)
+                    if path.suffix == ".jar" and str(path.parent) in (
+                        "overrides/mods",
+                        "server-overrides/mods",
+                        "client-overrides/mods",
+                    ):
+                        unknown_mods.add(path.name)
+
             return Modpack(
                 frozenset(file["hashes"]["sha512"] for file in j["files"]),
                 GameVersion(j["dependencies"]["minecraft"]),
+                unknown_mods,
             )
         except Exception as e:
             raise ModpackException("Failed to load mrpack file: " + str(e)) from e
@@ -186,6 +205,13 @@ def write_table(table: Table) -> None:
     print(tabulate.tabulate(table, headers="firstrow", tablefmt="github"))
 
 
+def write_unknown(mods: Set[str]) -> None:
+    if mods:
+        print("\nUnknown mods (probably from CurseForge) - must be checked manually:")
+        for mod in sorted(mods, key=lambda m: m.lower()):
+            print("  " + mod)
+
+
 def write_incompatible(
     num_mods: int,
     game_versions: Set[GameVersion],
@@ -217,6 +243,7 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
         write_csv(table)
     else:
         write_table(table)
+        write_unknown(modpack.unknown_mods)
         write_incompatible(len(table) - 1, game_versions, modpack.game_version, incompatible)
 
 
