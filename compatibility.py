@@ -248,12 +248,21 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
 
 
 def main() -> None:  # pragma: no cover
-    parser = argparse.ArgumentParser()
-    parser.add_argument("mrpack_file")
-    parser.add_argument("--check-version", action="append", default=[])
-    parser.add_argument("--csv", action="store_true")
+    parser = argparse.ArgumentParser(
+        description="Check Minecraft mods for compatibility with game versions."
+    )
+    parser.add_argument("mrpack_file", help="a Modrinth-format (mrpack) modpack")
+    parser.add_argument(
+        "--version",
+        action="append",
+        default=[],
+        help="game version to check; may be specified multiple times",
+    )
+    parser.add_argument(
+        "--csv", action="store_true", help="generate CSV instead of a human-readable table"
+    )
     args = parser.parse_args()
-    check_compatibility(args.check_version, args.mrpack_file, args.csv)
+    check_compatibility(args.version, args.mrpack_file, args.csv)
 
 
 if __name__ == "__main__":  # pragma: no cover

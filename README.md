@@ -9,7 +9,7 @@ exists that is compatible with the given game versions, and reports which mods
 are not compatible:
 
 ```shell
-./compatibility.py --check-version 1.20 --check-version 1.20.1 mods.mrpack
+./compatibility.py --version 1.20 --version 1.20.1 mods.mrpack
 ```
 
 ## Limitations
