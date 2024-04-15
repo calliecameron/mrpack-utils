@@ -13,6 +13,7 @@ from collections.abc import Mapping, Sequence, Set
 
 import requests
 import tabulate
+from frozendict import frozendict
 
 
 @functools.total_ordering
@@ -58,6 +59,8 @@ class Mod:
         name: str,
         slug: str,
         installed_version: str,
+        client: str,
+        server: str,
         versions: Set[GameVersion],
     ) -> None:
         super().__init__()
@@ -65,6 +68,8 @@ class Mod:
         self._name = name
         self._link = "https://modrinth.com/mod/" + slug
         self._installed_version = installed_version
+        self._client = client
+        self._server = server
         self._game_versions = frozenset(versions)
         self._latest_game_version = max(self._game_versions)
 
@@ -94,6 +99,14 @@ class Mod:
         return self._installed_version
 
     @property
+    def client(self) -> str:
+        return self._client
+
+    @property
+    def server(self) -> str:
+        return self._server
+
+    @property
     def game_versions(self) -> frozenset[GameVersion]:
         return self._game_versions
 
@@ -113,17 +126,23 @@ class Modpack:
     def __init__(
         self,
         mod_hashes: Set[str],
+        mod_envs: Mapping[str, Mapping[str, str]],
         game_version: GameVersion,
         unknown_mods: Set[str],
     ) -> None:
         super().__init__()
         self._mod_hashes = frozenset(mod_hashes)
+        self._mod_envs = frozendict({k: frozendict(v) for k, v in mod_envs.items()})
         self._game_version = game_version
         self._unknown_mods = frozenset(unknown_mods)
 
     @property
     def mod_hashes(self) -> frozenset[str]:
         return self._mod_hashes
+
+    @property
+    def mod_envs(self) -> frozendict[str, frozendict[str, str]]:
+        return self._mod_envs
 
     @property
     def game_version(self) -> GameVersion:
@@ -147,6 +166,10 @@ class Modpack:
             versions[mod_hash]["project_id"]: versions[mod_hash]["version_number"]
             for mod_hash in versions
         }
+        envs: dict[str, Mapping[str, str]] = {
+            versions[mod_hash]["project_id"]: self._mod_envs.get(mod_hash, {})
+            for mod_hash in versions
+        }
 
         projects_response = requests.get(
             "https://api.modrinth.com/v2/projects",
@@ -165,6 +188,8 @@ class Modpack:
                     project["title"],
                     project["slug"],
                     installed_versions[project["id"]],
+                    envs[project["id"]].get("client", ""),
+                    envs[project["id"]].get("server", ""),
                     versions,
                 ),
             )
@@ -190,6 +215,7 @@ class Modpack:
 
             return Modpack(
                 frozenset(file["hashes"]["sha512"] for file in j["files"]),
+                {file["hashes"]["sha512"]: file["env"] for file in j["files"] if "env" in file},
                 GameVersion(j["dependencies"]["minecraft"]),
                 unknown_mods,
             )
@@ -206,13 +232,20 @@ def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, 
     sorted_versions = sorted(game_versions)
     table = [
         tuple(
-            ["Name", "Link", "Installed version", "Latest game version"]
+            ["Name", "Link", "Installed version", "On client", "On server", "Latest game version"]
             + [str(version) for version in sorted_versions],
         ),
     ]
 
     for mod in sorted(mods):
-        row = [mod.name, mod.link, mod.installed_version, str(mod.latest_game_version)]
+        row = [
+            mod.name,
+            mod.link,
+            mod.installed_version,
+            mod.client,
+            mod.server,
+            str(mod.latest_game_version),
+        ]
         for version in sorted_versions:
             if mod.compatible_with(version):
                 row.append("yes")

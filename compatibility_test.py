@@ -1,5 +1,6 @@
 import pytest
 import requests_mock
+from frozendict import frozendict
 
 from compatibility import (
     GameVersion,
@@ -57,11 +58,15 @@ class TestMod:
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         assert m.name == "Foo"
         assert m.link == "https://modrinth.com/mod/foo"
         assert m.installed_version == "1.2.3"
+        assert m.client == "required"
+        assert m.server == ""
         assert m.game_versions == frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
         assert m.latest_game_version == GameVersion("1.20")
         assert m.compatible_with(GameVersion("1.19.4"))
@@ -75,12 +80,16 @@ class TestMod:
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) == Mod(
             "1234",
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         assert Mod(
@@ -88,12 +97,16 @@ class TestMod:
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) == Mod(
             "1234",
             "Bar",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         assert Mod(
@@ -101,12 +114,16 @@ class TestMod:
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) != Mod(
             "1235",
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         with pytest.raises(NotImplementedError):
@@ -116,6 +133,8 @@ class TestMod:
                     "Foo",
                     "foo",
                     "1.2.3",
+                    "required",
+                    "",
                     frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
                 )
                 == "foo"
@@ -129,6 +148,8 @@ class TestMod:
                 "Foo",
                 "foo",
                 "1.2.3",
+                "required",
+                "",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
         ) == hash(
@@ -137,6 +158,8 @@ class TestMod:
                 "Foo",
                 "foo",
                 "1.2.3",
+                "required",
+                "",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
         )
@@ -146,6 +169,8 @@ class TestMod:
                 "Foo",
                 "foo",
                 "1.2.3",
+                "required",
+                "",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
         ) == hash(
@@ -154,6 +179,8 @@ class TestMod:
                 "Bar",
                 "foo",
                 "1.2.3",
+                "required",
+                "",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
         )
@@ -163,6 +190,8 @@ class TestMod:
                 "Foo",
                 "foo",
                 "1.2.3",
+                "required",
+                "",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
         ) != hash(
@@ -171,6 +200,8 @@ class TestMod:
                 "Foo",
                 "foo",
                 "1.2.3",
+                "required",
+                "",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
         )
@@ -182,12 +213,16 @@ class TestMod:
             "bar",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) < Mod(
             "1234",
             "Foo",
             "foo",
             "1.2.3",
+            "required",
+            "",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         with pytest.raises(NotImplementedError):
@@ -197,6 +232,8 @@ class TestMod:
                     "Foo",
                     "foo",
                     "1.2.3",
+                    "required",
+                    "",
                     frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
                 )
                 < "foo"
@@ -207,6 +244,9 @@ class TestModpack:
     def test_from_file(self) -> None:
         m = Modpack.from_file("testdata/test.mrpack")
         assert m.mod_hashes == frozenset(["abcd", "fedc"])
+        assert m.mod_envs == frozendict(
+            {"abcd": frozendict({"client": "required", "server": "optional"})},
+        )
         assert m.game_version == GameVersion("1.19.4")
         assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
 
@@ -214,7 +254,12 @@ class TestModpack:
             Modpack.from_file("testdata/modrinth.index.json")
 
     def test_load_mods(self) -> None:
-        modpack = Modpack(frozenset(["abcd", "fedc"]), GameVersion("1.19.4"), frozenset())
+        modpack = Modpack(
+            frozenset(["abcd", "fedc"]),
+            {"abcd": {"client": "required", "server": "optional"}},
+            GameVersion("1.19.4"),
+            frozenset(),
+        )
         with requests_mock.Mocker() as m:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
@@ -253,10 +298,14 @@ class TestModpack:
         assert mods[0].name == "Bar"
         assert mods[0].link == "https://modrinth.com/mod/bar"
         assert mods[0].installed_version == "4.5.6"
+        assert mods[0].client == ""
+        assert mods[0].server == ""
         assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
         assert mods[1].name == "Foo"
         assert mods[1].link == "https://modrinth.com/mod/foo"
         assert mods[1].installed_version == "1.2.3"
+        assert mods[1].client == "required"
+        assert mods[1].server == "optional"
         assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
 
 
@@ -266,6 +315,8 @@ def test_make_table() -> None:
         "Foo",
         "foo",
         "1.2.3",
+        "required",
+        "optional",
         frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
     )
     bar = Mod(
@@ -273,15 +324,35 @@ def test_make_table() -> None:
         "Bar",
         "bar",
         "4.5.6",
+        "required",
+        "",
         frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
     )
     mods = frozenset([foo, bar])
     table, incompatible = make_table(mods, frozenset([GameVersion("1.19.4"), GameVersion("1.20")]))
 
     assert table == [
-        ("Name", "Link", "Installed version", "Latest game version", "1.19.4", "1.20"),
-        ("Bar", "https://modrinth.com/mod/bar", "4.5.6", "1.19.4", "yes", "no"),
-        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "1.20", "yes", "yes"),
+        (
+            "Name",
+            "Link",
+            "Installed version",
+            "On client",
+            "On server",
+            "Latest game version",
+            "1.19.4",
+            "1.20",
+        ),
+        ("Bar", "https://modrinth.com/mod/bar", "4.5.6", "required", "", "1.19.4", "yes", "no"),
+        (
+            "Foo",
+            "https://modrinth.com/mod/foo",
+            "1.2.3",
+            "required",
+            "optional",
+            "1.20",
+            "yes",
+            "yes",
+        ),
     ]
     assert incompatible == {
         GameVersion("1.19.4"): frozenset(),
@@ -291,33 +362,69 @@ def test_make_table() -> None:
 
 def test_write_csv(capsys: pytest.CaptureFixture[str]) -> None:
     table = [
-        ("Name", "Link", "Installed version", "Latest game version", "1.19.4", "1.20"),
-        ("Bar", "https://modrinth.com/mod/bar", "4.5.6", "1.19.4", "yes", "no"),
-        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "1.20", "yes", "yes"),
+        (
+            "Name",
+            "Link",
+            "Installed version",
+            "On client",
+            "On server",
+            "Latest game version",
+            "1.19.4",
+            "1.20",
+        ),
+        (
+            "Bar",
+            "https://modrinth.com/mod/bar",
+            "4.5.6",
+            "required",
+            "optional",
+            "1.19.4",
+            "yes",
+            "no",
+        ),
+        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "required", "", "1.20", "yes", "yes"),
     ]
     write_csv(table)
     assert (
         capsys.readouterr().out
-        == """Name,Link,Installed version,Latest game version,1.19.4,1.20\r
-Bar,https://modrinth.com/mod/bar,4.5.6,1.19.4,yes,no\r
-Foo,https://modrinth.com/mod/foo,1.2.3,1.20,yes,yes\r
+        == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20\r
+Bar,https://modrinth.com/mod/bar,4.5.6,required,optional,1.19.4,yes,no\r
+Foo,https://modrinth.com/mod/foo,1.2.3,required,,1.20,yes,yes\r
 """
     )
 
 
 def test_write_table(capsys: pytest.CaptureFixture[str]) -> None:
     table = [
-        ("Name", "Link", "Installed version", "Latest game version", "1.19.4", "1.20"),
-        ("Bar", "https://modrinth.com/mod/bar", "4.5.6", "1.19.4", "yes", "no"),
-        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "1.20", "yes", "yes"),
+        (
+            "Name",
+            "Link",
+            "Installed version",
+            "On client",
+            "On server",
+            "Latest game version",
+            "1.19.4",
+            "1.20",
+        ),
+        (
+            "Bar",
+            "https://modrinth.com/mod/bar",
+            "4.5.6",
+            "required",
+            "optional",
+            "1.19.4",
+            "yes",
+            "no",
+        ),
+        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "required", "", "1.20", "yes", "yes"),
     ]
     write_table(table)
     assert (
         capsys.readouterr().out
-        == """| Name   | Link                         | Installed version   | Latest game version   | 1.19.4   | 1.20   |
-|--------|------------------------------|---------------------|-----------------------|----------|--------|
-| Bar    | https://modrinth.com/mod/bar | 4.5.6               | 1.19.4                | yes      | no     |
-| Foo    | https://modrinth.com/mod/foo | 1.2.3               | 1.20                  | yes      | yes    |
+        == """| Name   | Link                         | Installed version   | On client   | On server   | Latest game version   | 1.19.4   | 1.20   |
+|--------|------------------------------|---------------------|-------------|-------------|-----------------------|----------|--------|
+| Bar    | https://modrinth.com/mod/bar | 4.5.6               | required    | optional    | 1.19.4                | yes      | no     |
+| Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    |             | 1.20                  | yes      | yes    |
 """  # noqa: E501
     )
 
@@ -343,6 +450,8 @@ def test_write_incompatible(capsys: pytest.CaptureFixture[str]) -> None:
         "Foo",
         "foo",
         "1.2.3",
+        "required",
+        "optional",
         frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
     )
     bar = Mod(
@@ -350,6 +459,8 @@ def test_write_incompatible(capsys: pytest.CaptureFixture[str]) -> None:
         "Bar",
         "bar",
         "4.5.6",
+        "required",
+        "",
         frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
     )
 
@@ -412,19 +523,19 @@ def test_check_compatibility(capsys: pytest.CaptureFixture[str]) -> None:
         check_compatibility(["1.20"], "testdata/test.mrpack", True)
         assert (
             capsys.readouterr().out
-            == """Name,Link,Installed version,Latest game version,1.19.4,1.20\r
-Bar,https://modrinth.com/mod/bar,4.5.6,1.19.4,yes,no\r
-Foo,https://modrinth.com/mod/foo,1.2.3,1.20,no,yes\r
+            == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20\r
+Bar,https://modrinth.com/mod/bar,4.5.6,,,1.19.4,yes,no\r
+Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes\r
 """
         )
 
         check_compatibility(["1.20"], "testdata/test.mrpack", False)
         assert (
             capsys.readouterr().out
-            == """| Name   | Link                         | Installed version   | Latest game version   | 1.19.4   | 1.20   |
-|--------|------------------------------|---------------------|-----------------------|----------|--------|
-| Bar    | https://modrinth.com/mod/bar | 4.5.6               | 1.19.4                | yes      | no     |
-| Foo    | https://modrinth.com/mod/foo | 1.2.3               | 1.20                  | no       | yes    |
+            == """| Name   | Link                         | Installed version   | On client   | On server   | Latest game version   | 1.19.4   | 1.20   |
+|--------|------------------------------|---------------------|-------------|-------------|-----------------------|----------|--------|
+| Bar    | https://modrinth.com/mod/bar | 4.5.6               |             |             | 1.19.4                | yes      | no     |
+| Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    | optional    | 1.20                  | no       | yes    |
 
 Unknown mods (probably from CurseForge) - must be checked manually:
   bar-1.0.0.jar
