@@ -17,6 +17,12 @@
             "hashes": {
                 "sha512": "fedc"
             }
+        },
+        {
+            "path": "mods/baz.jar",
+            "hashes": {
+                "sha512": "pqrs"
+            }
         }
     ],
     "dependencies": {

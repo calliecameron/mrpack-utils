@@ -11,6 +11,7 @@ from compatibility import (
     make_table,
     write_csv,
     write_incompatible,
+    write_missing,
     write_table,
     write_unknown,
 )
@@ -243,7 +244,8 @@ class TestMod:
 class TestModpack:
     def test_from_file(self) -> None:
         m = Modpack.from_file("testdata/test.mrpack")
-        assert m.mod_hashes == frozenset(["abcd", "fedc"])
+        assert m.mod_hashes == frozenset(["abcd", "fedc", "pqrs"])
+        assert m.mod_jars == frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"})
         assert m.mod_envs == frozendict(
             {"abcd": frozendict({"client": "required", "server": "optional"})},
         )
@@ -255,7 +257,8 @@ class TestModpack:
 
     def test_load_mods(self) -> None:
         modpack = Modpack(
-            frozenset(["abcd", "fedc"]),
+            frozenset(["abcd", "fedc", "pqrs"]),
+            frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
             {"abcd": {"client": "required", "server": "optional"}},
             GameVersion("1.19.4"),
             frozenset(),
@@ -267,10 +270,29 @@ class TestModpack:
                     "abcd": {
                         "project_id": "baz",
                         "version_number": "1.2.3",
+                        "files": [
+                            {
+                                "hashes": {
+                                    "sha512": "abcd",
+                                },
+                            },
+                            {
+                                "hashes": {
+                                    "sha512": "wxyz",
+                                },
+                            },
+                        ],
                     },
                     "fedc": {
                         "project_id": "quux",
                         "version_number": "4.5.6",
+                        "files": [
+                            {
+                                "hashes": {
+                                    "sha512": "fedc",
+                                },
+                            },
+                        ],
                     },
                 },
             )
@@ -292,8 +314,9 @@ class TestModpack:
                     },
                 ],
             )
-            mods = sorted(modpack.load_mods())
+            raw_mods, missing_mods = modpack.load_mods()
 
+        mods = sorted(raw_mods)
         assert len(mods) == 2  # noqa: PLR2004
         assert mods[0].name == "Bar"
         assert mods[0].link == "https://modrinth.com/mod/bar"
@@ -307,6 +330,8 @@ class TestModpack:
         assert mods[1].client == "required"
         assert mods[1].server == "optional"
         assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
+
+        assert missing_mods == frozenset({"baz.jar"})
 
 
 def test_make_table() -> None:
@@ -429,6 +454,21 @@ def test_write_table(capsys: pytest.CaptureFixture[str]) -> None:
     )
 
 
+def test_write_missing(capsys: pytest.CaptureFixture[str]) -> None:
+    write_missing(frozenset())
+    assert capsys.readouterr().out == ""
+
+    write_missing(frozenset(["foo", "bar"]))
+    assert (
+        capsys.readouterr().out
+        == """
+Mods supposed to be on Modrinth, but not found:
+  bar
+  foo
+"""
+    )
+
+
 def test_write_unknown(capsys: pytest.CaptureFixture[str]) -> None:
     write_unknown(frozenset())
     assert capsys.readouterr().out == ""
@@ -505,10 +545,29 @@ def test_check_compatibility(capsys: pytest.CaptureFixture[str]) -> None:
                 "abcd": {
                     "project_id": "baz",
                     "version_number": "1.2.3",
+                    "files": [
+                        {
+                            "hashes": {
+                                "sha512": "abcd",
+                            },
+                        },
+                        {
+                            "hashes": {
+                                "sha512": "wxyz",
+                            },
+                        },
+                    ],
                 },
                 "fedc": {
                     "project_id": "quux",
                     "version_number": "4.5.6",
+                    "files": [
+                        {
+                            "hashes": {
+                                "sha512": "fedc",
+                            },
+                        },
+                    ],
                 },
             },
         )
@@ -536,6 +595,9 @@ Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes\r
 |--------|------------------------------|---------------------|-------------|-------------|-----------------------|----------|--------|
 | Bar    | https://modrinth.com/mod/bar | 4.5.6               |             |             | 1.19.4                | yes      | no     |
 | Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    | optional    | 1.20                  | no       | yes    |
+
+Mods supposed to be on Modrinth, but not found:
+  baz.jar
 
 Unknown mods (probably from CurseForge) - must be checked manually:
   bar-1.0.0.jar

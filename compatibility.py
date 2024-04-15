@@ -126,12 +126,14 @@ class Modpack:
     def __init__(
         self,
         mod_hashes: Set[str],
+        mod_jars: Mapping[str, str],
         mod_envs: Mapping[str, Mapping[str, str]],
         game_version: GameVersion,
         unknown_mods: Set[str],
     ) -> None:
         super().__init__()
         self._mod_hashes = frozenset(mod_hashes)
+        self._mod_jars = mod_jars
         self._mod_envs = frozendict({k: frozendict(v) for k, v in mod_envs.items()})
         self._game_version = game_version
         self._unknown_mods = frozenset(unknown_mods)
@@ -139,6 +141,10 @@ class Modpack:
     @property
     def mod_hashes(self) -> frozenset[str]:
         return self._mod_hashes
+
+    @property
+    def mod_jars(self) -> Mapping[str, str]:
+        return self._mod_jars
 
     @property
     def mod_envs(self) -> frozendict[str, frozendict[str, str]]:
@@ -152,7 +158,7 @@ class Modpack:
     def unknown_mods(self) -> frozenset[str]:
         return self._unknown_mods
 
-    def load_mods(self) -> frozenset[Mod]:
+    def load_mods(self) -> tuple[frozenset[Mod], frozenset[str]]:
         versions_response = requests.post(
             "https://api.modrinth.com/v2/version_files",
             json={"hashes": sorted(self._mod_hashes), "algorithm": "sha512"},
@@ -160,6 +166,17 @@ class Modpack:
         )
         versions_response.raise_for_status()
         versions = versions_response.json()
+
+        hashes_returned = frozenset(
+            {
+                file["hashes"]["sha512"]
+                for version in versions
+                for file in versions[version]["files"]
+            },
+        )
+        missing_mods = frozenset(
+            {self._mod_jars[mod_hash] for mod_hash in self._mod_hashes - hashes_returned},
+        )
 
         ids = {versions[mod_hash]["project_id"] for mod_hash in versions}
         installed_versions = {
@@ -194,7 +211,7 @@ class Modpack:
                 ),
             )
 
-        return frozenset(mods)
+        return frozenset(mods), missing_mods
 
     @staticmethod
     def from_file(filename: str) -> "Modpack":
@@ -215,6 +232,7 @@ class Modpack:
 
             return Modpack(
                 frozenset(file["hashes"]["sha512"] for file in j["files"]),
+                {file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]},
                 {file["hashes"]["sha512"]: file["env"] for file in j["files"] if "env" in file},
                 GameVersion(j["dependencies"]["minecraft"]),
                 unknown_mods,
@@ -265,6 +283,13 @@ def write_table(table: Table) -> None:
     print(tabulate.tabulate(table, headers="firstrow", tablefmt="github"))
 
 
+def write_missing(mods: Set[str]) -> None:
+    if mods:
+        print("\nMods supposed to be on Modrinth, but not found:")
+        for mod in sorted(mods, key=lambda m: m.lower()):
+            print("  " + mod)
+
+
 def write_unknown(mods: Set[str]) -> None:
     if mods:
         print("\nUnknown mods (probably from CurseForge) - must be checked manually:")
@@ -295,7 +320,7 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
     game_versions = {GameVersion(version) for version in versions}
     modpack = Modpack.from_file(mrpack_file)
     game_versions.add(modpack.game_version)
-    mods = modpack.load_mods()
+    mods, missing_mods = modpack.load_mods()
 
     table, incompatible = make_table(mods, game_versions)
 
@@ -303,6 +328,7 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
         write_csv(table)
     else:
         write_table(table)
+        write_missing(missing_mods)
         write_unknown(modpack.unknown_mods)
         write_incompatible(len(table) - 1, game_versions, modpack.game_version, incompatible)
 
