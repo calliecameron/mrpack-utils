@@ -3,10 +3,8 @@ all: lint test
 
 .PHONY: lint
 lint:
-	pylint --score n --recursive y .
-	flake8 '--filename=*.py,*.pyi'
-	black --check .
-	isort --check .
+	ruff check .
+	ruff format --diff .
 	mypy --strict .
 
 .PHONY: test

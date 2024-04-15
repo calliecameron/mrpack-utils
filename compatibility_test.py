@@ -5,7 +5,7 @@ from compatibility import (
     GameVersion,
     Mod,
     Modpack,
-    ModpackException,
+    ModpackError,
     check_compatibility,
     make_table,
     write_csv,
@@ -13,9 +13,6 @@ from compatibility import (
     write_table,
     write_unknown,
 )
-
-# pylint: disable=disallowed-name
-# flake8: noqa
 
 
 class TestGameVersion:
@@ -33,7 +30,7 @@ class TestGameVersion:
         assert GameVersion("1.19.4") == GameVersion("1.19.4")
         assert GameVersion("1.19.4") != GameVersion("1.20")
         with pytest.raises(NotImplementedError):
-            GameVersion("1.20") == "1.20"  # pylint: disable=expression-not-assigned
+            assert GameVersion("1.20") == "1.20"
 
     def test_hash(self) -> None:
         assert hash(GameVersion("1.19.4")) == hash(GameVersion("1.19.4"))
@@ -45,11 +42,11 @@ class TestGameVersion:
         assert GameVersion("1.20") < GameVersion("1.20.1")
         assert GameVersion("1.20") > GameVersion("1.19.4")
         with pytest.raises(NotImplementedError):
-            GameVersion("1.20") < "1.20"  # pylint: disable=expression-not-assigned
+            assert GameVersion("1.20") < "1.20"
 
     def test_from_list(self) -> None:
         assert GameVersion.from_list(["1.19", "1.20-dev", "1.18.4", "1.19", "foo"]) == frozenset(
-            [GameVersion("1.19"), GameVersion("1.18.4")]
+            [GameVersion("1.19"), GameVersion("1.18.4")],
         )
 
 
@@ -67,46 +64,70 @@ class TestMod:
     def test_eq(self) -> None:
         # Only ID matters
         assert Mod(
-            "1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
+            "1234",
+            "Foo",
+            "foo",
+            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) == Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
         assert Mod(
-            "1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
+            "1234",
+            "Foo",
+            "foo",
+            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) == Mod("1234", "Bar", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
         assert Mod(
-            "1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
+            "1234",
+            "Foo",
+            "foo",
+            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) != Mod("1235", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
         with pytest.raises(NotImplementedError):
-            Mod(  # pylint: disable=expression-not-assigned
-                "1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
-            ) == "foo"
+            assert (
+                Mod(
+                    "1234",
+                    "Foo",
+                    "foo",
+                    frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
+                )
+                == "foo"
+            )
 
     def test_hash(self) -> None:
         # Only ID matters
         assert hash(
-            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
+            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])),
         ) == hash(
-            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
+            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])),
         )
         assert hash(
-            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
+            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])),
         ) == hash(
-            Mod("1234", "Bar", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
+            Mod("1234", "Bar", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])),
         )
         assert hash(
-            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
+            Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])),
         ) != hash(
-            Mod("1235", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
+            Mod("1235", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])),
         )
 
     def test_lt(self) -> None:
         # Only name matters, case insensitively
         assert Mod(
-            "1234", "bar", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
+            "1234",
+            "bar",
+            "foo",
+            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         ) < Mod("1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")]))
         with pytest.raises(NotImplementedError):
-            Mod(  # pylint: disable=expression-not-assigned
-                "1234", "Foo", "foo", frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
-            ) < "foo"
+            assert (
+                Mod(
+                    "1234",
+                    "Foo",
+                    "foo",
+                    frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
+                )
+                < "foo"
+            )
 
 
 class TestModpack:
@@ -116,7 +137,7 @@ class TestModpack:
         assert m.game_version == GameVersion("1.19.4")
         assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
 
-        with pytest.raises(ModpackException):
+        with pytest.raises(ModpackError):
             Modpack.from_file("testdata/modrinth.index.json")
 
     def test_load_mods(self) -> None:
@@ -148,7 +169,7 @@ class TestModpack:
             )
             mods = sorted(modpack.load_mods())
 
-        assert len(mods) == 2
+        assert len(mods) == 2  # noqa: PLR2004
         assert mods[0].name == "Bar"
         assert mods[0].link == "https://modrinth.com/mod/bar"
         assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
@@ -292,7 +313,6 @@ Foo,https://modrinth.com/mod/foo,1.20,no,yes\r
         check_compatibility(["1.20"], "testdata/test.mrpack", False)
         assert (
             capsys.readouterr().out
-            # pylint: disable=line-too-long
             == """| Name   | Link                         | Latest game version   | 1.19.4   | 1.20   |
 |--------|------------------------------|-----------------------|----------|--------|
 | Bar    | https://modrinth.com/mod/bar | 1.19.4                | yes      | no     |
@@ -312,5 +332,5 @@ For version 1.19.4:
 For version 1.20:
   1 out of 2 mods are incompatible with this version:
     Bar
-"""
+"""  # noqa: E501
         )

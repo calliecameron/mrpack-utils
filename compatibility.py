@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import contextlib
 import csv
 import functools
 import json
@@ -44,10 +45,8 @@ class GameVersion:
         # We deliberately skip over any versions that don't parse
         out = set()
         for version in versions:
-            try:
+            with contextlib.suppress(ValueError):
                 out.add(GameVersion(version))
-            except ValueError:
-                pass
         return frozenset(out)
 
 
@@ -94,13 +93,16 @@ class Mod:
         return version in self._game_versions
 
 
-class ModpackException(Exception):
+class ModpackError(Exception):
     pass
 
 
 class Modpack:
     def __init__(
-        self, mod_hashes: Set[str], game_version: GameVersion, unknown_mods: Set[str]
+        self,
+        mod_hashes: Set[str],
+        game_version: GameVersion,
+        unknown_mods: Set[str],
     ) -> None:
         super().__init__()
         self._mod_hashes = frozenset(mod_hashes)
@@ -128,11 +130,11 @@ class Modpack:
         versions_response.raise_for_status()
         versions = versions_response.json()
 
-        ids = set(versions[hash]["project_id"] for hash in versions)
+        ids = {versions[mod_hash]["project_id"] for mod_hash in versions}
 
         projects_response = requests.get(
             "https://api.modrinth.com/v2/projects",
-            {"ids": "[" + ", ".join('"%s"' % id for id in sorted(ids)) + "]"},
+            {"ids": "[" + ", ".join('"%s"' % mod_id for mod_id in sorted(ids)) + "]"},
             timeout=10,
         )
         projects_response.raise_for_status()
@@ -167,8 +169,8 @@ class Modpack:
                 GameVersion(j["dependencies"]["minecraft"]),
                 unknown_mods,
             )
-        except Exception as e:
-            raise ModpackException("Failed to load mrpack file: " + str(e)) from e
+        except Exception as e:  # noqa: BLE001
+            raise ModpackError("Failed to load mrpack file: " + str(e)) from e
 
 
 Table = Sequence[tuple[str, ...]]
@@ -180,8 +182,8 @@ def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, 
     sorted_versions = sorted(game_versions)
     table = [
         tuple(
-            ["Name", "Link", "Latest game version"] + [str(version) for version in sorted_versions]
-        )
+            ["Name", "Link", "Latest game version"] + [str(version) for version in sorted_versions],
+        ),
     ]
 
     for mod in sorted(mods):
@@ -232,7 +234,7 @@ def write_incompatible(
 
 
 def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
-    game_versions = set(GameVersion(version) for version in versions)
+    game_versions = {GameVersion(version) for version in versions}
     modpack = Modpack.from_file(mrpack_file)
     game_versions.add(modpack.game_version)
     mods = modpack.load_mods()
@@ -249,7 +251,7 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
 
 def main() -> None:  # pragma: no cover
     parser = argparse.ArgumentParser(
-        description="Check Minecraft mods for compatibility with game versions."
+        description="Check Minecraft mods for compatibility with game versions.",
     )
     parser.add_argument("mrpack_file", help="a Modrinth-format (mrpack) modpack")
     parser.add_argument(
@@ -259,7 +261,9 @@ def main() -> None:  # pragma: no cover
         help="game version to check; may be specified multiple times",
     )
     parser.add_argument(
-        "--csv", action="store_true", help="generate CSV instead of a human-readable table"
+        "--csv",
+        action="store_true",
+        help="generate CSV instead of a human-readable table",
     )
     args = parser.parse_args()
     check_compatibility(args.version, args.mrpack_file, args.csv)
