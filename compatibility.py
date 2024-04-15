@@ -52,11 +52,19 @@ class GameVersion:
 
 @functools.total_ordering
 class Mod:
-    def __init__(self, mod_id: str, name: str, slug: str, versions: Set[GameVersion]) -> None:
+    def __init__(
+        self,
+        mod_id: str,
+        name: str,
+        slug: str,
+        installed_version: str,
+        versions: Set[GameVersion],
+    ) -> None:
         super().__init__()
         self._id = mod_id
         self._name = name
         self._link = "https://modrinth.com/mod/" + slug
+        self._installed_version = installed_version
         self._game_versions = frozenset(versions)
         self._latest_game_version = max(self._game_versions)
 
@@ -80,6 +88,10 @@ class Mod:
     @property
     def link(self) -> str:
         return self._link
+
+    @property
+    def installed_version(self) -> str:
+        return self._installed_version
 
     @property
     def game_versions(self) -> frozenset[GameVersion]:
@@ -131,6 +143,10 @@ class Modpack:
         versions = versions_response.json()
 
         ids = {versions[mod_hash]["project_id"] for mod_hash in versions}
+        installed_versions = {
+            versions[mod_hash]["project_id"]: versions[mod_hash]["version_number"]
+            for mod_hash in versions
+        }
 
         projects_response = requests.get(
             "https://api.modrinth.com/v2/projects",
@@ -143,7 +159,15 @@ class Modpack:
         mods = set()
         for project in projects:
             versions = GameVersion.from_list(project["game_versions"])
-            mods.add(Mod(project["id"], project["title"], project["slug"], versions))
+            mods.add(
+                Mod(
+                    project["id"],
+                    project["title"],
+                    project["slug"],
+                    installed_versions[project["id"]],
+                    versions,
+                ),
+            )
 
         return frozenset(mods)
 
@@ -182,12 +206,13 @@ def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, 
     sorted_versions = sorted(game_versions)
     table = [
         tuple(
-            ["Name", "Link", "Latest game version"] + [str(version) for version in sorted_versions],
+            ["Name", "Link", "Installed version", "Latest game version"]
+            + [str(version) for version in sorted_versions],
         ),
     ]
 
     for mod in sorted(mods):
-        row = [mod.name, mod.link, str(mod.latest_game_version)]
+        row = [mod.name, mod.link, mod.installed_version, str(mod.latest_game_version)]
         for version in sorted_versions:
             if mod.compatible_with(version):
                 row.append("yes")
