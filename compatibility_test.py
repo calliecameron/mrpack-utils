@@ -3,10 +3,14 @@ import requests_mock
 from frozendict import frozendict
 
 from compatibility import (
+    Env,
     GameVersion,
+    InstalledMod,
     Mod,
     Modpack,
     ModpackError,
+    MrpackFile,
+    Requirement,
     check_compatibility,
     make_table,
     write_csv,
@@ -15,6 +19,28 @@ from compatibility import (
     write_table,
     write_unknown,
 )
+
+
+class TestRequirement:
+    def test_from_str(self) -> None:
+        assert Requirement.from_str("") == Requirement.UNKNOWN
+        assert Requirement.from_str("required") == Requirement.REQUIRED
+        assert Requirement.from_str("optional") == Requirement.OPTIONAL
+        assert Requirement.from_str("unsupported") == Requirement.UNSUPPORTED
+        with pytest.raises(ValueError):
+            Requirement.from_str("foo")
+
+
+class TestEnv:
+    def test_from_dict(self) -> None:
+        e = Env.from_dict({"client": "required", "server": "optional"})
+        assert e.client == Requirement.REQUIRED
+        assert e.server == Requirement.OPTIONAL
+
+        with pytest.raises(ValueError):
+            Env.from_dict({"client": "required"})
+        with pytest.raises(ValueError):
+            Env.from_dict({"client": "required", "server": "foo"})
 
 
 class TestGameVersion:
@@ -52,217 +78,100 @@ class TestGameVersion:
         )
 
 
+class TestMrpackFile:
+    def test_from_file(self) -> None:
+        m = MrpackFile.from_file("testdata/test.mrpack")
+        assert m.name == "Test Modpack"
+        assert m.version == "1.1"
+        assert m.game_version == GameVersion("1.19.4")
+        assert m.mod_hashes == frozenset(["abcd", "fedc", "pqrs"])
+        assert m.mod_jars == frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"})
+        assert m.mod_envs == frozendict(
+            {
+                "abcd": Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+            },
+        )
+        assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
+
+        with pytest.raises(ModpackError):
+            MrpackFile.from_file("testdata/modrinth.index.json")
+
+
 class TestMod:
     def test_properties(self) -> None:
         m = Mod(
-            "1234",
             "Foo",
             "foo",
-            "1.2.3",
-            "required",
-            "",
+            Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+            "MIT",
+            "example.com",
+            "example2.com",
             frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         assert m.name == "Foo"
         assert m.link == "https://modrinth.com/mod/foo"
-        assert m.installed_version == "1.2.3"
-        assert m.client == "required"
-        assert m.server == ""
+        assert m.env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
+        assert m.mod_license == "MIT"
+        assert m.source_url == "example.com"
+        assert m.issues_url == "example2.com"
         assert m.game_versions == frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
         assert m.latest_game_version == GameVersion("1.20")
         assert m.compatible_with(GameVersion("1.19.4"))
         assert m.compatible_with(GameVersion("1.20"))
         assert not m.compatible_with(GameVersion("1.20.1"))
 
-    def test_eq(self) -> None:
-        # Only ID matters
-        assert Mod(
-            "1234",
-            "Foo",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        ) == Mod(
-            "1234",
-            "Foo",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        )
-        assert Mod(
-            "1234",
-            "Foo",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        ) == Mod(
-            "1234",
-            "Bar",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        )
-        assert Mod(
-            "1234",
-            "Foo",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        ) != Mod(
-            "1235",
-            "Foo",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        )
-        with pytest.raises(NotImplementedError):
-            assert (
-                Mod(
-                    "1234",
-                    "Foo",
-                    "foo",
-                    "1.2.3",
-                    "required",
-                    "",
-                    frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-                )
-                == "foo"
-            )
 
-    def test_hash(self) -> None:
-        # Only ID matters
-        assert hash(
+class TestInstalledMod:
+    def test_properties(self) -> None:
+        m = InstalledMod(
             Mod(
-                "1234",
                 "Foo",
                 "foo",
-                "1.2.3",
-                "required",
-                "",
+                Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+                "MIT",
+                "example.com",
+                "example2.com",
                 frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
             ),
-        ) == hash(
-            Mod(
-                "1234",
-                "Foo",
-                "foo",
-                "1.2.3",
-                "required",
-                "",
-                frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-            ),
+            "1.2",
+            Env(Requirement.REQUIRED, Requirement.REQUIRED),
         )
-        assert hash(
-            Mod(
-                "1234",
-                "Foo",
-                "foo",
-                "1.2.3",
-                "required",
-                "",
-                frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-            ),
-        ) == hash(
-            Mod(
-                "1234",
-                "Bar",
-                "foo",
-                "1.2.3",
-                "required",
-                "",
-                frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-            ),
-        )
-        assert hash(
-            Mod(
-                "1234",
-                "Foo",
-                "foo",
-                "1.2.3",
-                "required",
-                "",
-                frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-            ),
-        ) != hash(
-            Mod(
-                "1235",
-                "Foo",
-                "foo",
-                "1.2.3",
-                "required",
-                "",
-                frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-            ),
-        )
-
-    def test_lt(self) -> None:
-        # Only name matters, case insensitively
-        assert Mod(
-            "1234",
-            "bar",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        ) < Mod(
-            "1234",
-            "Foo",
-            "foo",
-            "1.2.3",
-            "required",
-            "",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        )
-        with pytest.raises(NotImplementedError):
-            assert (
-                Mod(
-                    "1234",
-                    "Foo",
-                    "foo",
-                    "1.2.3",
-                    "required",
-                    "",
-                    frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-                )
-                < "foo"
-            )
+        assert m.name == "Foo"
+        assert m.link == "https://modrinth.com/mod/foo"
+        assert m.version == "1.2"
+        assert m.original_env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
+        assert m.overridden_env == Env(Requirement.REQUIRED, Requirement.REQUIRED)
+        assert m.mod_license == "MIT"
+        assert m.source_url == "example.com"
+        assert m.issues_url == "example2.com"
+        assert m.game_versions == frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
+        assert m.latest_game_version == GameVersion("1.20")
+        assert m.compatible_with(GameVersion("1.19.4"))
+        assert m.compatible_with(GameVersion("1.20"))
+        assert not m.compatible_with(GameVersion("1.20.1"))
 
 
 class TestModpack:
-    def test_from_file(self) -> None:
-        m = Modpack.from_file("testdata/test.mrpack")
-        assert m.mod_hashes == frozenset(["abcd", "fedc", "pqrs"])
-        assert m.mod_jars == frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"})
-        assert m.mod_envs == frozendict(
-            {"abcd": frozendict({"client": "required", "server": "optional"})},
-        )
-        assert m.game_version == GameVersion("1.19.4")
-        assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
-
-        with pytest.raises(ModpackError):
-            Modpack.from_file("testdata/modrinth.index.json")
-
-    def test_load_mods(self) -> None:
-        modpack = Modpack(
+    def test_load(self) -> None:
+        mrpack1 = MrpackFile(
+            "Test Modpack",
+            "1",
+            GameVersion("1.19.4"),
             frozenset(["abcd", "fedc", "pqrs"]),
             frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
-            {"abcd": {"client": "required", "server": "optional"}},
-            GameVersion("1.19.4"),
-            frozenset(),
+            frozendict({"abcd": Env(Requirement.REQUIRED, Requirement.OPTIONAL)}),
+            frozenset(["unknown.jar"]),
         )
+        mrpack2 = MrpackFile(
+            "Test Modpack",
+            "2",
+            GameVersion("1.19.4"),
+            frozenset(["abcd", "lmno", "pqrs"]),
+            frozendict({"abcd": "foo.jar", "lmno": "bar.jar", "pqrs": "baz.jar"}),
+            frozendict({"abcd": Env(Requirement.REQUIRED, Requirement.OPTIONAL)}),
+            frozenset(["unknown.jar"]),
+        )
+
         with requests_mock.Mocker() as m:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
@@ -294,6 +203,17 @@ class TestModpack:
                             },
                         ],
                     },
+                    "lmno": {
+                        "project_id": "quux",
+                        "version_number": "4.5.7",
+                        "files": [
+                            {
+                                "hashes": {
+                                    "sha512": "lmno",
+                                },
+                            },
+                        ],
+                    },
                 },
             )
             m.get(
@@ -311,50 +231,122 @@ class TestModpack:
                         "title": "Bar",
                         "slug": "bar",
                         "game_versions": ["1.19.4"],
+                        "client": "optional",
+                        "server": "optional",
+                        "license": {"id": "MIT"},
+                        "source_url": "example.com",
+                        "issues_url": "example2.com",
                     },
                 ],
             )
-            raw_mods, missing_mods = modpack.load_mods()
+            modpacks = Modpack.load(mrpack1, mrpack2)
 
-        mods = sorted(raw_mods)
+        assert len(modpacks) == 2  # noqa: PLR2004
+
+        modpack = modpacks[0]
+        assert modpack.name == "Test Modpack"
+        assert modpack.version == "1"
+        assert modpack.game_version == GameVersion("1.19.4")
+
+        mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
         assert len(mods) == 2  # noqa: PLR2004
         assert mods[0].name == "Bar"
         assert mods[0].link == "https://modrinth.com/mod/bar"
-        assert mods[0].installed_version == "4.5.6"
-        assert mods[0].client == ""
-        assert mods[0].server == ""
+        assert mods[0].version == "4.5.6"
+        assert mods[0].original_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
+        assert mods[0].overridden_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
+        assert mods[0].mod_license == "MIT"
+        assert mods[0].source_url == "example.com"
+        assert mods[0].issues_url == "example2.com"
         assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
+        assert mods[0].latest_game_version == GameVersion("1.19.4")
+
         assert mods[1].name == "Foo"
         assert mods[1].link == "https://modrinth.com/mod/foo"
-        assert mods[1].installed_version == "1.2.3"
-        assert mods[1].client == "required"
-        assert mods[1].server == "optional"
+        assert mods[1].version == "1.2.3"
+        assert mods[1].original_env == Env(Requirement.UNKNOWN, Requirement.UNKNOWN)
+        assert mods[1].overridden_env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
+        assert mods[1].mod_license == ""
+        assert mods[1].source_url == ""
+        assert mods[1].issues_url == ""
         assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
+        assert mods[1].latest_game_version == GameVersion("1.20")
 
-        assert missing_mods == frozenset({"baz.jar"})
+        assert modpack.missing_mods == frozenset({"baz.jar"})
+        assert modpack.unknown_mods == frozenset({"unknown.jar"})
+
+        modpack = modpacks[1]
+        assert modpack.name == "Test Modpack"
+        assert modpack.version == "2"
+        assert modpack.game_version == GameVersion("1.19.4")
+
+        mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
+        assert len(mods) == 2  # noqa: PLR2004
+        assert mods[0].name == "Bar"
+        assert mods[0].link == "https://modrinth.com/mod/bar"
+        assert mods[0].version == "4.5.7"
+        assert mods[0].original_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
+        assert mods[0].overridden_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
+        assert mods[0].mod_license == "MIT"
+        assert mods[0].source_url == "example.com"
+        assert mods[0].issues_url == "example2.com"
+        assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
+        assert mods[0].latest_game_version == GameVersion("1.19.4")
+
+        assert mods[1].name == "Foo"
+        assert mods[1].link == "https://modrinth.com/mod/foo"
+        assert mods[1].version == "1.2.3"
+        assert mods[1].original_env == Env(Requirement.UNKNOWN, Requirement.UNKNOWN)
+        assert mods[1].overridden_env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
+        assert mods[1].mod_license == ""
+        assert mods[1].source_url == ""
+        assert mods[1].issues_url == ""
+        assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
+        assert mods[1].latest_game_version == GameVersion("1.20")
+
+        assert modpack.missing_mods == frozenset({"baz.jar"})
+        assert modpack.unknown_mods == frozenset({"unknown.jar"})
 
 
 def test_make_table() -> None:
-    foo = Mod(
-        "abcd",
-        "Foo",
-        "foo",
+    foo = InstalledMod(
+        Mod(
+            "Foo",
+            "foo",
+            Env(Requirement.OPTIONAL, Requirement.OPTIONAL),
+            "MIT",
+            "example.com",
+            "example2.com",
+            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
+        ),
         "1.2.3",
-        "required",
-        "optional",
-        frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
+        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
     )
-    bar = Mod(
-        "fedc",
-        "Bar",
-        "bar",
+    bar = InstalledMod(
+        Mod(
+            "Bar",
+            "bar",
+            Env(Requirement.REQUIRED, Requirement.REQUIRED),
+            "GPL",
+            "",
+            "",
+            frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
+        ),
         "4.5.6",
-        "required",
-        "",
-        frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
+        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
     )
-    mods = frozenset([foo, bar])
-    table, incompatible = make_table(mods, frozenset([GameVersion("1.19.4"), GameVersion("1.20")]))
+    modpack = Modpack(
+        "Test Modpack",
+        "1",
+        GameVersion("1.19.4"),
+        {"abcd": foo, "fedc": bar},
+        frozenset(),
+        frozenset(),
+    )
+    table, incompatible = make_table(
+        modpack,
+        frozenset([GameVersion("1.19.4"), GameVersion("1.20")]),
+    )
 
     assert table == [
         (
@@ -367,7 +359,16 @@ def test_make_table() -> None:
             "1.19.4",
             "1.20",
         ),
-        ("Bar", "https://modrinth.com/mod/bar", "4.5.6", "required", "", "1.19.4", "yes", "no"),
+        (
+            "Bar",
+            "https://modrinth.com/mod/bar",
+            "4.5.6",
+            "required",
+            "optional",
+            "1.19.4",
+            "yes",
+            "no",
+        ),
         (
             "Foo",
             "https://modrinth.com/mod/foo",
@@ -407,14 +408,23 @@ def test_write_csv(capsys: pytest.CaptureFixture[str]) -> None:
             "yes",
             "no",
         ),
-        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "required", "", "1.20", "yes", "yes"),
+        (
+            "Foo",
+            "https://modrinth.com/mod/foo",
+            "1.2.3",
+            "required",
+            "optional",
+            "1.20",
+            "yes",
+            "yes",
+        ),
     ]
     write_csv(table)
     assert (
         capsys.readouterr().out
         == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20\r
 Bar,https://modrinth.com/mod/bar,4.5.6,required,optional,1.19.4,yes,no\r
-Foo,https://modrinth.com/mod/foo,1.2.3,required,,1.20,yes,yes\r
+Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,yes,yes\r
 """
     )
 
@@ -441,7 +451,16 @@ def test_write_table(capsys: pytest.CaptureFixture[str]) -> None:
             "yes",
             "no",
         ),
-        ("Foo", "https://modrinth.com/mod/foo", "1.2.3", "required", "", "1.20", "yes", "yes"),
+        (
+            "Foo",
+            "https://modrinth.com/mod/foo",
+            "1.2.3",
+            "required",
+            "optional",
+            "1.20",
+            "yes",
+            "yes",
+        ),
     ]
     write_table(table)
     assert (
@@ -449,7 +468,7 @@ def test_write_table(capsys: pytest.CaptureFixture[str]) -> None:
         == """| Name   | Link                         | Installed version   | On client   | On server   | Latest game version   | 1.19.4   | 1.20   |
 |--------|------------------------------|---------------------|-------------|-------------|-----------------------|----------|--------|
 | Bar    | https://modrinth.com/mod/bar | 4.5.6               | required    | optional    | 1.19.4                | yes      | no     |
-| Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    |             | 1.20                  | yes      | yes    |
+| Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    | optional    | 1.20                  | yes      | yes    |
 """  # noqa: E501
     )
 
@@ -485,23 +504,31 @@ Unknown mods (probably from CurseForge) - must be checked manually:
 
 
 def test_write_incompatible(capsys: pytest.CaptureFixture[str]) -> None:
-    foo = Mod(
-        "abcd",
-        "Foo",
-        "foo",
+    foo = InstalledMod(
+        Mod(
+            "Foo",
+            "foo",
+            Env(Requirement.REQUIRED, Requirement.REQUIRED),
+            "MIT",
+            "example.com",
+            "example2.com",
+            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
+        ),
         "1.2.3",
-        "required",
-        "optional",
-        frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
+        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
     )
-    bar = Mod(
-        "fedc",
-        "Bar",
-        "bar",
+    bar = InstalledMod(
+        Mod(
+            "Bar",
+            "bar",
+            Env(Requirement.REQUIRED, Requirement.UNSUPPORTED),
+            "",
+            "",
+            "",
+            frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
+        ),
         "4.5.6",
-        "required",
-        "",
-        frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
+        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
     )
 
     incompatible = {
@@ -575,15 +602,27 @@ def test_check_compatibility(capsys: pytest.CaptureFixture[str]) -> None:
             'https://api.modrinth.com/v2/projects?ids=["baz", "quux"]',
             complete_qs=True,
             json=[
-                {"id": "baz", "title": "Foo", "slug": "foo", "game_versions": ["1.19.2", "1.20"]},
-                {"id": "quux", "title": "Bar", "slug": "bar", "game_versions": ["1.19.4"]},
+                {
+                    "id": "baz",
+                    "title": "Foo",
+                    "slug": "foo",
+                    "game_versions": ["1.19.2", "1.20"],
+                    "client": "optional",
+                    "server": "required",
+                },
+                {
+                    "id": "quux",
+                    "title": "Bar",
+                    "slug": "bar",
+                    "game_versions": ["1.19.4"],
+                },
             ],
         )
         check_compatibility(["1.20"], "testdata/test.mrpack", True)
         assert (
             capsys.readouterr().out
             == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20\r
-Bar,https://modrinth.com/mod/bar,4.5.6,,,1.19.4,yes,no\r
+Bar,https://modrinth.com/mod/bar,4.5.6,unknown,unknown,1.19.4,yes,no\r
 Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes\r
 """
         )
@@ -593,7 +632,7 @@ Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes\r
             capsys.readouterr().out
             == """| Name   | Link                         | Installed version   | On client   | On server   | Latest game version   | 1.19.4   | 1.20   |
 |--------|------------------------------|---------------------|-------------|-------------|-----------------------|----------|--------|
-| Bar    | https://modrinth.com/mod/bar | 4.5.6               |             |             | 1.19.4                | yes      | no     |
+| Bar    | https://modrinth.com/mod/bar | 4.5.6               | unknown     | unknown     | 1.19.4                | yes      | no     |
 | Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    | optional    | 1.20                  | no       | yes    |
 
 Mods supposed to be on Modrinth, but not found:

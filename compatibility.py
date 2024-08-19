@@ -10,10 +10,57 @@ import re
 import sys
 import zipfile
 from collections.abc import Mapping, Sequence, Set
+from dataclasses import dataclass
+from enum import Enum, auto
+from typing import Any, TypeAlias, cast
 
 import requests
 import tabulate
 from frozendict import frozendict
+
+
+class ModpackError(Exception):
+    pass
+
+
+VersionHash: TypeAlias = str
+ProjectID: TypeAlias = str
+
+
+class Requirement(Enum):
+    UNKNOWN = auto()
+    REQUIRED = auto()
+    OPTIONAL = auto()
+    UNSUPPORTED = auto()
+
+    @staticmethod
+    def from_str(s: str) -> "Requirement":
+        if not s:
+            return Requirement.UNKNOWN
+        if s == "required":
+            return Requirement.REQUIRED
+        if s == "optional":
+            return Requirement.OPTIONAL
+        if s == "unsupported":
+            return Requirement.UNSUPPORTED
+        raise ValueError(
+            "Requirement value must be one of {required, optional, unsupported}, got '" + s + "'",
+        )
+
+
+@dataclass(frozen=True)
+class Env:
+    client: Requirement
+    server: Requirement
+
+    @staticmethod
+    def from_dict(env: Mapping[str, str]) -> "Env":
+        if env.keys() != frozenset(["client", "server"]):
+            raise ValueError("Env must have keys {client, server}, got " + str(env.keys()))
+        return Env(
+            Requirement.from_str(env["client"]),
+            Requirement.from_str(env["server"]),
+        )
 
 
 @functools.total_ordering
@@ -51,170 +98,56 @@ class GameVersion:
         return frozenset(out)
 
 
-@functools.total_ordering
-class Mod:
+class MrpackFile:
     def __init__(
         self,
-        mod_id: str,
         name: str,
-        slug: str,
-        installed_version: str,
-        client: str,
-        server: str,
-        versions: Set[GameVersion],
+        version: str,
+        game_version: GameVersion,
+        mod_hashes: Set[VersionHash],
+        mod_jars: Mapping[VersionHash, str],
+        mod_envs: Mapping[VersionHash, Env],
+        unknown_mods: Set[str],
     ) -> None:
         super().__init__()
-        self._id = mod_id
         self._name = name
-        self._link = "https://modrinth.com/mod/" + slug
-        self._installed_version = installed_version
-        self._client = client
-        self._server = server
-        self._game_versions = frozenset(versions)
-        self._latest_game_version = max(self._game_versions)
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Mod):
-            raise NotImplementedError
-        return self._id == other._id
-
-    def __hash__(self) -> int:
-        return hash(self._id)
-
-    def __lt__(self, other: object) -> bool:
-        if not isinstance(other, Mod):
-            raise NotImplementedError
-        return self._name.lower() < other._name.lower()
+        self._version = version
+        self._game_version = game_version
+        self._mod_hashes = frozenset(mod_hashes)
+        self._mod_jars = frozendict(mod_jars)
+        self._mod_envs = frozendict(mod_envs)
+        self._unknown_mods = frozenset(unknown_mods)
 
     @property
     def name(self) -> str:
         return self._name
 
     @property
-    def link(self) -> str:
-        return self._link
-
-    @property
-    def installed_version(self) -> str:
-        return self._installed_version
-
-    @property
-    def client(self) -> str:
-        return self._client
-
-    @property
-    def server(self) -> str:
-        return self._server
-
-    @property
-    def game_versions(self) -> frozenset[GameVersion]:
-        return self._game_versions
-
-    @property
-    def latest_game_version(self) -> GameVersion:
-        return self._latest_game_version
-
-    def compatible_with(self, version: GameVersion) -> bool:
-        return version in self._game_versions
-
-
-class ModpackError(Exception):
-    pass
-
-
-class Modpack:
-    def __init__(
-        self,
-        mod_hashes: Set[str],
-        mod_jars: Mapping[str, str],
-        mod_envs: Mapping[str, Mapping[str, str]],
-        game_version: GameVersion,
-        unknown_mods: Set[str],
-    ) -> None:
-        super().__init__()
-        self._mod_hashes = frozenset(mod_hashes)
-        self._mod_jars = mod_jars
-        self._mod_envs = frozendict({k: frozendict(v) for k, v in mod_envs.items()})
-        self._game_version = game_version
-        self._unknown_mods = frozenset(unknown_mods)
-
-    @property
-    def mod_hashes(self) -> frozenset[str]:
-        return self._mod_hashes
-
-    @property
-    def mod_jars(self) -> Mapping[str, str]:
-        return self._mod_jars
-
-    @property
-    def mod_envs(self) -> frozendict[str, frozendict[str, str]]:
-        return self._mod_envs
+    def version(self) -> str:
+        return self._version
 
     @property
     def game_version(self) -> GameVersion:
         return self._game_version
 
     @property
+    def mod_hashes(self) -> frozenset[VersionHash]:
+        return self._mod_hashes
+
+    @property
+    def mod_jars(self) -> frozendict[VersionHash, str]:
+        return self._mod_jars
+
+    @property
+    def mod_envs(self) -> frozendict[VersionHash, Env]:
+        return self._mod_envs
+
+    @property
     def unknown_mods(self) -> frozenset[str]:
         return self._unknown_mods
 
-    def load_mods(self) -> tuple[frozenset[Mod], frozenset[str]]:
-        versions_response = requests.post(
-            "https://api.modrinth.com/v2/version_files",
-            json={"hashes": sorted(self._mod_hashes), "algorithm": "sha512"},
-            timeout=10,
-        )
-        versions_response.raise_for_status()
-        versions = versions_response.json()
-
-        hashes_returned = frozenset(
-            {
-                file["hashes"]["sha512"]
-                for version in versions
-                for file in versions[version]["files"]
-            },
-        )
-        missing_mods = frozenset(
-            {self._mod_jars[mod_hash] for mod_hash in self._mod_hashes - hashes_returned},
-        )
-
-        ids = {versions[mod_hash]["project_id"] for mod_hash in versions}
-        installed_versions = {
-            versions[mod_hash]["project_id"]: versions[mod_hash]["version_number"]
-            for mod_hash in versions
-        }
-        envs: dict[str, Mapping[str, str]] = {
-            versions[mod_hash]["project_id"]: self._mod_envs.get(mod_hash, {})
-            for mod_hash in versions
-        }
-
-        projects_response = requests.get(
-            "https://api.modrinth.com/v2/projects",
-            {"ids": "[" + ", ".join(f'"{mod_id}"' for mod_id in sorted(ids)) + "]"},
-            timeout=10,
-        )
-        projects_response.raise_for_status()
-        projects = projects_response.json()
-
-        mods = set()
-        for project in projects:
-            versions = GameVersion.from_list(project["game_versions"])
-            mods.add(
-                Mod(
-                    project["id"],
-                    project["title"],
-                    project["slug"],
-                    installed_versions[project["id"]],
-                    envs[project["id"]].get("client", ""),
-                    envs[project["id"]].get("server", ""),
-                    versions,
-                ),
-            )
-
-        return frozenset(mods), missing_mods
-
     @staticmethod
-    def from_file(filename: str) -> "Modpack":
+    def from_file(filename: str) -> "MrpackFile":
         try:
             with zipfile.ZipFile(filename) as z:
                 with z.open("modrinth.index.json") as f:
@@ -230,23 +163,275 @@ class Modpack:
                     ):
                         unknown_mods.add(path.name)
 
-            return Modpack(
+            return MrpackFile(
+                j["name"],
+                j["versionId"],
+                GameVersion(j["dependencies"]["minecraft"]),
                 frozenset(file["hashes"]["sha512"] for file in j["files"]),
                 {file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]},
-                {file["hashes"]["sha512"]: file["env"] for file in j["files"] if "env" in file},
-                GameVersion(j["dependencies"]["minecraft"]),
+                {
+                    file["hashes"]["sha512"]: Env.from_dict(file["env"])
+                    for file in j["files"]
+                    if "env" in file
+                },
                 unknown_mods,
             )
         except Exception as e:
             raise ModpackError("Failed to load mrpack file: " + str(e)) from e
 
 
+class Mod:
+    def __init__(
+        self,
+        name: str,
+        slug: str,
+        env: Env,
+        mod_license: str,
+        source_url: str,
+        issues_url: str,
+        game_versions: Set[GameVersion],
+    ) -> None:
+        super().__init__()
+        self._name = name
+        self._link = "https://modrinth.com/mod/" + slug
+        self._env = env
+        self._mod_license = mod_license
+        self._source_url = source_url
+        self._issues_url = issues_url
+        self._game_versions = frozenset(game_versions)
+        self._latest_game_version = max(self._game_versions)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def link(self) -> str:
+        return self._link
+
+    @property
+    def env(self) -> Env:
+        return self._env
+
+    @property
+    def mod_license(self) -> str:
+        return self._mod_license
+
+    @property
+    def source_url(self) -> str:
+        return self._source_url
+
+    @property
+    def issues_url(self) -> str:
+        return self._issues_url
+
+    @property
+    def game_versions(self) -> frozenset[GameVersion]:
+        return self._game_versions
+
+    @property
+    def latest_game_version(self) -> GameVersion:
+        return self._latest_game_version
+
+    def compatible_with(self, version: GameVersion) -> bool:
+        return version in self._game_versions
+
+
+class InstalledMod:
+    def __init__(
+        self,
+        mod: Mod,
+        version: str,
+        overridden_env: Env,
+    ) -> None:
+        super().__init__()
+        self._mod = mod
+        self._version = version
+        self._overridden_env = overridden_env
+
+    @property
+    def name(self) -> str:
+        return self._mod.name
+
+    @property
+    def link(self) -> str:
+        return self._mod.link
+
+    @property
+    def version(self) -> str:
+        return self._version
+
+    @property
+    def original_env(self) -> Env:
+        return self._mod.env
+
+    @property
+    def overridden_env(self) -> Env:
+        return self._overridden_env
+
+    @property
+    def mod_license(self) -> str:
+        return self._mod.mod_license
+
+    @property
+    def source_url(self) -> str:
+        return self._mod.source_url
+
+    @property
+    def issues_url(self) -> str:
+        return self._mod.issues_url
+
+    @property
+    def game_versions(self) -> frozenset[GameVersion]:
+        return self._mod.game_versions
+
+    @property
+    def latest_game_version(self) -> GameVersion:
+        return self._mod.latest_game_version
+
+    def compatible_with(self, version: GameVersion) -> bool:
+        return self._mod.compatible_with(version)
+
+
+class Modpack:
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        game_version: GameVersion,
+        mods: Mapping[ProjectID, InstalledMod],
+        missing_mods: Set[str],
+        unknown_mods: Set[str],
+    ) -> None:
+        super().__init__()
+        self._name = name
+        self._version = version
+        self._game_version = game_version
+        self._mods = frozendict(mods)
+        self._missing_mods = frozenset(missing_mods)
+        self._unknown_mods = frozenset(unknown_mods)
+
+    @property
+    def name(self) -> str:
+        return self._name
+
+    @property
+    def version(self) -> str:
+        return self._version
+
+    @property
+    def game_version(self) -> GameVersion:
+        return self._game_version
+
+    @property
+    def mods(self) -> frozendict[ProjectID, InstalledMod]:
+        return self._mods
+
+    @property
+    def missing_mods(self) -> frozenset[str]:
+        return self._missing_mods
+
+    @property
+    def unknown_mods(self) -> frozenset[str]:
+        return self._unknown_mods
+
+    @staticmethod
+    def _fetch_versions(
+        hashes: Set[VersionHash],
+    ) -> tuple[dict[VersionHash, dict[str, Any]], frozenset[VersionHash]]:
+        versions_response = requests.post(
+            "https://api.modrinth.com/v2/version_files",
+            json={"hashes": sorted(hashes), "algorithm": "sha512"},
+            timeout=10,
+        )
+        versions_response.raise_for_status()
+        versions = versions_response.json()
+
+        known_hashes = frozenset(
+            {
+                file["hashes"]["sha512"]
+                for version in versions
+                for file in versions[version]["files"]
+            },
+        )
+
+        return versions, known_hashes
+
+    @staticmethod
+    def _fetch_projects(versions: Mapping[VersionHash, Mapping[str, Any]]) -> list[dict[str, Any]]:
+        ids = {versions[mod_hash]["project_id"] for mod_hash in versions}
+        projects_response = requests.get(
+            "https://api.modrinth.com/v2/projects",
+            {"ids": "[" + ", ".join(f'"{mod_id}"' for mod_id in sorted(ids)) + "]"},
+            timeout=10,
+        )
+        projects_response.raise_for_status()
+        return cast(list[dict[str, Any]], projects_response.json())
+
+    @staticmethod
+    def load(*mrpacks: MrpackFile) -> "tuple[Modpack, ...]":
+        all_hashes: set[VersionHash] = set()
+        for mrpack in mrpacks:
+            all_hashes |= mrpack.mod_hashes
+
+        versions, known_hashes = Modpack._fetch_versions(all_hashes)
+        projects = Modpack._fetch_projects(versions)
+
+        mods = {}
+        for project in projects:
+            try:
+                mods[project["id"]] = Mod(
+                    project["title"],
+                    project["slug"],
+                    Env(
+                        Requirement.from_str(project.get("client", "")),
+                        Requirement.from_str(project.get("server", "")),
+                    ),
+                    "" if "license" not in project else project["license"]["id"],
+                    project.get("source_url", ""),
+                    project.get("issues_url", ""),
+                    GameVersion.from_list(project["game_versions"]),
+                )
+            except Exception as e:  # noqa: PERF203
+                raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
+
+        modpacks = []
+        for mrpack in mrpacks:
+            installed_mods = {}
+            missing_mods = set()
+            for mod_hash in mrpack.mod_hashes:
+                if mod_hash in known_hashes:
+                    mod_id = versions[mod_hash]["project_id"]
+                    mod = mods[mod_id]
+                    installed_mods[mod_id] = InstalledMod(
+                        mod,
+                        versions[mod_hash]["version_number"],
+                        mrpack.mod_envs.get(mod_hash, mod.env),
+                    )
+                else:
+                    missing_mods.add(mrpack.mod_jars[mod_hash])
+            modpacks.append(
+                Modpack(
+                    mrpack.name,
+                    mrpack.version,
+                    mrpack.game_version,
+                    installed_mods,
+                    missing_mods,
+                    mrpack.unknown_mods,
+                ),
+            )
+
+        return tuple(modpacks)
+
+
 Table = Sequence[tuple[str, ...]]
-IncompatibleMods = Mapping[GameVersion, Set[Mod]]
+IncompatibleMods = Mapping[GameVersion, Set[InstalledMod]]
 
 
-def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, IncompatibleMods]:
-    incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
+def make_table(modpack: Modpack, game_versions: Set[GameVersion]) -> tuple[Table, IncompatibleMods]:
+    incompatible: dict[GameVersion, set[InstalledMod]] = {
+        version: set() for version in game_versions
+    }
     sorted_versions = sorted(game_versions)
     table = [
         tuple(
@@ -255,13 +440,13 @@ def make_table(mods: Set[Mod], game_versions: Set[GameVersion]) -> tuple[Table, 
         ),
     ]
 
-    for mod in sorted(mods):
+    for mod in sorted(modpack.mods.values(), key=lambda m: m.name.lower()):
         row = [
             mod.name,
             mod.link,
-            mod.installed_version,
-            mod.client,
-            mod.server,
+            mod.version,
+            mod.overridden_env.client.name.lower(),
+            mod.overridden_env.server.name.lower(),
             str(mod.latest_game_version),
         ]
         for version in sorted_versions:
@@ -310,7 +495,7 @@ def write_incompatible(
         mods = incompatible[version]
         if mods:
             print("  %d out of %d mods are incompatible with this version:" % (len(mods), num_mods))
-            for mod in sorted(mods):
+            for mod in sorted(mods, key=lambda m: m.name.lower()):
                 print("    " + mod.name)
         else:
             print("  All mods are compatible with this version")
@@ -318,17 +503,17 @@ def write_incompatible(
 
 def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
     game_versions = {GameVersion(version) for version in versions}
-    modpack = Modpack.from_file(mrpack_file)
+    mrpack = MrpackFile.from_file(mrpack_file)
+    (modpack,) = Modpack.load(mrpack)
     game_versions.add(modpack.game_version)
-    mods, missing_mods = modpack.load_mods()
 
-    table, incompatible = make_table(mods, game_versions)
+    table, incompatible = make_table(modpack, game_versions)
 
     if output_csv:
         write_csv(table)
     else:
         write_table(table)
-        write_missing(missing_mods)
+        write_missing(modpack.missing_mods)
         write_unknown(modpack.unknown_mods)
         write_incompatible(len(table) - 1, game_versions, modpack.game_version, incompatible)
 

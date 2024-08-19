@@ -1,5 +1,7 @@
 {
     "formatVersion": 1,
+    "name": "Test Modpack",
+    "versionId": "1.1",
     "game": "minecraft",
     "files": [
         {
