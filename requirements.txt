@@ -1,10 +1,10 @@
-frozendict == 2.4.2
-mypy == 1.9.0
-pytest == 8.1.1
+frozendict == 2.4.4
+mypy == 1.11.1
+pytest == 8.3.2
 pytest-cov == 5.0.0
-requests == 2.31.0
+requests == 2.32.3
 requests-mock == 1.12.1
-ruff == 0.3.7
+ruff == 0.6.1
 tabulate == 0.9.0
-types-requests == 2.31.0.20240406
+types-requests == 2.32.0.20240712
 types-tabulate == 0.9.0.20240106

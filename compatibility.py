@@ -190,7 +190,7 @@ class Modpack:
 
         projects_response = requests.get(
             "https://api.modrinth.com/v2/projects",
-            {"ids": "[" + ", ".join('"%s"' % mod_id for mod_id in sorted(ids)) + "]"},
+            {"ids": "[" + ", ".join(f'"{mod_id}"' for mod_id in sorted(ids)) + "]"},
             timeout=10,
         )
         projects_response.raise_for_status()
@@ -237,7 +237,7 @@ class Modpack:
                 GameVersion(j["dependencies"]["minecraft"]),
                 unknown_mods,
             )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             raise ModpackError("Failed to load mrpack file: " + str(e)) from e
 
 
@@ -306,7 +306,7 @@ def write_incompatible(
     print("\nModpack game version: " + str(mrpack_game_version))
 
     for version in sorted(game_versions):
-        print("\nFor version %s:" % version)
+        print(f"\nFor version {version}:")
         mods = incompatible[version]
         if mods:
             print("  %d out of %d mods are incompatible with this version:" % (len(mods), num_mods))
