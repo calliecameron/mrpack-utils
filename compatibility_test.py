@@ -5,7 +5,6 @@ from frozendict import frozendict
 from compatibility import (
     Env,
     GameVersion,
-    InstalledMod,
     Mod,
     Modpack,
     ModpackError,
@@ -88,7 +87,7 @@ class TestMrpackFile:
         assert m.mod_jars == frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"})
         assert m.mod_envs == frozendict(
             {
-                "abcd": Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+                "abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
             },
         )
         assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
@@ -100,47 +99,21 @@ class TestMrpackFile:
 class TestMod:
     def test_properties(self) -> None:
         m = Mod(
-            "Foo",
-            "foo",
-            Env(Requirement.REQUIRED, Requirement.OPTIONAL),
-            "MIT",
-            "example.com",
-            "example2.com",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        )
-        assert m.name == "Foo"
-        assert m.link == "https://modrinth.com/mod/foo"
-        assert m.env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
-        assert m.mod_license == "MIT"
-        assert m.source_url == "example.com"
-        assert m.issues_url == "example2.com"
-        assert m.game_versions == frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
-        assert m.latest_game_version == GameVersion("1.20")
-        assert m.compatible_with(GameVersion("1.19.4"))
-        assert m.compatible_with(GameVersion("1.20"))
-        assert not m.compatible_with(GameVersion("1.20.1"))
-
-
-class TestInstalledMod:
-    def test_properties(self) -> None:
-        m = InstalledMod(
-            Mod(
-                "Foo",
-                "foo",
-                Env(Requirement.REQUIRED, Requirement.OPTIONAL),
-                "MIT",
-                "example.com",
-                "example2.com",
-                frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-            ),
-            "1.2",
-            Env(Requirement.REQUIRED, Requirement.REQUIRED),
+            name="Foo",
+            slug="foo",
+            version="1.2",
+            original_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+            mod_license="MIT",
+            source_url="example.com",
+            issues_url="example2.com",
+            game_versions=frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         assert m.name == "Foo"
         assert m.link == "https://modrinth.com/mod/foo"
         assert m.version == "1.2"
-        assert m.original_env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
-        assert m.overridden_env == Env(Requirement.REQUIRED, Requirement.REQUIRED)
+        assert m.original_env == Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)
+        assert m.overridden_env == Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED)
         assert m.mod_license == "MIT"
         assert m.source_url == "example.com"
         assert m.issues_url == "example2.com"
@@ -154,22 +127,26 @@ class TestInstalledMod:
 class TestModpack:
     def test_load(self) -> None:
         mrpack1 = MrpackFile(
-            "Test Modpack",
-            "1",
-            GameVersion("1.19.4"),
-            frozenset(["abcd", "fedc", "pqrs"]),
-            frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
-            frozendict({"abcd": Env(Requirement.REQUIRED, Requirement.OPTIONAL)}),
-            frozenset(["unknown.jar"]),
+            name="Test Modpack",
+            version="1",
+            game_version=GameVersion("1.19.4"),
+            mod_hashes=frozenset(["abcd", "fedc", "pqrs"]),
+            mod_jars=frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
+            mod_envs=frozendict(
+                {"abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)},
+            ),
+            unknown_mods=frozenset(["unknown.jar"]),
         )
         mrpack2 = MrpackFile(
-            "Test Modpack",
-            "2",
-            GameVersion("1.19.4"),
-            frozenset(["abcd", "lmno", "pqrs"]),
-            frozendict({"abcd": "foo.jar", "lmno": "bar.jar", "pqrs": "baz.jar"}),
-            frozendict({"abcd": Env(Requirement.REQUIRED, Requirement.OPTIONAL)}),
-            frozenset(["unknown.jar"]),
+            name="Test Modpack",
+            version="2",
+            game_version=GameVersion("1.19.4"),
+            mod_hashes=frozenset(["abcd", "lmno", "pqrs"]),
+            mod_jars=frozendict({"abcd": "foo.jar", "lmno": "bar.jar", "pqrs": "baz.jar"}),
+            mod_envs=frozendict(
+                {"abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)},
+            ),
+            unknown_mods=frozenset(["unknown.jar"]),
         )
 
         with requests_mock.Mocker() as m:
@@ -253,8 +230,14 @@ class TestModpack:
         assert mods[0].name == "Bar"
         assert mods[0].link == "https://modrinth.com/mod/bar"
         assert mods[0].version == "4.5.6"
-        assert mods[0].original_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
-        assert mods[0].overridden_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
+        assert mods[0].original_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
+        assert mods[0].overridden_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
         assert mods[0].mod_license == "MIT"
         assert mods[0].source_url == "example.com"
         assert mods[0].issues_url == "example2.com"
@@ -264,8 +247,14 @@ class TestModpack:
         assert mods[1].name == "Foo"
         assert mods[1].link == "https://modrinth.com/mod/foo"
         assert mods[1].version == "1.2.3"
-        assert mods[1].original_env == Env(Requirement.UNKNOWN, Requirement.UNKNOWN)
-        assert mods[1].overridden_env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
+        assert mods[1].original_env == Env(
+            client=Requirement.UNKNOWN,
+            server=Requirement.UNKNOWN,
+        )
+        assert mods[1].overridden_env == Env(
+            client=Requirement.REQUIRED,
+            server=Requirement.OPTIONAL,
+        )
         assert mods[1].mod_license == ""
         assert mods[1].source_url == ""
         assert mods[1].issues_url == ""
@@ -285,8 +274,14 @@ class TestModpack:
         assert mods[0].name == "Bar"
         assert mods[0].link == "https://modrinth.com/mod/bar"
         assert mods[0].version == "4.5.7"
-        assert mods[0].original_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
-        assert mods[0].overridden_env == Env(Requirement.OPTIONAL, Requirement.OPTIONAL)
+        assert mods[0].original_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
+        assert mods[0].overridden_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
         assert mods[0].mod_license == "MIT"
         assert mods[0].source_url == "example.com"
         assert mods[0].issues_url == "example2.com"
@@ -296,8 +291,14 @@ class TestModpack:
         assert mods[1].name == "Foo"
         assert mods[1].link == "https://modrinth.com/mod/foo"
         assert mods[1].version == "1.2.3"
-        assert mods[1].original_env == Env(Requirement.UNKNOWN, Requirement.UNKNOWN)
-        assert mods[1].overridden_env == Env(Requirement.REQUIRED, Requirement.OPTIONAL)
+        assert mods[1].original_env == Env(
+            client=Requirement.UNKNOWN,
+            server=Requirement.UNKNOWN,
+        )
+        assert mods[1].overridden_env == Env(
+            client=Requirement.REQUIRED,
+            server=Requirement.OPTIONAL,
+        )
         assert mods[1].mod_license == ""
         assert mods[1].source_url == ""
         assert mods[1].issues_url == ""
@@ -309,39 +310,35 @@ class TestModpack:
 
 
 def test_make_table() -> None:
-    foo = InstalledMod(
-        Mod(
-            "Foo",
-            "foo",
-            Env(Requirement.OPTIONAL, Requirement.OPTIONAL),
-            "MIT",
-            "example.com",
-            "example2.com",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        ),
-        "1.2.3",
-        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+    foo = Mod(
+        name="Foo",
+        slug="foo",
+        version="1.2.3",
+        original_env=Env(client=Requirement.OPTIONAL, server=Requirement.OPTIONAL),
+        overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+        mod_license="MIT",
+        source_url="example.com",
+        issues_url="example2.com",
+        game_versions=frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
     )
-    bar = InstalledMod(
-        Mod(
-            "Bar",
-            "bar",
-            Env(Requirement.REQUIRED, Requirement.REQUIRED),
-            "GPL",
-            "",
-            "",
-            frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
-        ),
-        "4.5.6",
-        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+    bar = Mod(
+        name="Bar",
+        slug="bar",
+        version="4.5.6",
+        original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+        overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+        mod_license="GPL",
+        source_url="",
+        issues_url="",
+        game_versions=frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
     )
     modpack = Modpack(
-        "Test Modpack",
-        "1",
-        GameVersion("1.19.4"),
-        {"abcd": foo, "fedc": bar},
-        frozenset(),
-        frozenset(),
+        name="Test Modpack",
+        version="1",
+        game_version=GameVersion("1.19.4"),
+        mods={"abcd": foo, "fedc": bar},
+        missing_mods=frozenset(),
+        unknown_mods=frozenset(),
     )
     table, incompatible = make_table(
         modpack,
@@ -504,31 +501,27 @@ Unknown mods (probably from CurseForge) - must be checked manually:
 
 
 def test_write_incompatible(capsys: pytest.CaptureFixture[str]) -> None:
-    foo = InstalledMod(
-        Mod(
-            "Foo",
-            "foo",
-            Env(Requirement.REQUIRED, Requirement.REQUIRED),
-            "MIT",
-            "example.com",
-            "example2.com",
-            frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-        ),
-        "1.2.3",
-        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+    foo = Mod(
+        name="Foo",
+        slug="foo",
+        version="1.2.3",
+        original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+        overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+        mod_license="MIT",
+        source_url="example.com",
+        issues_url="example2.com",
+        game_versions=frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
     )
-    bar = InstalledMod(
-        Mod(
-            "Bar",
-            "bar",
-            Env(Requirement.REQUIRED, Requirement.UNSUPPORTED),
-            "",
-            "",
-            "",
-            frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
-        ),
-        "4.5.6",
-        Env(Requirement.REQUIRED, Requirement.OPTIONAL),
+    bar = Mod(
+        name="Bar",
+        slug="bar",
+        version="4.5.6",
+        original_env=Env(client=Requirement.REQUIRED, server=Requirement.UNSUPPORTED),
+        overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+        mod_license="",
+        source_url="",
+        issues_url="",
+        game_versions=frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
     )
 
     incompatible = {

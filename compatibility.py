@@ -48,7 +48,7 @@ class Requirement(Enum):
         )
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class Env:
     client: Requirement
     server: Requirement
@@ -58,8 +58,8 @@ class Env:
         if env.keys() != frozenset(["client", "server"]):
             raise ValueError("Env must have keys {client, server}, got " + str(env.keys()))
         return Env(
-            Requirement.from_str(env["client"]),
-            Requirement.from_str(env["server"]),
+            client=Requirement.from_str(env["client"]),
+            server=Requirement.from_str(env["server"]),
         )
 
 
@@ -101,6 +101,7 @@ class GameVersion:
 class MrpackFile:
     def __init__(
         self,
+        *,
         name: str,
         version: str,
         game_version: GameVersion,
@@ -164,28 +165,44 @@ class MrpackFile:
                         unknown_mods.add(path.name)
 
             return MrpackFile(
-                j["name"],
-                j["versionId"],
-                GameVersion(j["dependencies"]["minecraft"]),
-                frozenset(file["hashes"]["sha512"] for file in j["files"]),
-                {file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]},
-                {
+                name=j["name"],
+                version=j["versionId"],
+                game_version=GameVersion(j["dependencies"]["minecraft"]),
+                mod_hashes=frozenset(file["hashes"]["sha512"] for file in j["files"]),
+                mod_jars={
+                    file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]
+                },
+                mod_envs={
                     file["hashes"]["sha512"]: Env.from_dict(file["env"])
                     for file in j["files"]
                     if "env" in file
                 },
-                unknown_mods,
+                unknown_mods=unknown_mods,
             )
         except Exception as e:
             raise ModpackError("Failed to load mrpack file: " + str(e)) from e
 
 
+@dataclass(frozen=True, kw_only=True)
+class ModStub:
+    name: str
+    slug: str
+    env: Env
+    mod_license: str
+    source_url: str
+    issues_url: str
+    game_versions: Set[GameVersion]
+
+
 class Mod:
     def __init__(
         self,
+        *,
         name: str,
         slug: str,
-        env: Env,
+        version: str,
+        original_env: Env,
+        overridden_env: Env,
         mod_license: str,
         source_url: str,
         issues_url: str,
@@ -194,7 +211,9 @@ class Mod:
         super().__init__()
         self._name = name
         self._link = "https://modrinth.com/mod/" + slug
-        self._env = env
+        self._version = version
+        self._original_env = original_env
+        self._overridden_env = overridden_env
         self._mod_license = mod_license
         self._source_url = source_url
         self._issues_url = issues_url
@@ -210,8 +229,16 @@ class Mod:
         return self._link
 
     @property
-    def env(self) -> Env:
-        return self._env
+    def version(self) -> str:
+        return self._version
+
+    @property
+    def original_env(self) -> Env:
+        return self._original_env
+
+    @property
+    def overridden_env(self) -> Env:
+        return self._overridden_env
 
     @property
     def mod_license(self) -> str:
@@ -237,69 +264,14 @@ class Mod:
         return version in self._game_versions
 
 
-class InstalledMod:
-    def __init__(
-        self,
-        mod: Mod,
-        version: str,
-        overridden_env: Env,
-    ) -> None:
-        super().__init__()
-        self._mod = mod
-        self._version = version
-        self._overridden_env = overridden_env
-
-    @property
-    def name(self) -> str:
-        return self._mod.name
-
-    @property
-    def link(self) -> str:
-        return self._mod.link
-
-    @property
-    def version(self) -> str:
-        return self._version
-
-    @property
-    def original_env(self) -> Env:
-        return self._mod.env
-
-    @property
-    def overridden_env(self) -> Env:
-        return self._overridden_env
-
-    @property
-    def mod_license(self) -> str:
-        return self._mod.mod_license
-
-    @property
-    def source_url(self) -> str:
-        return self._mod.source_url
-
-    @property
-    def issues_url(self) -> str:
-        return self._mod.issues_url
-
-    @property
-    def game_versions(self) -> frozenset[GameVersion]:
-        return self._mod.game_versions
-
-    @property
-    def latest_game_version(self) -> GameVersion:
-        return self._mod.latest_game_version
-
-    def compatible_with(self, version: GameVersion) -> bool:
-        return self._mod.compatible_with(version)
-
-
 class Modpack:
     def __init__(
         self,
+        *,
         name: str,
         version: str,
         game_version: GameVersion,
-        mods: Mapping[ProjectID, InstalledMod],
+        mods: Mapping[ProjectID, Mod],
         missing_mods: Set[str],
         unknown_mods: Set[str],
     ) -> None:
@@ -324,7 +296,7 @@ class Modpack:
         return self._game_version
 
     @property
-    def mods(self) -> frozendict[ProjectID, InstalledMod]:
+    def mods(self) -> frozendict[ProjectID, Mod]:
         return self._mods
 
     @property
@@ -377,47 +349,53 @@ class Modpack:
         versions, known_hashes = Modpack._fetch_versions(all_hashes)
         projects = Modpack._fetch_projects(versions)
 
-        mods = {}
+        mod_stubs = {}
         for project in projects:
             try:
-                mods[project["id"]] = Mod(
-                    project["title"],
-                    project["slug"],
-                    Env(
-                        Requirement.from_str(project.get("client", "")),
-                        Requirement.from_str(project.get("server", "")),
+                mod_stubs[project["id"]] = ModStub(
+                    name=project["title"],
+                    slug=project["slug"],
+                    env=Env(
+                        client=Requirement.from_str(project.get("client", "")),
+                        server=Requirement.from_str(project.get("server", "")),
                     ),
-                    "" if "license" not in project else project["license"]["id"],
-                    project.get("source_url", ""),
-                    project.get("issues_url", ""),
-                    GameVersion.from_list(project["game_versions"]),
+                    mod_license="" if "license" not in project else project["license"]["id"],
+                    source_url=project.get("source_url", ""),
+                    issues_url=project.get("issues_url", ""),
+                    game_versions=GameVersion.from_list(project["game_versions"]),
                 )
             except Exception as e:  # noqa: PERF203
                 raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
 
         modpacks = []
         for mrpack in mrpacks:
-            installed_mods = {}
+            mods = {}
             missing_mods = set()
             for mod_hash in mrpack.mod_hashes:
                 if mod_hash in known_hashes:
                     mod_id = versions[mod_hash]["project_id"]
-                    mod = mods[mod_id]
-                    installed_mods[mod_id] = InstalledMod(
-                        mod,
-                        versions[mod_hash]["version_number"],
-                        mrpack.mod_envs.get(mod_hash, mod.env),
+                    mod_stub = mod_stubs[mod_id]
+                    mods[mod_id] = Mod(
+                        name=mod_stub.name,
+                        slug=mod_stub.slug,
+                        version=versions[mod_hash]["version_number"],
+                        original_env=mod_stub.env,
+                        overridden_env=mrpack.mod_envs.get(mod_hash, mod_stub.env),
+                        mod_license=mod_stub.mod_license,
+                        source_url=mod_stub.source_url,
+                        issues_url=mod_stub.issues_url,
+                        game_versions=mod_stub.game_versions,
                     )
                 else:
                     missing_mods.add(mrpack.mod_jars[mod_hash])
             modpacks.append(
                 Modpack(
-                    mrpack.name,
-                    mrpack.version,
-                    mrpack.game_version,
-                    installed_mods,
-                    missing_mods,
-                    mrpack.unknown_mods,
+                    name=mrpack.name,
+                    version=mrpack.version,
+                    game_version=mrpack.game_version,
+                    mods=mods,
+                    missing_mods=missing_mods,
+                    unknown_mods=mrpack.unknown_mods,
                 ),
             )
 
@@ -425,13 +403,11 @@ class Modpack:
 
 
 Table = Sequence[tuple[str, ...]]
-IncompatibleMods = Mapping[GameVersion, Set[InstalledMod]]
+IncompatibleMods = Mapping[GameVersion, Set[Mod]]
 
 
 def make_table(modpack: Modpack, game_versions: Set[GameVersion]) -> tuple[Table, IncompatibleMods]:
-    incompatible: dict[GameVersion, set[InstalledMod]] = {
-        version: set() for version in game_versions
-    }
+    incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
     sorted_versions = sorted(game_versions)
     table = [
         tuple(
