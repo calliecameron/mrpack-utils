@@ -5,7 +5,7 @@ from collections.abc import Mapping, Sequence, Set
 
 import tabulate
 
-from mrpack_utils.mods import GameVersion, Mod, Modpack, MrpackFile
+from mrpack_utils.mods import GameVersion, Mod, Modpack
 
 Table = Sequence[tuple[str, ...]]
 IncompatibleMods = Mapping[GameVersion, Set[Mod]]
@@ -84,8 +84,7 @@ def write_incompatible(
 
 def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
     game_versions = {GameVersion(version) for version in versions}
-    mrpack = MrpackFile.from_file(mrpack_file)
-    (modpack,) = Modpack.load(mrpack)
+    (modpack,) = Modpack.from_files(mrpack_file)
     game_versions.add(modpack.game_version)
 
     table, incompatible = make_table(modpack, game_versions)

@@ -8,8 +8,8 @@ from mrpack_utils.mods import (
     Mod,
     Modpack,
     ModpackError,
-    MrpackFile,
     Requirement,
+    _MrpackFile,
 )
 
 
@@ -72,7 +72,7 @@ class TestGameVersion:
 
 class TestMrpackFile:
     def test_from_file(self) -> None:
-        m = MrpackFile.from_file("testdata/test.mrpack")
+        m = _MrpackFile.from_file("testdata/test.mrpack")
         assert m.name == "Test Modpack"
         assert m.version == "1.1"
         assert m.game_version == GameVersion("1.19.4")
@@ -86,7 +86,7 @@ class TestMrpackFile:
         assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
 
         with pytest.raises(ModpackError):
-            MrpackFile.from_file("testdata/modrinth.index.json")
+            _MrpackFile.from_file("testdata/modrinth.index.json")
 
 
 class TestMod:
@@ -119,7 +119,7 @@ class TestMod:
 
 class TestModpack:
     def test_load(self) -> None:
-        mrpack1 = MrpackFile(
+        mrpack1 = _MrpackFile(
             name="Test Modpack",
             version="1",
             game_version=GameVersion("1.19.4"),
@@ -130,7 +130,7 @@ class TestModpack:
             ),
             unknown_mods=frozenset(["unknown.jar"]),
         )
-        mrpack2 = MrpackFile(
+        mrpack2 = _MrpackFile(
             name="Test Modpack",
             version="2",
             game_version=GameVersion("1.19.4"),
@@ -209,7 +209,7 @@ class TestModpack:
                     },
                 ],
             )
-            modpacks = Modpack.load(mrpack1, mrpack2)
+            modpacks = Modpack._load(mrpack1, mrpack2)  # noqa: SLF001
 
         assert len(modpacks) == 2  # noqa: PLR2004
 
@@ -300,3 +300,107 @@ class TestModpack:
 
         assert modpack.missing_mods == frozenset({"baz.jar"})
         assert modpack.unknown_mods == frozenset({"unknown.jar"})
+
+    def test_from_files(self) -> None:
+        with requests_mock.Mocker() as m:
+            m.post(
+                "https://api.modrinth.com/v2/version_files",
+                json={
+                    "abcd": {
+                        "project_id": "foo",
+                        "version_number": "1.2.3",
+                        "files": [
+                            {
+                                "hashes": {
+                                    "sha512": "abcd",
+                                },
+                            },
+                        ],
+                    },
+                    "fedc": {
+                        "project_id": "bar",
+                        "version_number": "4.5.6",
+                        "files": [
+                            {
+                                "hashes": {
+                                    "sha512": "fedc",
+                                },
+                            },
+                        ],
+                    },
+                },
+            )
+            m.get(
+                'https://api.modrinth.com/v2/projects?ids=["bar", "foo"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "foo",
+                        "title": "Foo",
+                        "slug": "foo",
+                        "game_versions": ["1.19.2", "1.20"],
+                    },
+                    {
+                        "id": "bar",
+                        "title": "Bar",
+                        "slug": "bar",
+                        "game_versions": ["1.19.4"],
+                        "client": "optional",
+                        "server": "optional",
+                        "license": {"id": "MIT"},
+                        "source_url": "example.com",
+                        "issues_url": "example2.com",
+                    },
+                ],
+            )
+            (modpack,) = Modpack.from_files("testdata/test.mrpack")
+
+        assert modpack.name == "Test Modpack"
+        assert modpack.version == "1.1"
+        assert modpack.game_version == GameVersion("1.19.4")
+
+        mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
+        assert len(mods) == 2  # noqa: PLR2004
+
+        assert mods[0].name == "Bar"
+        assert mods[0].link == "https://modrinth.com/mod/bar"
+        assert mods[0].version == "4.5.6"
+        assert mods[0].original_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
+        assert mods[0].overridden_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
+        assert mods[0].mod_license == "MIT"
+        assert mods[0].source_url == "example.com"
+        assert mods[0].issues_url == "example2.com"
+        assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
+        assert mods[0].latest_game_version == GameVersion("1.19.4")
+
+        assert mods[1].name == "Foo"
+        assert mods[1].link == "https://modrinth.com/mod/foo"
+        assert mods[1].version == "1.2.3"
+        assert mods[1].original_env == Env(
+            client=Requirement.UNKNOWN,
+            server=Requirement.UNKNOWN,
+        )
+        assert mods[1].overridden_env == Env(
+            client=Requirement.REQUIRED,
+            server=Requirement.OPTIONAL,
+        )
+        assert mods[1].mod_license == ""
+        assert mods[1].source_url == ""
+        assert mods[1].issues_url == ""
+        assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
+        assert mods[1].latest_game_version == GameVersion("1.20")
+
+        assert modpack.missing_mods == frozenset({"baz.jar"})
+        assert modpack.unknown_mods == frozenset(
+            {
+                "foo-1.2.3.jar",
+                "bar-1.0.0.jar",
+                "baz-1.0.0.jar",
+            },
+        )

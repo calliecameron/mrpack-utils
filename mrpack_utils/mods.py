@@ -92,7 +92,7 @@ class GameVersion:
         return frozenset(out)
 
 
-class MrpackFile:
+class _MrpackFile:
     def __init__(
         self,
         *,
@@ -142,7 +142,7 @@ class MrpackFile:
         return self._unknown_mods
 
     @staticmethod
-    def from_file(filename: str) -> "MrpackFile":
+    def from_file(filename: str) -> "_MrpackFile":
         try:
             with zipfile.ZipFile(filename) as z:
                 with z.open("modrinth.index.json") as f:
@@ -158,7 +158,7 @@ class MrpackFile:
                     ):
                         unknown_mods.add(path.name)
 
-            return MrpackFile(
+            return _MrpackFile(
                 name=j["name"],
                 version=j["versionId"],
                 game_version=GameVersion(j["dependencies"]["minecraft"]),
@@ -178,7 +178,7 @@ class MrpackFile:
 
 
 @dataclass(frozen=True, kw_only=True)
-class ModStub:
+class _ModStub:
     name: str
     slug: str
     env: Env
@@ -335,7 +335,7 @@ class Modpack:
         return cast(list[dict[str, Any]], projects_response.json())
 
     @staticmethod
-    def load(*mrpacks: MrpackFile) -> "tuple[Modpack, ...]":
+    def _load(*mrpacks: _MrpackFile) -> "tuple[Modpack, ...]":
         all_hashes: set[VersionHash] = set()
         for mrpack in mrpacks:
             all_hashes |= mrpack.mod_hashes
@@ -346,7 +346,7 @@ class Modpack:
         mod_stubs = {}
         for project in projects:
             try:
-                mod_stubs[project["id"]] = ModStub(
+                mod_stubs[project["id"]] = _ModStub(
                     name=project["title"],
                     slug=project["slug"],
                     env=Env(
@@ -394,3 +394,7 @@ class Modpack:
             )
 
         return tuple(modpacks)
+
+    @staticmethod
+    def from_files(*files: str) -> "tuple[Modpack, ...]":
+        return Modpack._load(*[_MrpackFile.from_file(f) for f in files])
