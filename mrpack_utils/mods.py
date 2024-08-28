@@ -358,7 +358,7 @@ class Modpack:
                     issues_url=project.get("issues_url", ""),
                     game_versions=GameVersion.from_list(project["game_versions"]),
                 )
-            except Exception as e:  # noqa: PERF203
+            except Exception as e:  # noqa: PERF203  # pragma nocover
                 raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
 
         modpacks = []

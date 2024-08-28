@@ -3,9 +3,21 @@ import io
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from collections.abc import Set as AbstractSet
-from dataclasses import dataclass
 
 import tabulate
+from attrs import field, frozen
+
+
+def _frozenset_converter(data: AbstractSet[str]) -> frozenset[str]:
+    return frozenset(data)
+
+
+def _tuple_converter(data: Sequence[str]) -> tuple[str, ...]:
+    return tuple(data)
+
+
+def _table_converter(data: Sequence[Sequence[str]]) -> tuple[tuple[str, ...], ...]:
+    return tuple(tuple(row) for row in data)
 
 
 class Element(ABC):
@@ -14,18 +26,18 @@ class Element(ABC):
         raise NotImplementedError
 
 
-@dataclass(frozen=True)
+@frozen
 class List(Element):
-    data: Sequence[str]
+    data: tuple[str, ...] = field(converter=_tuple_converter)
 
     def render(self) -> str:
         return "\n".join(self.data)
 
 
-@dataclass(frozen=True)
+@frozen
 class Set(Element):
     title: str
-    data: AbstractSet[str]
+    data: frozenset[str] = field(converter=_frozenset_converter)
 
     def render(self) -> str:
         out = []
@@ -35,9 +47,9 @@ class Set(Element):
         return "\n".join(out)
 
 
-@dataclass(frozen=True)
+@frozen
 class Table(Element):
-    data: Sequence[Sequence[str]]
+    data: tuple[tuple[str, ...], ...] = field(converter=_table_converter)
 
     def render(self) -> str:
         return tabulate.tabulate(self.data, headers="firstrow", tablefmt="github")
@@ -48,11 +60,11 @@ class Table(Element):
             return f.getvalue().rstrip()
 
 
-@dataclass(frozen=True, kw_only=True)
+@frozen
 class IncompatibleMods(Element):
     num_mods: int
     game_version: str
-    mods: AbstractSet[str]
+    mods: frozenset[str] = field(converter=_frozenset_converter)
 
     def render(self) -> str:
         out = []
@@ -66,3 +78,15 @@ class IncompatibleMods(Element):
         else:
             out.append("  All mods are compatible with this version")
         return "\n".join(out)
+
+
+def render(elements: Sequence[Element]) -> str:
+    items = [element.render() for element in elements]
+    return "\n\n".join([item for item in items if item])
+
+
+def render_csv(elements: Sequence[Element]) -> str:
+    for element in elements:
+        if isinstance(element, Table):
+            return element.render_csv()
+    return ""

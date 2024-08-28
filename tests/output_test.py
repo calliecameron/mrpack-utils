@@ -1,17 +1,31 @@
-from mrpack_utils.output import IncompatibleMods, List, Set, Table
+from mrpack_utils.output import IncompatibleMods, List, Set, Table, render, render_csv
+
+# ruff: noqa: E741
 
 
 class TestList:
     def test_render(self) -> None:
-        assert List([]).render() == ""
-        assert List(["a", "c", "b"]).render() == "a\nc\nb"
+        l = List([])
+        assert l.data == ()
+        assert l.render() == ""
+
+        l = List(["a", "c", "b"])
+        assert l.data == ("a", "c", "b")
+        assert l.render() == "a\nc\nb"
 
 
 class TestSet:
     def test_render(self) -> None:
-        assert Set("foo", frozenset([])).render() == ""
+        s = Set("foo", set())
+        assert s.title == "foo"
+        assert s.data == frozenset()
+        assert s.render() == ""
+
+        s = Set("foo", {"a", "c", "b"})
+        assert s.title == "foo"
+        assert s.data == frozenset(["a", "b", "c"])
         assert (
-            Set("foo", frozenset(["a", "c", "b"])).render()
+            s.render()
             == """foo:
   a
   b
@@ -21,48 +35,40 @@ class TestSet:
 
 class TestTable:
     def test_render(self) -> None:
+        t = Table(
+            [
+                ["A", "B"],
+            ],
+        )
+        assert t.data == (("A", "B"),)
         assert (
-            Table(
-                [
-                    ["A", "B"],
-                ],
-            ).render()
+            t.render()
             == """| A   | B   |
 |-----|-----|"""
         )
+        assert t.render_csv() == "A,B"
 
+        t = Table(
+            [
+                ["A", "B"],
+                ["a", "b"],
+                ["c", "d"],
+            ],
+        )
+        assert t.data == (
+            ("A", "B"),
+            ("a", "b"),
+            ("c", "d"),
+        )
         assert (
-            Table(
-                [
-                    ["A", "B"],
-                    ["a", "b"],
-                    ["c", "d"],
-                ],
-            ).render()
+            t.render()
             == """| A   | B   |
 |-----|-----|
 | a   | b   |
 | c   | d   |"""
         )
-
-    def test_render_csv(self) -> None:
         assert (
-            Table(
-                [
-                    ["A", "B"],
-                ],
-            ).render_csv()
-            == "A,B"
-        )
-
-        assert (
-            Table(
-                [
-                    ["A", "B"],
-                    ["a", "b"],
-                    ["c", "d"],
-                ],
-            ).render_csv()
+            t.render_csv()
             == """A,B
 a,b
 c,d"""
@@ -71,24 +77,84 @@ c,d"""
 
 class TestIncompatibleMods:
     def test_render(self) -> None:
+        i = IncompatibleMods(
+            num_mods=10,
+            game_version="1.19.2",
+            mods=set(),
+        )
+        assert i.num_mods == 10  # noqa: PLR2004
+        assert i.game_version == "1.19.2"
+        assert i.mods == frozenset()
         assert (
-            IncompatibleMods(
-                num_mods=10,
-                game_version="1.19.2",
-                mods=frozenset(),
-            ).render()
+            i.render()
             == """For version 1.19.2:
   All mods are compatible with this version"""
         )
 
+        i = IncompatibleMods(
+            num_mods=10,
+            game_version="1.19.2",
+            mods={"B", "A"},
+        )
+        assert i.num_mods == 10  # noqa: PLR2004
+        assert i.game_version == "1.19.2"
+        assert i.mods == frozenset(["A", "B"])
         assert (
-            IncompatibleMods(
-                num_mods=10,
-                game_version="1.19.2",
-                mods=frozenset({"B", "A"}),
-            ).render()
+            i.render()
             == """For version 1.19.2:
   2 out of 10 mods are incompatible with this version:
     A
     B"""
+        )
+
+
+class TestRender:
+    def test_render(self) -> None:
+        data = [
+            List(["a", "c", "b"]),
+            IncompatibleMods(
+                num_mods=10,
+                game_version="1.19.2",
+                mods={"B", "A"},
+            ),
+            Set("foo", set()),
+            Set("foo", {"a", "c", "b"}),
+            Table(
+                [
+                    ["A", "B"],
+                    ["a", "b"],
+                    ["c", "d"],
+                ],
+            ),
+        ]
+
+        assert render([]) == ""
+        assert (
+            render(data)
+            == """a
+c
+b
+
+For version 1.19.2:
+  2 out of 10 mods are incompatible with this version:
+    A
+    B
+
+foo:
+  a
+  b
+  c
+
+| A   | B   |
+|-----|-----|
+| a   | b   |
+| c   | d   |"""
+        )
+
+        assert render_csv([]) == ""
+        assert (
+            render_csv(data)
+            == """A,B
+a,b
+c,d"""
         )
