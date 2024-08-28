@@ -1,14 +1,9 @@
 import pytest
 import requests_mock
 
-from mrpack_utils.commands import (
+from mrpack_utils.main import (
     check_compatibility,
     make_table,
-    write_csv,
-    write_incompatible,
-    write_missing,
-    write_table,
-    write_unknown,
 )
 from mrpack_utils.mods import (
     Env,
@@ -55,7 +50,7 @@ def test_make_table() -> None:
         frozenset([GameVersion("1.19.4"), GameVersion("1.20")]),
     )
 
-    assert table == [
+    assert table.data == [
         (
             "Name",
             "Link",
@@ -91,180 +86,6 @@ def test_make_table() -> None:
         GameVersion("1.19.4"): frozenset(),
         GameVersion("1.20"): frozenset([bar]),
     }
-
-
-def test_write_csv(capsys: pytest.CaptureFixture[str]) -> None:
-    table = [
-        (
-            "Name",
-            "Link",
-            "Installed version",
-            "On client",
-            "On server",
-            "Latest game version",
-            "1.19.4",
-            "1.20",
-        ),
-        (
-            "Bar",
-            "https://modrinth.com/mod/bar",
-            "4.5.6",
-            "required",
-            "optional",
-            "1.19.4",
-            "yes",
-            "no",
-        ),
-        (
-            "Foo",
-            "https://modrinth.com/mod/foo",
-            "1.2.3",
-            "required",
-            "optional",
-            "1.20",
-            "yes",
-            "yes",
-        ),
-    ]
-    write_csv(table)
-    assert (
-        capsys.readouterr().out
-        == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20\r
-Bar,https://modrinth.com/mod/bar,4.5.6,required,optional,1.19.4,yes,no\r
-Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,yes,yes\r
-"""
-    )
-
-
-def test_write_table(capsys: pytest.CaptureFixture[str]) -> None:
-    table = [
-        (
-            "Name",
-            "Link",
-            "Installed version",
-            "On client",
-            "On server",
-            "Latest game version",
-            "1.19.4",
-            "1.20",
-        ),
-        (
-            "Bar",
-            "https://modrinth.com/mod/bar",
-            "4.5.6",
-            "required",
-            "optional",
-            "1.19.4",
-            "yes",
-            "no",
-        ),
-        (
-            "Foo",
-            "https://modrinth.com/mod/foo",
-            "1.2.3",
-            "required",
-            "optional",
-            "1.20",
-            "yes",
-            "yes",
-        ),
-    ]
-    write_table(table)
-    assert (
-        capsys.readouterr().out
-        == """| Name   | Link                         | Installed version   | On client   | On server   | Latest game version   | 1.19.4   | 1.20   |
-|--------|------------------------------|---------------------|-------------|-------------|-----------------------|----------|--------|
-| Bar    | https://modrinth.com/mod/bar | 4.5.6               | required    | optional    | 1.19.4                | yes      | no     |
-| Foo    | https://modrinth.com/mod/foo | 1.2.3               | required    | optional    | 1.20                  | yes      | yes    |
-"""  # noqa: E501
-    )
-
-
-def test_write_missing(capsys: pytest.CaptureFixture[str]) -> None:
-    write_missing(frozenset())
-    assert capsys.readouterr().out == ""
-
-    write_missing(frozenset(["foo", "bar"]))
-    assert (
-        capsys.readouterr().out
-        == """
-Mods supposed to be on Modrinth, but not found:
-  bar
-  foo
-"""
-    )
-
-
-def test_write_unknown(capsys: pytest.CaptureFixture[str]) -> None:
-    write_unknown(frozenset())
-    assert capsys.readouterr().out == ""
-
-    write_unknown(frozenset(["foo", "bar"]))
-    assert (
-        capsys.readouterr().out
-        == """
-Unknown mods (probably from CurseForge) - must be checked manually:
-  bar
-  foo
-"""
-    )
-
-
-def test_write_incompatible(capsys: pytest.CaptureFixture[str]) -> None:
-    foo = Mod(
-        name="Foo",
-        slug="foo",
-        version="1.2.3",
-        original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-        overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-        mod_license="MIT",
-        source_url="example.com",
-        issues_url="example2.com",
-        game_versions=frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
-    )
-    bar = Mod(
-        name="Bar",
-        slug="bar",
-        version="4.5.6",
-        original_env=Env(client=Requirement.REQUIRED, server=Requirement.UNSUPPORTED),
-        overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-        mod_license="",
-        source_url="",
-        issues_url="",
-        game_versions=frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
-    )
-
-    incompatible = {
-        GameVersion("1.19.4"): frozenset(),
-        GameVersion("1.20"): frozenset([bar]),
-        GameVersion("1.18"): frozenset([foo, bar]),
-    }
-
-    write_incompatible(
-        2,
-        frozenset([GameVersion("1.19.4"), GameVersion("1.20"), GameVersion("1.18")]),
-        GameVersion("1.19.4"),
-        incompatible,
-    )
-
-    assert (
-        capsys.readouterr().out
-        == """
-Modpack game version: 1.19.4
-
-For version 1.18:
-  2 out of 2 mods are incompatible with this version:
-    Bar
-    Foo
-
-For version 1.19.4:
-  All mods are compatible with this version
-
-For version 1.20:
-  1 out of 2 mods are incompatible with this version:
-    Bar
-"""
-    )
 
 
 def test_check_compatibility(capsys: pytest.CaptureFixture[str]) -> None:
@@ -324,9 +145,9 @@ def test_check_compatibility(capsys: pytest.CaptureFixture[str]) -> None:
         check_compatibility(["1.20"], "testdata/test.mrpack", True)
         assert (
             capsys.readouterr().out
-            == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20\r
-Bar,https://modrinth.com/mod/bar,4.5.6,unknown,unknown,1.19.4,yes,no\r
-Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes\r
+            == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20
+Bar,https://modrinth.com/mod/bar,4.5.6,unknown,unknown,1.19.4,yes,no
+Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes
 """
         )
 

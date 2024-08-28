@@ -1,17 +1,17 @@
 import argparse
-import csv
-import sys
-from collections.abc import Mapping, Sequence, Set
-
-import tabulate
+from collections.abc import Mapping, Sequence
+from collections.abc import Set as AbstractSet
 
 from mrpack_utils.mods import GameVersion, Mod, Modpack
+from mrpack_utils.output import IncompatibleMods, List, Set, Table
 
-Table = Sequence[tuple[str, ...]]
-IncompatibleMods = Mapping[GameVersion, Set[Mod]]
+IncompatibleModMap = Mapping[GameVersion, AbstractSet[Mod]]
 
 
-def make_table(modpack: Modpack, game_versions: Set[GameVersion]) -> tuple[Table, IncompatibleMods]:
+def make_table(
+    modpack: Modpack,
+    game_versions: AbstractSet[GameVersion],
+) -> tuple[Table, IncompatibleModMap]:
     incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
     sorted_versions = sorted(game_versions)
     table = [
@@ -38,48 +38,7 @@ def make_table(modpack: Modpack, game_versions: Set[GameVersion]) -> tuple[Table
                 incompatible[version].add(mod)
         table.append(tuple(row))
 
-    return table, {version: frozenset(incompatible[version]) for version in incompatible}
-
-
-def write_csv(table: Table) -> None:
-    csv.writer(sys.stdout).writerows(table)
-
-
-def write_table(table: Table) -> None:
-    print(tabulate.tabulate(table, headers="firstrow", tablefmt="github"))
-
-
-def write_missing(mods: Set[str]) -> None:
-    if mods:
-        print("\nMods supposed to be on Modrinth, but not found:")
-        for mod in sorted(mods, key=lambda m: m.lower()):
-            print("  " + mod)
-
-
-def write_unknown(mods: Set[str]) -> None:
-    if mods:
-        print("\nUnknown mods (probably from CurseForge) - must be checked manually:")
-        for mod in sorted(mods, key=lambda m: m.lower()):
-            print("  " + mod)
-
-
-def write_incompatible(
-    num_mods: int,
-    game_versions: Set[GameVersion],
-    mrpack_game_version: GameVersion,
-    incompatible: IncompatibleMods,
-) -> None:
-    print("\nModpack game version: " + str(mrpack_game_version))
-
-    for version in sorted(game_versions):
-        print(f"\nFor version {version}:")
-        mods = incompatible[version]
-        if mods:
-            print("  %d out of %d mods are incompatible with this version:" % (len(mods), num_mods))
-            for mod in sorted(mods, key=lambda m: m.name.lower()):
-                print("    " + mod.name)
-        else:
-            print("  All mods are compatible with this version")
+    return Table(table), {version: frozenset(incompatible[version]) for version in incompatible}
 
 
 def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: bool) -> None:
@@ -90,12 +49,25 @@ def check_compatibility(versions: Sequence[str], mrpack_file: str, output_csv: b
     table, incompatible = make_table(modpack, game_versions)
 
     if output_csv:
-        write_csv(table)
+        print(table.render_csv())
     else:
-        write_table(table)
-        write_missing(modpack.missing_mods)
-        write_unknown(modpack.unknown_mods)
-        write_incompatible(len(table) - 1, game_versions, modpack.game_version, incompatible)
+        out = [
+            table.render(),
+            Set("Mods supposed to be on Modrinth, but not found", modpack.missing_mods).render(),
+            Set(
+                "Unknown mods (probably from CurseForge) - must be checked manually",
+                modpack.unknown_mods,
+            ).render(),
+            List(["Modpack game version: " + str(modpack.game_version)]).render(),
+        ] + [
+            IncompatibleMods(
+                num_mods=len(modpack.mods),
+                game_version=str(version),
+                mods={mod.name for mod in incompatible[version]},
+            ).render()
+            for version in sorted(game_versions)
+        ]
+        print("\n\n".join([item for item in out if item]))
 
 
 def main() -> None:  # pragma: no cover

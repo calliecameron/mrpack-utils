@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from mrpack_utils.commands import main
+from mrpack_utils.main import main
 
 
 if __name__ == "__main__":
