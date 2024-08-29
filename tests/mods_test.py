@@ -84,7 +84,20 @@ class TestMrpackFile:
                 "abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
             },
         )
-        assert m.unknown_mods == frozenset(["foo-1.2.3.jar", "bar-1.0.0.jar", "baz-1.0.0.jar"])
+        assert m.unknown_mods == frozendict(
+            {
+                "client-overrides/mods/baz-1.0.0.jar": "a2c6f513",
+                "client-overrides/mods/foo-1.2.3.jar": "d6902afc",
+                "overrides/mods/foo-1.2.3.jar": "d6902afc",
+                "server-overrides/mods/bar-1.0.0.jar": "7123eea6",
+            },
+        )
+        assert m.other_files == frozendict(
+            {
+                "overrides/config/foo.txt": "7e3265a8",
+                "server-overrides/config/bar.txt": "04a2b3e9",
+            },
+        )
 
         with pytest.raises(ModpackError):
             _MrpackFile.from_file("testdata/modrinth.index.json")
@@ -130,7 +143,8 @@ class TestModpack:
             mod_envs=frozendict(
                 {"abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)},
             ),
-            unknown_mods=frozenset(["unknown.jar"]),
+            unknown_mods=frozendict({"overrides/mods/unknown.jar": "a"}),
+            other_files=frozendict({"overrides/config/foo.txt": "b"}),
         )
         mrpack2 = _MrpackFile(
             name="Test Modpack",
@@ -142,7 +156,8 @@ class TestModpack:
             mod_envs=frozendict(
                 {"abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)},
             ),
-            unknown_mods=frozenset(["unknown.jar"]),
+            unknown_mods=frozendict({"overrides/mods/unknown.jar": "c"}),
+            other_files=frozendict({"overrides/config/foo.txt": "d"}),
         )
 
         with requests_mock.Mocker() as m:
@@ -259,7 +274,8 @@ class TestModpack:
         assert mods[1].latest_game_version == GameVersion("1.20")
 
         assert modpack.missing_mods == frozenset({"baz.jar"})
-        assert modpack.unknown_mods == frozenset({"unknown.jar"})
+        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "a"})
+        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "b"})
 
         modpack = modpacks[1]
         assert modpack.name == "Test Modpack"
@@ -304,7 +320,8 @@ class TestModpack:
         assert mods[1].latest_game_version == GameVersion("1.20")
 
         assert modpack.missing_mods == frozenset({"baz.jar"})
-        assert modpack.unknown_mods == frozenset({"unknown.jar"})
+        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "c"})
+        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "d"})
 
     def test_from_files(self) -> None:
         with requests_mock.Mocker() as m:
@@ -403,10 +420,17 @@ class TestModpack:
         assert mods[1].latest_game_version == GameVersion("1.20")
 
         assert modpack.missing_mods == frozenset({"baz.jar"})
-        assert modpack.unknown_mods == frozenset(
+        assert modpack.unknown_mods == frozendict(
             {
-                "foo-1.2.3.jar",
-                "bar-1.0.0.jar",
-                "baz-1.0.0.jar",
+                "client-overrides/mods/baz-1.0.0.jar": "a2c6f513",
+                "client-overrides/mods/foo-1.2.3.jar": "d6902afc",
+                "overrides/mods/foo-1.2.3.jar": "d6902afc",
+                "server-overrides/mods/bar-1.0.0.jar": "7123eea6",
+            },
+        )
+        assert modpack.other_files == frozendict(
+            {
+                "overrides/config/foo.txt": "7e3265a8",
+                "server-overrides/config/bar.txt": "04a2b3e9",
             },
         )

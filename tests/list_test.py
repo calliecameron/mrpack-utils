@@ -45,7 +45,8 @@ class TestList:
             dependencies={"foo": "1", "fabric-loader": "0.16"},
             mods={"abcd": foo, "fedc": bar},
             missing_mods=frozenset(),
-            unknown_mods=frozenset(),
+            unknown_mods={},
+            other_files={},
         )
         table, incompatible = _make_table(
             modpack,

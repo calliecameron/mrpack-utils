@@ -14,8 +14,11 @@ test: testdata
 .PHONY: testdata
 testdata: testdata/test.mrpack
 
-testdata/test.mrpack: testdata/modrinth.index.json
-	cd testdata && zip test.mrpack modrinth.index.json overrides/mods/* client-overrides/mods/* server-overrides/mods/*
+TESTDATA := $(shell find testdata -type f ! -name test.mrpack -printf '%P\n')
+TESTDATA_DEPS := $(addprefix testdata/,$(TESTDATA))
+
+testdata/test.mrpack: $(TESTDATA_DEPS)
+	cd testdata && zip test.mrpack $(TESTDATA)
 
 SUBDIR_ROOTS := mrpack_utils testdata tests
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)

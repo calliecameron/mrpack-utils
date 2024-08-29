@@ -103,7 +103,8 @@ class _MrpackFile:
         mod_hashes: Set[VersionHash],
         mod_jars: Mapping[VersionHash, str],
         mod_envs: Mapping[VersionHash, Env],
-        unknown_mods: Set[str],
+        unknown_mods: Mapping[str, str],
+        other_files: Mapping[str, str],
     ) -> None:
         super().__init__()
         self._name = name
@@ -113,7 +114,8 @@ class _MrpackFile:
         self._mod_hashes = frozenset(mod_hashes)
         self._mod_jars = frozendict(mod_jars)
         self._mod_envs = frozendict(mod_envs)
-        self._unknown_mods = frozenset(unknown_mods)
+        self._unknown_mods = frozendict(unknown_mods)
+        self._other_files = frozendict(other_files)
 
     @property
     def name(self) -> str:
@@ -144,8 +146,12 @@ class _MrpackFile:
         return self._mod_envs
 
     @property
-    def unknown_mods(self) -> frozenset[str]:
+    def unknown_mods(self) -> frozendict[str, str]:
         return self._unknown_mods
+
+    @property
+    def other_files(self) -> frozendict[str, str]:
+        return self._other_files
 
     @staticmethod
     def from_file(filename: str) -> "_MrpackFile":
@@ -154,15 +160,20 @@ class _MrpackFile:
                 with z.open("modrinth.index.json") as f:
                     j = json.load(f)
 
-                unknown_mods = set()
-                for file in z.namelist():
-                    path = pathlib.PurePath(file)
-                    if path.suffix == ".jar" and str(path.parent) in (
-                        "overrides/mods",
-                        "server-overrides/mods",
-                        "client-overrides/mods",
-                    ):
-                        unknown_mods.add(path.name)
+                unknown_mods: dict[str, str] = {}
+                other_files: dict[str, str] = {}
+                for file in z.infolist():
+                    if file.filename != "modrinth.index.json" and not file.is_dir():
+                        path = pathlib.PurePath(file.filename)
+                        if path.suffix == ".jar" and str(path.parent) in (
+                            "overrides/mods",
+                            "server-overrides/mods",
+                            "client-overrides/mods",
+                        ):
+                            target = unknown_mods
+                        else:
+                            target = other_files
+                        target[file.filename] = f"{file.CRC:08x}"
 
             dependencies = j["dependencies"]
             game_version = dependencies["minecraft"]
@@ -183,6 +194,7 @@ class _MrpackFile:
                     if "env" in file
                 },
                 unknown_mods=unknown_mods,
+                other_files=other_files,
             )
         except Exception as e:
             raise ModpackError("Failed to load mrpack file: " + str(e)) from e
@@ -279,7 +291,8 @@ class Modpack:
         dependencies: Mapping[str, str],
         mods: Mapping[ProjectID, Mod],
         missing_mods: Set[str],
-        unknown_mods: Set[str],
+        unknown_mods: Mapping[str, str],
+        other_files: Mapping[str, str],
     ) -> None:
         super().__init__()
         self._name = name
@@ -288,7 +301,8 @@ class Modpack:
         self._dependencies = frozendict(dependencies)
         self._mods = frozendict(mods)
         self._missing_mods = frozenset(missing_mods)
-        self._unknown_mods = frozenset(unknown_mods)
+        self._unknown_mods = frozendict(unknown_mods)
+        self._other_files = frozendict(other_files)
 
     @property
     def name(self) -> str:
@@ -315,8 +329,12 @@ class Modpack:
         return self._missing_mods
 
     @property
-    def unknown_mods(self) -> frozenset[str]:
+    def unknown_mods(self) -> frozendict[str, str]:
         return self._unknown_mods
+
+    @property
+    def other_files(self) -> frozendict[str, str]:
+        return self._other_files
 
     @staticmethod
     def _fetch_versions(
@@ -408,6 +426,7 @@ class Modpack:
                     mods=mods,
                     missing_mods=missing_mods,
                     unknown_mods=mrpack.unknown_mods,
+                    other_files=mrpack.other_files,
                 ),
             )
 

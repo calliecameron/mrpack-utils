@@ -1,3 +1,4 @@
+import pathlib
 from collections.abc import Set as AbstractSet
 
 from frozendict import frozendict
@@ -55,7 +56,7 @@ def run(mrpack_file: str, game_versions: AbstractSet[GameVersion]) -> tuple[Elem
             Set("Mods supposed to be on Modrinth, but not found", modpack.missing_mods),
             Set(
                 "Unknown mods (probably from CurseForge) - must be checked manually",
-                modpack.unknown_mods,
+                {pathlib.PurePath(file).name for file in modpack.unknown_mods},
             ),
             List(["Modpack game version: " + str(modpack.game_version)]),
         ]
