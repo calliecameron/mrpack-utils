@@ -76,11 +76,45 @@ c,d"""
 
 
 class TestIncompatibleMods:
-    def test_render(self) -> None:
+    def test_render_normal(self) -> None:
         i = IncompatibleMods(
             num_mods=10,
             game_version="1.19.2",
             mods=set(),
+            curseforge_warning=False,
+        )
+        assert i.num_mods == 10  # noqa: PLR2004
+        assert i.game_version == "1.19.2"
+        assert i.mods == frozenset()
+        assert (
+            i.render()
+            == """For version 1.19.2:
+  All mods are compatible with this version"""
+        )
+
+        i = IncompatibleMods(
+            num_mods=10,
+            game_version="1.19.2",
+            mods={"B", "A"},
+            curseforge_warning=False,
+        )
+        assert i.num_mods == 10  # noqa: PLR2004
+        assert i.game_version == "1.19.2"
+        assert i.mods == frozenset(["A", "B"])
+        assert (
+            i.render()
+            == """For version 1.19.2:
+  2 out of 10 mods are incompatible with this version:
+    A
+    B"""
+        )
+
+    def test_render_warning(self) -> None:
+        i = IncompatibleMods(
+            num_mods=10,
+            game_version="1.19.2",
+            mods=set(),
+            curseforge_warning=True,
         )
         assert i.num_mods == 10  # noqa: PLR2004
         assert i.game_version == "1.19.2"
@@ -95,6 +129,7 @@ class TestIncompatibleMods:
             num_mods=10,
             game_version="1.19.2",
             mods={"B", "A"},
+            curseforge_warning=True,
         )
         assert i.num_mods == 10  # noqa: PLR2004
         assert i.game_version == "1.19.2"
@@ -116,6 +151,7 @@ class TestRender:
                 num_mods=10,
                 game_version="1.19.2",
                 mods={"B", "A"},
+                curseforge_warning=False,
             ),
             Set("foo", set()),
             Set("foo", {"a", "c", "b"}),
@@ -136,7 +172,7 @@ c
 b
 
 For version 1.19.2:
-  2 out of 10 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
+  2 out of 10 mods are incompatible with this version:
     A
     B
 
@@ -148,7 +184,7 @@ foo:
 | A   | B   |
 |-----|-----|
 | a   | b   |
-| c   | d   |"""  # noqa: E501
+| c   | d   |"""
         )
 
         assert render_csv([]) == ""

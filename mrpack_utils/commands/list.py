@@ -152,6 +152,7 @@ def run(
                 num_mods=len(modpack.mods),
                 game_version=str(version),
                 mods={mod.name for mod in incompatible[version]},
+                curseforge_warning=len(modpack.unknown_mods) > 0,
             )
             for version in sorted(game_versions)
         ],

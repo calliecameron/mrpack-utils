@@ -480,11 +480,13 @@ class TestList:
                     num_mods=2,
                     game_version="1.19.4",
                     mods={"Foo"},
+                    curseforge_warning=True,
                 ),
                 IncompatibleMods(
                     num_mods=2,
                     game_version="1.20",
                     mods={"Bar"},
+                    curseforge_warning=True,
                 ),
             )
 
@@ -753,10 +755,12 @@ class TestList:
                     num_mods=2,
                     game_version="1.19.4",
                     mods={"Foo"},
+                    curseforge_warning=True,
                 ),
                 IncompatibleMods(
                     num_mods=2,
                     game_version="1.20",
                     mods={"Bar"},
+                    curseforge_warning=True,
                 ),
             )

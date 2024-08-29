@@ -65,21 +65,25 @@ class IncompatibleMods(Element):
     num_mods: int
     game_version: str
     mods: frozenset[str] = field(converter=_frozenset_converter)
+    curseforge_warning: bool
 
     def render(self) -> str:
+        modrinth = ""
+        warning = ""
+        if self.curseforge_warning:
+            modrinth = " Modrinth"
+            warning = " (CurseForge mods must be checked manually)"
+
         out = []
         out.append(f"For version {self.game_version}:")
         if self.mods:
             out.append(
-                f"  {len(self.mods)} out of {self.num_mods} Modrinth mods are incompatible with "
-                "this version (CurseForge mods must be checked manually):",
+                f"  {len(self.mods)} out of {self.num_mods}{modrinth} mods are incompatible with "
+                f"this version{warning}:",
             )
             out += ["    " + mod for mod in sorted(self.mods, key=lambda m: m.lower())]
         else:
-            out.append(
-                "  All Modrinth mods are compatible with this version (CurseForge mods must be "
-                "checked manually)",
-            )
+            out.append(f"  All{modrinth} mods are compatible with this version{warning}")
         return "\n".join(out)
 
 
