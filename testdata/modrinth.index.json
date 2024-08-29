@@ -28,6 +28,8 @@
         }
     ],
     "dependencies": {
-        "minecraft": "1.19.4"
+        "minecraft": "1.19.4",
+        "fabric-loader": "0.16",
+        "foo": "1"
     }
 }

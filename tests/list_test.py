@@ -42,6 +42,7 @@ class TestList:
             name="Test Modpack",
             version="1",
             game_version=GameVersion("1.19.4"),
+            dependencies={"foo": "1", "fabric-loader": "0.16"},
             mods={"abcd": foo, "fedc": bar},
             missing_mods=frozenset(),
             unknown_mods=frozenset(),

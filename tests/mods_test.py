@@ -76,6 +76,7 @@ class TestMrpackFile:
         assert m.name == "Test Modpack"
         assert m.version == "1.1"
         assert m.game_version == GameVersion("1.19.4")
+        assert m.dependencies == frozendict({"fabric-loader": "0.16", "foo": "1"})
         assert m.mod_hashes == frozenset(["abcd", "fedc", "pqrs"])
         assert m.mod_jars == frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"})
         assert m.mod_envs == frozendict(
@@ -123,6 +124,7 @@ class TestModpack:
             name="Test Modpack",
             version="1",
             game_version=GameVersion("1.19.4"),
+            dependencies=frozendict({"foo": "1"}),
             mod_hashes=frozenset(["abcd", "fedc", "pqrs"]),
             mod_jars=frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
             mod_envs=frozendict(
@@ -134,6 +136,7 @@ class TestModpack:
             name="Test Modpack",
             version="2",
             game_version=GameVersion("1.19.4"),
+            dependencies=frozendict({"foo": "2"}),
             mod_hashes=frozenset(["abcd", "lmno", "pqrs"]),
             mod_jars=frozendict({"abcd": "foo.jar", "lmno": "bar.jar", "pqrs": "baz.jar"}),
             mod_envs=frozendict(
@@ -217,6 +220,7 @@ class TestModpack:
         assert modpack.name == "Test Modpack"
         assert modpack.version == "1"
         assert modpack.game_version == GameVersion("1.19.4")
+        assert modpack.dependencies == frozendict({"foo": "1"})
 
         mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
         assert len(mods) == 2  # noqa: PLR2004
@@ -261,6 +265,7 @@ class TestModpack:
         assert modpack.name == "Test Modpack"
         assert modpack.version == "2"
         assert modpack.game_version == GameVersion("1.19.4")
+        assert modpack.dependencies == frozendict({"foo": "2"})
 
         mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
         assert len(mods) == 2  # noqa: PLR2004
@@ -358,6 +363,7 @@ class TestModpack:
         assert modpack.name == "Test Modpack"
         assert modpack.version == "1.1"
         assert modpack.game_version == GameVersion("1.19.4")
+        assert modpack.dependencies == frozendict({"fabric-loader": "0.16", "foo": "1"})
 
         mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
         assert len(mods) == 2  # noqa: PLR2004

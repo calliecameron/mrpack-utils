@@ -99,6 +99,7 @@ class _MrpackFile:
         name: str,
         version: str,
         game_version: GameVersion,
+        dependencies: Mapping[str, str],
         mod_hashes: Set[VersionHash],
         mod_jars: Mapping[VersionHash, str],
         mod_envs: Mapping[VersionHash, Env],
@@ -108,6 +109,7 @@ class _MrpackFile:
         self._name = name
         self._version = version
         self._game_version = game_version
+        self._dependencies = frozendict(dependencies)
         self._mod_hashes = frozenset(mod_hashes)
         self._mod_jars = frozendict(mod_jars)
         self._mod_envs = frozendict(mod_envs)
@@ -124,6 +126,10 @@ class _MrpackFile:
     @property
     def game_version(self) -> GameVersion:
         return self._game_version
+
+    @property
+    def dependencies(self) -> frozendict[str, str]:
+        return self._dependencies
 
     @property
     def mod_hashes(self) -> frozenset[VersionHash]:
@@ -158,10 +164,15 @@ class _MrpackFile:
                     ):
                         unknown_mods.add(path.name)
 
+            dependencies = j["dependencies"]
+            game_version = dependencies["minecraft"]
+            del dependencies["minecraft"]
+
             return _MrpackFile(
                 name=j["name"],
                 version=j["versionId"],
-                game_version=GameVersion(j["dependencies"]["minecraft"]),
+                game_version=GameVersion(game_version),
+                dependencies=dependencies,
                 mod_hashes=frozenset(file["hashes"]["sha512"] for file in j["files"]),
                 mod_jars={
                     file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]
@@ -265,6 +276,7 @@ class Modpack:
         name: str,
         version: str,
         game_version: GameVersion,
+        dependencies: Mapping[str, str],
         mods: Mapping[ProjectID, Mod],
         missing_mods: Set[str],
         unknown_mods: Set[str],
@@ -273,6 +285,7 @@ class Modpack:
         self._name = name
         self._version = version
         self._game_version = game_version
+        self._dependencies = frozendict(dependencies)
         self._mods = frozendict(mods)
         self._missing_mods = frozenset(missing_mods)
         self._unknown_mods = frozenset(unknown_mods)
@@ -288,6 +301,10 @@ class Modpack:
     @property
     def game_version(self) -> GameVersion:
         return self._game_version
+
+    @property
+    def dependencies(self) -> frozendict[str, str]:
+        return self._dependencies
 
     @property
     def mods(self) -> frozendict[ProjectID, Mod]:
@@ -387,6 +404,7 @@ class Modpack:
                     name=mrpack.name,
                     version=mrpack.version,
                     game_version=mrpack.game_version,
+                    dependencies=mrpack.dependencies,
                     mods=mods,
                     missing_mods=missing_mods,
                     unknown_mods=mrpack.unknown_mods,
