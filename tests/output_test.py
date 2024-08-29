@@ -88,7 +88,7 @@ class TestIncompatibleMods:
         assert (
             i.render()
             == """For version 1.19.2:
-  All mods are compatible with this version"""
+  All Modrinth mods are compatible with this version (CurseForge mods must be checked manually)"""
         )
 
         i = IncompatibleMods(
@@ -102,9 +102,9 @@ class TestIncompatibleMods:
         assert (
             i.render()
             == """For version 1.19.2:
-  2 out of 10 mods are incompatible with this version:
+  2 out of 10 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
     A
-    B"""
+    B"""  # noqa: E501
         )
 
 
@@ -136,7 +136,7 @@ c
 b
 
 For version 1.19.2:
-  2 out of 10 mods are incompatible with this version:
+  2 out of 10 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
     A
     B
 
@@ -148,7 +148,7 @@ foo:
 | A   | B   |
 |-----|-----|
 | a   | b   |
-| c   | d   |"""
+| c   | d   |"""  # noqa: E501
         )
 
         assert render_csv([]) == ""

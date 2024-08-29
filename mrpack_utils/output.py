@@ -71,12 +71,15 @@ class IncompatibleMods(Element):
         out.append(f"For version {self.game_version}:")
         if self.mods:
             out.append(
-                f"  {len(self.mods)} out of {self.num_mods} mods are incompatible with this "
-                "version:",
+                f"  {len(self.mods)} out of {self.num_mods} Modrinth mods are incompatible with "
+                "this version (CurseForge mods must be checked manually):",
             )
             out += ["    " + mod for mod in sorted(self.mods, key=lambda m: m.lower())]
         else:
-            out.append("  All mods are compatible with this version")
+            out.append(
+                "  All Modrinth mods are compatible with this version (CurseForge mods must be "
+                "checked manually)",
+            )
         return "\n".join(out)
 
 
