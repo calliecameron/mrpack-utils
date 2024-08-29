@@ -59,7 +59,7 @@ class TestMain:
                     },
                 ],
             )
-            main(["--csv", "list", "--game-version", "1.20", "testdata/test.mrpack"])
+            main(["--csv", "list", "--check-version", "1.20", "testdata/test.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20
@@ -68,7 +68,7 @@ Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes
 """  # noqa: E501
             )
 
-            main(["list", "--game-version", "1.20", "testdata/test.mrpack"])
+            main(["list", "--check-version", "1.20", "testdata/test.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """| Name   | Link                         | Installed version   | On client   | On server   | Latest game version   | 1.19.4   | 1.20   |

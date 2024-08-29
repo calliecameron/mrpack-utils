@@ -21,7 +21,7 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
     parser_list.set_defaults(command="list")
     parser_list.add_argument("mrpack_file", help="a Modrinth-format (mrpack) modpack")
     parser_list.add_argument(
-        "--game-version",
+        "--check-version",
         type=GameVersion,
         action="append",
         default=[],
@@ -33,7 +33,7 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
     if args.command == "list":
         out = mrpack_utils.commands.list.run(
             args.mrpack_file,
-            frozenset(args.game_version),
+            frozenset(args.check_version),
         )
     else:
         raise NotImplementedError("Unknown subcommand")
