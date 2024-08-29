@@ -27,6 +27,11 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
         default=[],
         help="game version to check compatibility with; may be specified multiple times",
     )
+    parser_list.add_argument(
+        "--dev",
+        action="store_true",
+        help="display extra dev-related information",
+    )
 
     args = parser.parse_args(args=argv)
 
@@ -34,6 +39,7 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
         out = mrpack_utils.commands.list.run(
             args.mrpack_file,
             frozenset(args.check_version),
+            args.dev,
         )
     else:
         raise NotImplementedError("Unknown subcommand")

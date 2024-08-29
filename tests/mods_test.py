@@ -16,6 +16,7 @@ from mrpack_utils.mods import (
 class TestRequirement:
     def test_from_str(self) -> None:
         assert Requirement.from_str("") == Requirement.UNKNOWN
+        assert Requirement.from_str("unknown") == Requirement.UNKNOWN
         assert Requirement.from_str("required") == Requirement.REQUIRED
         assert Requirement.from_str("optional") == Requirement.OPTIONAL
         assert Requirement.from_str("unsupported") == Requirement.UNSUPPORTED
@@ -219,8 +220,8 @@ class TestModpack:
                         "title": "Bar",
                         "slug": "bar",
                         "game_versions": ["1.19.4"],
-                        "client": "optional",
-                        "server": "optional",
+                        "client_side": "optional",
+                        "server_side": "optional",
                         "license": {"id": "MIT"},
                         "source_url": "example.com",
                         "issues_url": "example2.com",
@@ -367,8 +368,8 @@ class TestModpack:
                         "title": "Bar",
                         "slug": "bar",
                         "game_versions": ["1.19.4"],
-                        "client": "optional",
-                        "server": "optional",
+                        "client_side": "optional",
+                        "server_side": "optional",
                         "license": {"id": "MIT"},
                         "source_url": "example.com",
                         "issues_url": "example2.com",

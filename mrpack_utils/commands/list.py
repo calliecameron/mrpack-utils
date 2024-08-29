@@ -14,12 +14,20 @@ _INSTALLED_VERSION = "Installed version"
 _CLIENT = "On client"
 _SERVER = "On server"
 _LATEST_GAME_VERSION = "Latest game version"
+_LICENSE = "License"
+_MODRINTH_CLIENT = "Modrinth client"
+_MODRINTH_SERVER = "Modrinth server"
+_SOURCE = "Source"
+_ISSUES = "Issues"
 
 
-def _headers(game_versions: AbstractSet[GameVersion]) -> list[str]:
-    return [_NAME, _LINK, _INSTALLED_VERSION, _CLIENT, _SERVER, _LATEST_GAME_VERSION] + [
+def _headers(game_versions: AbstractSet[GameVersion], dev: bool) -> list[str]:
+    out = [_NAME, _LINK, _INSTALLED_VERSION, _CLIENT, _SERVER, _LATEST_GAME_VERSION] + [
         str(version) for version in sorted(game_versions)
     ]
+    if dev:
+        out += [_LICENSE, _MODRINTH_CLIENT, _MODRINTH_SERVER, _SOURCE, _ISSUES]
+    return out
 
 
 def _empty_row(headers: Sequence[str]) -> list[str]:
@@ -42,6 +50,7 @@ def _modpack_data(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
 def _mods(
     modpack: Modpack,
     game_versions: AbstractSet[GameVersion],
+    dev: bool,
 ) -> tuple[list[list[str]], IncompatibleModMap]:
     incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
     out = []
@@ -61,6 +70,14 @@ def _mods(
             else:
                 row.append("no")
                 incompatible[version].add(mod)
+        if dev:
+            row += [
+                mod.mod_license,
+                mod.original_env.client.name.lower(),
+                mod.original_env.server.name.lower(),
+                mod.source_url,
+                mod.issues_url,
+            ]
         out.append(row)
 
     return out, frozendict(
@@ -68,21 +85,26 @@ def _mods(
     )
 
 
-def _unknown_mods(modpack: Modpack, game_versions: AbstractSet[GameVersion]) -> list[list[str]]:
+def _unknown_mods(
+    modpack: Modpack,
+    game_versions: AbstractSet[GameVersion],
+    dev: bool,
+) -> list[list[str]]:
     out = []
     versions = ["check manually"] * len(game_versions)
     for name, version in sorted(modpack.unknown_mods.items()):
-        out.append(
-            [
-                name,
-                "unknown - probably CurseForge",
-                version,
-                "unknown",
-                "unknown",
-                "unknown",
-                *versions,
-            ],
-        )
+        row = [
+            name,
+            "unknown - probably CurseForge",
+            version,
+            "unknown",
+            "unknown",
+            "unknown",
+            *versions,
+        ]
+        if dev:
+            row += [""] * 5
+        out.append(row)
     return out
 
 
@@ -97,15 +119,19 @@ def _other_files(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
     return out
 
 
-def run(mrpack_file: str, game_versions: AbstractSet[GameVersion]) -> tuple[Element, ...]:
+def run(
+    mrpack_file: str,
+    game_versions: AbstractSet[GameVersion],
+    dev: bool,
+) -> tuple[Element, ...]:
     (modpack,) = Modpack.from_files(mrpack_file)
     game_versions = set(game_versions)
     game_versions.add(modpack.game_version)
 
-    headers = _headers(game_versions)
+    headers = _headers(game_versions, dev)
     modpack_data = _modpack_data(modpack, headers)
-    mods, incompatible = _mods(modpack, game_versions)
-    unknown_mods = _unknown_mods(modpack, game_versions)
+    mods, incompatible = _mods(modpack, game_versions, dev)
+    unknown_mods = _unknown_mods(modpack, game_versions, dev)
     other_files = _other_files(modpack, headers)
 
     return tuple(

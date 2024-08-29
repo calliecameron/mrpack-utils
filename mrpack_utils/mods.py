@@ -29,7 +29,7 @@ class Requirement(Enum):
 
     @staticmethod
     def from_str(s: str) -> "Requirement":
-        if not s:
+        if not s or s == "unknown":
             return Requirement.UNKNOWN
         if s == "required":
             return Requirement.REQUIRED
@@ -385,8 +385,8 @@ class Modpack:
                     name=project["title"],
                     slug=project["slug"],
                     env=Env(
-                        client=Requirement.from_str(project.get("client", "")),
-                        server=Requirement.from_str(project.get("server", "")),
+                        client=Requirement.from_str(project.get("client_side", "")),
+                        server=Requirement.from_str(project.get("server_side", "")),
                     ),
                     mod_license="" if "license" not in project else project["license"]["id"],
                     source_url=project.get("source_url", ""),
