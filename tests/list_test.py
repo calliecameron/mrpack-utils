@@ -337,7 +337,7 @@ class TestList:
                     },
                 ],
             )
-            assert run("testdata/test.mrpack", frozenset([GameVersion("1.20")]), False) == (
+            assert run("testdata/test1.mrpack", frozenset([GameVersion("1.20")]), False) == (
                 Table(
                     [
                         [
@@ -546,7 +546,7 @@ class TestList:
                     },
                 ],
             )
-            assert run("testdata/test.mrpack", frozenset([GameVersion("1.20")]), True) == (
+            assert run("testdata/test1.mrpack", frozenset([GameVersion("1.20")]), True) == (
                 Table(
                     [
                         [

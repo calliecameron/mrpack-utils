@@ -73,7 +73,7 @@ class TestGameVersion:
 
 class TestMrpackFile:
     def test_from_file(self) -> None:
-        m = _MrpackFile.from_file("testdata/test.mrpack")
+        m = _MrpackFile.from_file("testdata/test1.mrpack")
         assert m.name == "Test Modpack"
         assert m.version == "1.1"
         assert m.game_version == GameVersion("1.19.4")
@@ -376,7 +376,7 @@ class TestModpack:
                     },
                 ],
             )
-            (modpack,) = Modpack.from_files("testdata/test.mrpack")
+            (modpack,) = Modpack.from_files("testdata/test1.mrpack")
 
         assert modpack.name == "Test Modpack"
         assert modpack.version == "1.1"

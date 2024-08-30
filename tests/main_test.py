@@ -62,7 +62,7 @@ class TestMain:
                     },
                 ],
             )
-            main(["--csv", "list", "--check-version", "1.20", "testdata/test.mrpack"])
+            main(["--csv", "list", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20
@@ -81,7 +81,7 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,
 """  # noqa: E501
             )
 
-            main(["list", "--check-version", "1.20", "testdata/test.mrpack"])
+            main(["list", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """| Name                                | Link                          | Installed version   | On client   | On server   | Latest game version   | 1.19.4         | 1.20           |
@@ -169,7 +169,7 @@ For version 1.20:
                     },
                 ],
             )
-            main(["--csv", "list", "--dev", "--check-version", "1.20", "testdata/test.mrpack"])
+            main(["--csv", "list", "--dev", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20,License,Modrinth client,Modrinth server,Source,Issues
@@ -188,7 +188,7 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,,,,,,
 """  # noqa: E501
             )
 
-            main(["list", "--dev", "--check-version", "1.20", "testdata/test.mrpack"])
+            main(["list", "--dev", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """| Name                                | Link                          | Installed version   | On client   | On server   | Latest game version   | 1.19.4         | 1.20           | License   | Modrinth client   | Modrinth server   | Source      | Issues       |

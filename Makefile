@@ -12,13 +12,13 @@ test: testdata
 	pytest --cov-report=term-missing --cov=mrpack_utils tests
 
 .PHONY: testdata
-testdata: testdata/test.mrpack
+testdata: testdata/test1.mrpack
 
-TESTDATA := $(shell find testdata -type f ! -name test.mrpack -printf '%P\n')
-TESTDATA_DEPS := $(addprefix testdata/,$(TESTDATA))
+TESTDATA1 := $(shell find testdata/test1 -type f -printf '%P\n')
+TESTDATA1_DEPS := $(addprefix testdata/test1/,$(TESTDATA))
 
-testdata/test.mrpack: $(TESTDATA_DEPS)
-	cd testdata && zip test.mrpack $(TESTDATA)
+testdata/test1.mrpack: $(TESTDATA1_DEPS)
+	cd testdata/test1 && zip test1.mrpack $(TESTDATA1) && mv test1.mrpack ..
 
 SUBDIR_ROOTS := mrpack_utils testdata tests
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
@@ -27,4 +27,4 @@ CLEAN := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 
 .PHONY: clean
 clean:
-	rm -rf $(CLEAN) testdata/test.mrpack
+	rm -rf $(CLEAN) testdata/*.mrpack
