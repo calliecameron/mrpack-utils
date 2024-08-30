@@ -1,14 +1,24 @@
 .PHONY: all
 all: lint test
 
+.PHONY: deps
+deps: .deps-installed
+
+.deps-installed: requirements.txt
+	pip install -r requirements.txt
+	touch .deps-installed
+
+requirements.txt: requirements.in pyproject.toml
+	pip-compile -q
+
 .PHONY: lint
-lint:
+lint: deps
 	ruff check .
 	ruff format --diff .
 	mypy --strict .
 
 .PHONY: test
-test: testdata
+test: testdata deps
 	pytest --cov-report=term-missing --cov=mrpack_utils tests
 
 .PHONY: testdata
@@ -33,4 +43,4 @@ CLEAN := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
 
 .PHONY: clean
 clean:
-	rm -rf $(CLEAN) testdata/*.mrpack
+	rm -rf $(CLEAN) testdata/*.mrpack .deps-installed

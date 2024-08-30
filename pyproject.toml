@@ -24,3 +24,7 @@ ignore = [
     "T20",
     "TRY003",
 ]
+
+[tool.pip-tools]
+generate-hashes = true
+strip-extras = true
