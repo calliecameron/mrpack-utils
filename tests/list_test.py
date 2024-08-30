@@ -16,7 +16,7 @@ from mrpack_utils.mods import (
     Modpack,
     Requirement,
 )
-from mrpack_utils.output import IncompatibleMods, Set, Table
+from mrpack_utils.output import IncompatibleMods, MissingMods, Table
 
 
 class TestList:
@@ -472,8 +472,7 @@ class TestList:
                         ],
                     ],
                 ),
-                Set(
-                    "Mods supposed to be on Modrinth, but not found",
+                MissingMods(
                     {"baz.jar"},
                 ),
                 IncompatibleMods(
@@ -747,8 +746,7 @@ class TestList:
                         ],
                     ],
                 ),
-                Set(
-                    "Mods supposed to be on Modrinth, but not found",
+                MissingMods(
                     {"baz.jar"},
                 ),
                 IncompatibleMods(

@@ -1,14 +1,13 @@
 import csv
 import io
 from abc import ABC, abstractmethod
-from collections.abc import Sequence
-from collections.abc import Set as AbstractSet
+from collections.abc import Sequence, Set
 
 import tabulate
 from attrs import field, frozen
 
 
-def _frozenset_converter(data: AbstractSet[str]) -> frozenset[str]:
+def _frozenset_converter(data: Set[str]) -> frozenset[str]:
     return frozenset(data)
 
 
@@ -35,15 +34,14 @@ class List(Element):
 
 
 @frozen
-class Set(Element):
-    title: str
-    data: frozenset[str] = field(converter=_frozenset_converter)
+class MissingMods(Element):
+    mods: frozenset[str] = field(converter=_frozenset_converter)
 
     def render(self) -> str:
         out = []
-        if self.data:
-            out.append(f"{self.title}:")
-            out += ["  " + item for item in sorted(self.data, key=lambda i: i.lower())]
+        if self.mods:
+            out.append("Mods supposed to be on Modrinth, but not found:")
+            out += ["  " + item for item in sorted(self.mods, key=lambda i: i.lower())]
         return "\n".join(out)
 
 

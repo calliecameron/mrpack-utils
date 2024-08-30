@@ -1,10 +1,9 @@
-from collections.abc import Sequence
-from collections.abc import Set as AbstractSet
+from collections.abc import Sequence, Set
 
 from frozendict import frozendict
 
 from mrpack_utils.mods import GameVersion, Mod, Modpack
-from mrpack_utils.output import Element, IncompatibleMods, Set, Table
+from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table
 
 IncompatibleModMap = frozendict[GameVersion, frozenset[Mod]]
 
@@ -21,7 +20,7 @@ _SOURCE = "Source"
 _ISSUES = "Issues"
 
 
-def _headers(game_versions: AbstractSet[GameVersion], dev: bool) -> list[str]:
+def _headers(game_versions: Set[GameVersion], dev: bool) -> list[str]:
     out = [_NAME, _LINK, _INSTALLED_VERSION, _CLIENT, _SERVER, _LATEST_GAME_VERSION] + [
         str(version) for version in sorted(game_versions)
     ]
@@ -49,7 +48,7 @@ def _modpack_data(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
 
 def _mods(
     modpack: Modpack,
-    game_versions: AbstractSet[GameVersion],
+    game_versions: Set[GameVersion],
     dev: bool,
 ) -> tuple[list[list[str]], IncompatibleModMap]:
     incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
@@ -87,7 +86,7 @@ def _mods(
 
 def _unknown_mods(
     modpack: Modpack,
-    game_versions: AbstractSet[GameVersion],
+    game_versions: Set[GameVersion],
     dev: bool,
 ) -> list[list[str]]:
     out = []
@@ -121,7 +120,7 @@ def _other_files(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
 
 def run(
     mrpack_file: str,
-    game_versions: AbstractSet[GameVersion],
+    game_versions: Set[GameVersion],
     dev: bool,
 ) -> tuple[Element, ...]:
     (modpack,) = Modpack.from_files(mrpack_file)
@@ -145,7 +144,7 @@ def run(
                     *other_files,
                 ],
             ),
-            Set("Mods supposed to be on Modrinth, but not found", modpack.missing_mods),
+            MissingMods(modpack.missing_mods),
         ]
         + [
             IncompatibleMods(

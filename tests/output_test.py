@@ -1,4 +1,4 @@
-from mrpack_utils.output import IncompatibleMods, List, Set, Table, render, render_csv
+from mrpack_utils.output import IncompatibleMods, List, MissingMods, Table, render, render_csv
 
 # ruff: noqa: E741
 
@@ -14,19 +14,17 @@ class TestList:
         assert l.render() == "a\nc\nb"
 
 
-class TestSet:
+class TestMissingMods:
     def test_render(self) -> None:
-        s = Set("foo", set())
-        assert s.title == "foo"
-        assert s.data == frozenset()
-        assert s.render() == ""
+        m = MissingMods(set())
+        assert m.mods == frozenset()
+        assert m.render() == ""
 
-        s = Set("foo", {"a", "c", "b"})
-        assert s.title == "foo"
-        assert s.data == frozenset(["a", "b", "c"])
+        m = MissingMods({"a", "c", "b"})
+        assert m.mods == frozenset(["a", "b", "c"])
         assert (
-            s.render()
-            == """foo:
+            m.render()
+            == """Mods supposed to be on Modrinth, but not found:
   a
   b
   c"""
@@ -153,8 +151,8 @@ class TestRender:
                 mods={"B", "A"},
                 curseforge_warning=False,
             ),
-            Set("foo", set()),
-            Set("foo", {"a", "c", "b"}),
+            MissingMods(set()),
+            MissingMods({"a", "c", "b"}),
             Table(
                 [
                     ["A", "B"],
@@ -176,7 +174,7 @@ For version 1.19.2:
     A
     B
 
-foo:
+Mods supposed to be on Modrinth, but not found:
   a
   b
   c
