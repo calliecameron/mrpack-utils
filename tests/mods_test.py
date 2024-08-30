@@ -108,22 +108,22 @@ class TestMod:
     def test_properties(self) -> None:
         m = Mod(
             name="Foo",
-            slug="foo",
+            slug="foo bar",
             version="1.2",
             original_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
             overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
             mod_license="MIT",
-            source_url="example.com",
+            source_url="https://example.com/a b",
             issues_url="example2.com",
             game_versions=frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         assert m.name == "Foo"
-        assert m.link == "https://modrinth.com/mod/foo"
+        assert m.link == "https://modrinth.com/mod/foo%20bar"
         assert m.version == "1.2"
         assert m.original_env == Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)
         assert m.overridden_env == Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED)
         assert m.mod_license == "MIT"
-        assert m.source_url == "example.com"
+        assert m.source_url == "https://example.com/a%20b"
         assert m.issues_url == "example2.com"
         assert m.game_versions == frozenset([GameVersion("1.20"), GameVersion("1.19.4")])
         assert m.latest_game_version == GameVersion("1.20")

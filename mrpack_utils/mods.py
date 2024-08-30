@@ -11,6 +11,7 @@ from typing import Any, TypeAlias, cast
 
 import requests
 from frozendict import frozendict
+from requests.utils import requote_uri
 
 
 class ModpackError(Exception):
@@ -227,13 +228,13 @@ class Mod:
     ) -> None:
         super().__init__()
         self._name = name
-        self._link = "https://modrinth.com/mod/" + slug
+        self._link = requote_uri("https://modrinth.com/mod/" + slug)
         self._version = version
         self._original_env = original_env
         self._overridden_env = overridden_env
         self._mod_license = mod_license
-        self._source_url = source_url
-        self._issues_url = issues_url
+        self._source_url = requote_uri(source_url)
+        self._issues_url = requote_uri(issues_url)
         self._game_versions = frozenset(game_versions)
         self._latest_game_version = max(self._game_versions)
 
@@ -389,8 +390,9 @@ class Modpack:
                         server=Requirement.from_str(project.get("server_side", "")),
                     ),
                     mod_license="" if "license" not in project else project["license"]["id"],
-                    source_url=project.get("source_url", ""),
-                    issues_url=project.get("issues_url", ""),
+                    # Sometimes the API returns None for these - force them to be strings
+                    source_url=project.get("source_url", "") or "",
+                    issues_url=project.get("issues_url", "") or "",
                     game_versions=GameVersion.from_list(project["game_versions"]),
                 )
             except Exception as e:  # noqa: PERF203  # pragma nocover
