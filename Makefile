@@ -12,13 +12,19 @@ test: testdata
 	pytest --cov-report=term-missing --cov=mrpack_utils tests
 
 .PHONY: testdata
-testdata: testdata/test1.mrpack
+testdata: testdata/test1.mrpack testdata/test2.mrpack
 
 TESTDATA1 := $(shell find testdata/test1 -type f -printf '%P\n')
 TESTDATA1_DEPS := $(addprefix testdata/test1/,$(TESTDATA))
 
 testdata/test1.mrpack: $(TESTDATA1_DEPS)
-	cd testdata/test1 && zip test1.mrpack $(TESTDATA1) && mv test1.mrpack ..
+	cd testdata/test1 && zip ../test1.mrpack $(TESTDATA1)
+
+TESTDATA2 := $(shell find testdata/test2 -type f -printf '%P\n')
+TESTDATA2_DEPS := $(addprefix testdata/test2/,$(TESTDATA))
+
+testdata/test2.mrpack: $(TESTDATA2_DEPS)
+	cd testdata/test2 && zip ../test2.mrpack $(TESTDATA2)
 
 SUBDIR_ROOTS := mrpack_utils testdata tests
 DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)

@@ -1,0 +1,35 @@
+{
+    "formatVersion": 1,
+    "name": "Test Modpack",
+    "versionId": "1.2",
+    "game": "minecraft",
+    "files": [
+        {
+            "path": "mods/foo.jar",
+            "hashes": {
+                "sha512": "abcd2"
+            },
+            "env": {
+                "client": "required",
+                "server": "optional"
+            }
+        },
+        {
+            "path": "mods/quux.jar",
+            "hashes": {
+                "sha512": "lmno"
+            }
+        },
+        {
+            "path": "mods/baz.jar",
+            "hashes": {
+                "sha512": "pqrs"
+            }
+        }
+    ],
+    "dependencies": {
+        "minecraft": "1.19.4",
+        "fabric-loader": "0.17",
+        "foo": "2"
+    }
+}
