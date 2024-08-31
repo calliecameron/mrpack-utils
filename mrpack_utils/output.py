@@ -11,10 +11,6 @@ def _frozenset_converter(data: Set[str]) -> frozenset[str]:
     return frozenset(data)
 
 
-def _tuple_converter(data: Sequence[str]) -> tuple[str, ...]:
-    return tuple(data)
-
-
 def _table_converter(data: Sequence[Sequence[str]]) -> tuple[tuple[str, ...], ...]:
     return tuple(tuple(row) for row in data)
 
@@ -23,26 +19,6 @@ class Element(ABC):
     @abstractmethod
     def render(self) -> str:  # pragma nocover
         raise NotImplementedError
-
-
-@frozen
-class List(Element):
-    data: tuple[str, ...] = field(converter=_tuple_converter)
-
-    def render(self) -> str:
-        return "\n".join(self.data)
-
-
-@frozen
-class MissingMods(Element):
-    mods: frozenset[str] = field(converter=_frozenset_converter)
-
-    def render(self) -> str:
-        out = []
-        if self.mods:
-            out.append("Mods supposed to be on Modrinth, but not found:")
-            out += ["  " + item for item in sorted(self.mods, key=lambda i: i.lower())]
-        return "\n".join(out)
 
 
 @frozen
@@ -56,6 +32,18 @@ class Table(Element):
         with io.StringIO() as f:
             csv.writer(f, lineterminator="\n").writerows(self.data)
             return f.getvalue().rstrip()
+
+
+@frozen
+class MissingMods(Element):
+    mods: frozenset[str] = field(converter=_frozenset_converter)
+
+    def render(self) -> str:
+        out = []
+        if self.mods:
+            out.append("Mods supposed to be on Modrinth, but not found:")
+            out += ["  " + item for item in sorted(self.mods, key=lambda i: i.lower())]
+        return "\n".join(out)
 
 
 @frozen

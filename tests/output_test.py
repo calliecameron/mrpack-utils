@@ -1,34 +1,6 @@
-from mrpack_utils.output import IncompatibleMods, List, MissingMods, Table, render, render_csv
+from mrpack_utils.output import IncompatibleMods, MissingMods, Table, render, render_csv
 
 # ruff: noqa: E741
-
-
-class TestList:
-    def test_render(self) -> None:
-        l = List([])
-        assert l.data == ()
-        assert l.render() == ""
-
-        l = List(["a", "c", "b"])
-        assert l.data == ("a", "c", "b")
-        assert l.render() == "a\nc\nb"
-
-
-class TestMissingMods:
-    def test_render(self) -> None:
-        m = MissingMods(set())
-        assert m.mods == frozenset()
-        assert m.render() == ""
-
-        m = MissingMods({"a", "c", "b"})
-        assert m.mods == frozenset(["a", "b", "c"])
-        assert (
-            m.render()
-            == """Mods supposed to be on Modrinth, but not found:
-  a
-  b
-  c"""
-        )
 
 
 class TestTable:
@@ -70,6 +42,23 @@ class TestTable:
             == """A,B
 a,b
 c,d"""
+        )
+
+
+class TestMissingMods:
+    def test_render(self) -> None:
+        m = MissingMods(set())
+        assert m.mods == frozenset()
+        assert m.render() == ""
+
+        m = MissingMods({"a", "c", "b"})
+        assert m.mods == frozenset(["a", "b", "c"])
+        assert (
+            m.render()
+            == """Mods supposed to be on Modrinth, but not found:
+  a
+  b
+  c"""
         )
 
 
@@ -144,7 +133,6 @@ class TestIncompatibleMods:
 class TestRender:
     def test_render(self) -> None:
         data = [
-            List(["a", "c", "b"]),
             IncompatibleMods(
                 num_mods=10,
                 game_version="1.19.2",
@@ -165,11 +153,7 @@ class TestRender:
         assert render([]) == ""
         assert (
             render(data)
-            == """a
-c
-b
-
-For version 1.19.2:
+            == """For version 1.19.2:
   2 out of 10 mods are incompatible with this version:
     A
     B
