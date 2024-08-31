@@ -43,7 +43,10 @@ def _modpack_data(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
     return [
         _row("modpack: " + modpack.name, modpack.version),
         _row("minecraft", str(modpack.game_version)),
-    ] + [_row(name, version) for (name, version) in sorted(modpack.dependencies.items())]
+    ] + [
+        _row(name, version)
+        for (name, version) in sorted(modpack.dependencies.items(), key=lambda i: i[0].lower())
+    ]
 
 
 def _mods(
@@ -91,7 +94,7 @@ def _unknown_mods(
 ) -> list[list[str]]:
     out = []
     versions = ["check manually"] * len(game_versions)
-    for name, version in sorted(modpack.unknown_mods.items()):
+    for name, version in sorted(modpack.unknown_mods.items(), key=lambda i: i[0].lower()):
         row = [
             name,
             "unknown - probably CurseForge",
@@ -109,7 +112,7 @@ def _unknown_mods(
 
 def _other_files(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
     out = []
-    for name, version in sorted(modpack.other_files.items()):
+    for name, version in sorted(modpack.other_files.items(), key=lambda i: i[0].lower()):
         row = _empty_row(headers)
         row[headers.index(_NAME)] = name
         row[headers.index(_INSTALLED_VERSION)] = version

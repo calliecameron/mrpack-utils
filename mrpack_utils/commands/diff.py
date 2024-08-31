@@ -12,9 +12,9 @@ def _diff(old: Mapping[str, str], new: Mapping[str, str]) -> list[tuple[str, str
     updated_keys = {k for k in kept_keys if new[k] != old[k]}
 
     return [
-        *[(k, old[k], new[k]) for k in sorted(updated_keys)],
-        *[(k, "", new[k]) for k in sorted(added_keys)],
-        *[(k, old[k], "") for k in sorted(removed_keys)],
+        *[(k, old[k], new[k]) for k in sorted(updated_keys, key=lambda s: s.lower())],
+        *[(k, "", new[k]) for k in sorted(added_keys, key=lambda s: s.lower())],
+        *[(k, old[k], "") for k in sorted(removed_keys, key=lambda s: s.lower())],
     ]
 
 

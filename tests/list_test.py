@@ -79,7 +79,7 @@ class TestList:
             name="Test Modpack",
             version="1",
             game_version=GameVersion("1.19.4"),
-            dependencies={"foo": "1", "fabric-loader": "0.16"},
+            dependencies={"Foo": "1", "fabric-loader": "0.16"},
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -89,7 +89,7 @@ class TestList:
             ["modpack: Test Modpack", "", "1", "", "", "", ""],
             ["minecraft", "", "1.19.4", "", "", "", ""],
             ["fabric-loader", "", "0.16", "", "", "", ""],
-            ["foo", "", "1", "", "", "", ""],
+            ["Foo", "", "1", "", "", "", ""],
         ]
 
     def test_mods(self) -> None:
@@ -208,7 +208,7 @@ class TestList:
             dependencies={},
             mods={},
             missing_mods=set(),
-            unknown_mods={"foo": "a", "bar": "b"},
+            unknown_mods={"Foo": "a", "bar": "b"},
             other_files={},
         )
 
@@ -223,7 +223,7 @@ class TestList:
                 "check manually",
             ],
             [
-                "foo",
+                "Foo",
                 "unknown - probably CurseForge",
                 "a",
                 "unknown",
@@ -249,7 +249,7 @@ class TestList:
                 "",
             ],
             [
-                "foo",
+                "Foo",
                 "unknown - probably CurseForge",
                 "a",
                 "unknown",
@@ -273,11 +273,11 @@ class TestList:
             mods={},
             missing_mods=set(),
             unknown_mods={},
-            other_files={"foo": "a", "bar": "b"},
+            other_files={"Foo": "a", "bar": "b"},
         )
         assert _other_files(modpack, _headers({GameVersion("1.19.2")}, False)) == [
             ["bar", "non-mod file", "b", "", "", "", ""],
-            ["foo", "non-mod file", "a", "", "", "", ""],
+            ["Foo", "non-mod file", "a", "", "", "", ""],
         ]
 
     def test_run_normal(self) -> None:
