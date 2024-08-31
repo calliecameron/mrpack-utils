@@ -1,6 +1,7 @@
 *~
 __pycache__/
-.env
-.coverage
-testdata/*.mrpack
-.deps-installed
+/.env
+/.coverage
+/testdata/*.mrpack
+/.deps-installed
+/.vscode
