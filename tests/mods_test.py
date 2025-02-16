@@ -12,6 +12,8 @@ from mrpack_utils.mods import (
     _MrpackFile,
 )
 
+# ruff: noqa: S101,PT011
+
 
 class TestRequirement:
     def test_from_str(self) -> None:

@@ -3,6 +3,8 @@ import requests_mock
 
 from mrpack_utils.main import main
 
+# ruff: noqa: S101
+
 
 class TestMain:
     def test_list_normal(self, capsys: pytest.CaptureFixture[str]) -> None:

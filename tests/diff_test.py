@@ -11,6 +11,8 @@ from mrpack_utils.commands.diff import (
 from mrpack_utils.mods import Env, GameVersion, Mod, Modpack, Requirement
 from mrpack_utils.output import MissingMods, Table
 
+# ruff: noqa: S101
+
 
 class TestDiff:
     def test_diff(self) -> None:

@@ -7,7 +7,7 @@ import zipfile
 from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any, TypeAlias, cast
+from typing import Any, cast
 
 import requests
 from frozendict import frozendict
@@ -18,8 +18,8 @@ class ModpackError(Exception):
     pass
 
 
-VersionHash: TypeAlias = str
-ProjectID: TypeAlias = str
+type VersionHash = str
+type ProjectID = str
 
 
 class Requirement(Enum):
@@ -395,7 +395,7 @@ class Modpack:
                     issues_url=project.get("issues_url", "") or "",
                     game_versions=GameVersion.from_list(project["game_versions"]),
                 )
-            except Exception as e:  # noqa: PERF203  # pragma nocover
+            except Exception as e:  # pragma nocover
                 raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
 
         modpacks = []

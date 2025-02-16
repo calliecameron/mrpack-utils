@@ -18,6 +18,8 @@ from mrpack_utils.mods import (
 )
 from mrpack_utils.output import IncompatibleMods, MissingMods, Table
 
+# ruff: noqa: S101
+
 
 class TestList:
     def test_headers(self) -> None:

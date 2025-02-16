@@ -1,6 +1,6 @@
 from mrpack_utils.output import IncompatibleMods, MissingMods, Table, render, render_csv
 
-# ruff: noqa: E741
+# ruff: noqa: E741,S101
 
 
 class TestTable:
