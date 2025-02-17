@@ -3,7 +3,7 @@ from collections.abc import Sequence, Set
 from frozendict import frozendict
 
 from mrpack_utils.mods import GameVersion, Mod, Modpack
-from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table
+from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
 
 IncompatibleModMap = frozendict[GameVersion, frozenset[Mod]]
 
@@ -147,6 +147,7 @@ def run(
                     *other_files,
                 ],
             ),
+            UnknownDependencies(modpack.unknown_dependencies),
             MissingMods(modpack.missing_mods),
         ]
         + [

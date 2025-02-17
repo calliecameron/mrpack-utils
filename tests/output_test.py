@@ -1,4 +1,11 @@
-from mrpack_utils.output import IncompatibleMods, MissingMods, Table, render, render_csv
+from mrpack_utils.output import (
+    IncompatibleMods,
+    MissingMods,
+    Table,
+    UnknownDependencies,
+    render,
+    render_csv,
+)
 
 # ruff: noqa: E741,S101
 
@@ -42,6 +49,23 @@ class TestTable:
             == """A,B
 a,b
 c,d"""
+        )
+
+
+class TestUnknownDependencies:
+    def test_render(self) -> None:
+        d = UnknownDependencies(set())
+        assert d.unknown_dependencies == frozenset()
+        assert d.render() == ""
+
+        d = UnknownDependencies({"a", "c", "b"})
+        assert d.unknown_dependencies == frozenset(["a", "b", "c"])
+        assert (
+            d.render()
+            == """Modpack dependencies not corresponding to any known mod loader:
+  a
+  b
+  c"""
         )
 
 

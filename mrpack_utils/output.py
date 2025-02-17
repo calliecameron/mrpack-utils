@@ -35,6 +35,20 @@ class Table(Element):
 
 
 @frozen
+class UnknownDependencies(Element):
+    unknown_dependencies: frozenset[str] = field(converter=_frozenset_converter)
+
+    def render(self) -> str:
+        out = []
+        if self.unknown_dependencies:
+            out.append("Modpack dependencies not corresponding to any known mod loader:")
+            out += [
+                "  " + item for item in sorted(self.unknown_dependencies, key=lambda i: i.lower())
+            ]
+        return "\n".join(out)
+
+
+@frozen
 class MissingMods(Element):
     mods: frozenset[str] = field(converter=_frozenset_converter)
 

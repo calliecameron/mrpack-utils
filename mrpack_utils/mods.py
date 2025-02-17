@@ -94,6 +94,15 @@ class GameVersion:
 
 
 class _MrpackFile:
+    _LOADERS = frozendict(
+        {
+            "forge": "forge",
+            "neoforge": "neoforge",
+            "fabric-loader": "fabric",
+            "quilt-loader": "quilt",
+        },
+    )
+
     def __init__(
         self,
         *,
@@ -101,6 +110,8 @@ class _MrpackFile:
         version: str,
         game_version: GameVersion,
         dependencies: Mapping[str, str],
+        loaders: Set[str],
+        unknown_dependencies: Set[str],
         mod_hashes: Set[VersionHash],
         mod_jars: Mapping[VersionHash, str],
         mod_envs: Mapping[VersionHash, Env],
@@ -112,6 +123,8 @@ class _MrpackFile:
         self._version = version
         self._game_version = game_version
         self._dependencies = frozendict(dependencies)
+        self._loaders = frozenset(loaders)
+        self._unknown_dependencies = frozenset(unknown_dependencies)
         self._mod_hashes = frozenset(mod_hashes)
         self._mod_jars = frozendict(mod_jars)
         self._mod_envs = frozendict(mod_envs)
@@ -133,6 +146,14 @@ class _MrpackFile:
     @property
     def dependencies(self) -> frozendict[str, str]:
         return self._dependencies
+
+    @property
+    def loaders(self) -> frozenset[str]:
+        return self._loaders
+
+    @property
+    def unknown_dependencies(self) -> frozenset[str]:
+        return self._unknown_dependencies
 
     @property
     def mod_hashes(self) -> frozenset[VersionHash]:
@@ -180,11 +201,22 @@ class _MrpackFile:
             game_version = dependencies["minecraft"]
             del dependencies["minecraft"]
 
+            # 'minecraft' is used for resource packs, and is always a valid loader
+            loaders = {"minecraft"}
+            unknown_dependencies = set()
+            for dep in sorted(dependencies):
+                if dep in _MrpackFile._LOADERS:
+                    loaders.add(_MrpackFile._LOADERS[dep])
+                else:
+                    unknown_dependencies.add(dep)
+
             return _MrpackFile(
                 name=j["name"],
                 version=j["versionId"],
                 game_version=GameVersion(game_version),
                 dependencies=dependencies,
+                loaders=loaders,
+                unknown_dependencies=unknown_dependencies,
                 mod_hashes=frozenset(file["hashes"]["sha512"] for file in j["files"]),
                 mod_jars={
                     file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]
@@ -290,6 +322,8 @@ class Modpack:
         version: str,
         game_version: GameVersion,
         dependencies: Mapping[str, str],
+        loaders: Set[str],
+        unknown_dependencies: Set[str],
         mods: Mapping[ProjectID, Mod],
         missing_mods: Set[str],
         unknown_mods: Mapping[str, str],
@@ -300,6 +334,8 @@ class Modpack:
         self._version = version
         self._game_version = game_version
         self._dependencies = frozendict(dependencies)
+        self._loaders = frozenset(loaders)
+        self._unknown_dependencies = frozenset(unknown_dependencies)
         self._mods = frozendict(mods)
         self._missing_mods = frozenset(missing_mods)
         self._unknown_mods = frozendict(unknown_mods)
@@ -320,6 +356,14 @@ class Modpack:
     @property
     def dependencies(self) -> frozendict[str, str]:
         return self._dependencies
+
+    @property
+    def loaders(self) -> frozenset[str]:
+        return self._loaders
+
+    @property
+    def unknown_dependencies(self) -> frozenset[str]:
+        return self._unknown_dependencies
 
     @property
     def mods(self) -> frozendict[ProjectID, Mod]:
@@ -425,6 +469,8 @@ class Modpack:
                     version=mrpack.version,
                     game_version=mrpack.game_version,
                     dependencies=mrpack.dependencies,
+                    loaders=mrpack.loaders,
+                    unknown_dependencies=mrpack.unknown_dependencies,
                     mods=mods,
                     missing_mods=missing_mods,
                     unknown_mods=mrpack.unknown_mods,

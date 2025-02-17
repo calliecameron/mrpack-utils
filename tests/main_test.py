@@ -101,6 +101,9 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,
 | overrides/config/foo.txt            | non-mod file                  | 7e3265a8            |             |             |                       |                |                |
 | server-overrides/config/bar.txt     | non-mod file                  | 04a2b3e9            |             |             |                       |                |                |
 
+Modpack dependencies not corresponding to any known mod loader:
+  foo
+
 Mods supposed to be on Modrinth, but not found:
   baz.jar
 
@@ -207,6 +210,9 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,,,,,,
 | server-overrides/mods/bar-1.0.0.jar | unknown - probably CurseForge | 7123eea6            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |             |              |
 | overrides/config/foo.txt            | non-mod file                  | 7e3265a8            |             |             |                       |                |                |           |                   |                   |             |              |
 | server-overrides/config/bar.txt     | non-mod file                  | 04a2b3e9            |             |             |                       |                |                |           |                   |                   |             |              |
+
+Modpack dependencies not corresponding to any known mod loader:
+  foo
 
 Mods supposed to be on Modrinth, but not found:
   baz.jar
@@ -348,6 +354,9 @@ overrides/config/foo.txt,7e3265a8,
 | server-overrides/config/bar.txt     | 04a2b3e9 | a472c297 |
 | overrides/config/baz.txt            |          | cc7b39e1 |
 | overrides/config/foo.txt            | 7e3265a8 |          |
+
+Modpack dependencies not corresponding to any known mod loader:
+  foo
 
 Mods supposed to be on Modrinth, but not found:
   baz.jar

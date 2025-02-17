@@ -9,7 +9,7 @@ from mrpack_utils.commands.diff import (
     run,
 )
 from mrpack_utils.mods import Env, GameVersion, Mod, Modpack, Requirement
-from mrpack_utils.output import MissingMods, Table
+from mrpack_utils.output import MissingMods, Table, UnknownDependencies
 
 # ruff: noqa: S101
 
@@ -50,6 +50,8 @@ class TestDiff:
                 "A": "1",
                 "B": "1",
             },
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -63,6 +65,8 @@ class TestDiff:
                 "A": "2",
                 "C": "1",
             },
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -130,6 +134,8 @@ class TestDiff:
             version="1",
             game_version=GameVersion("1.19.2"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={"A": mod1_1, "B": mod2},
             missing_mods=set(),
             unknown_mods={},
@@ -140,6 +146,8 @@ class TestDiff:
             version="2",
             game_version=GameVersion("1.19.2"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={"A": mod1_2, "C": mod3},
             missing_mods=set(),
             unknown_mods={},
@@ -159,6 +167,8 @@ class TestDiff:
             version="1",
             game_version=GameVersion("1.19.2"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={
@@ -172,6 +182,8 @@ class TestDiff:
             version="2",
             game_version=GameVersion("1.19.4"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={
@@ -194,6 +206,8 @@ class TestDiff:
             version="1",
             game_version=GameVersion("1.19.2"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -207,6 +221,8 @@ class TestDiff:
             version="2",
             game_version=GameVersion("1.19.4"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -332,5 +348,6 @@ class TestDiff:
                         ("overrides/config/foo.txt", "7e3265a8", ""),
                     ],
                 ),
+                UnknownDependencies({"foo"}),
                 MissingMods({"baz.jar"}),
             )

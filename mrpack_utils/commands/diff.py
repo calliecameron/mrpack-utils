@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 
 from mrpack_utils.mods import Modpack
-from mrpack_utils.output import Element, MissingMods, Table
+from mrpack_utils.output import Element, MissingMods, Table, UnknownDependencies
 
 
 def _diff(old: Mapping[str, str], new: Mapping[str, str]) -> list[tuple[str, str, str]]:
@@ -58,5 +58,6 @@ def run(old_file: str, new_file: str) -> tuple[Element, ...]:
                 *_other_files(old, new),
             ],
         ),
+        UnknownDependencies(old.unknown_dependencies | new.unknown_dependencies),
         MissingMods(old.missing_mods | new.missing_mods),
     )

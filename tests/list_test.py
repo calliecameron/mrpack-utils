@@ -16,7 +16,7 @@ from mrpack_utils.mods import (
     Modpack,
     Requirement,
 )
-from mrpack_utils.output import IncompatibleMods, MissingMods, Table
+from mrpack_utils.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
 
 # ruff: noqa: S101
 
@@ -82,6 +82,8 @@ class TestList:
             version="1",
             game_version=GameVersion("1.19.4"),
             dependencies={"Foo": "1", "fabric-loader": "0.16"},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -122,6 +124,8 @@ class TestList:
             version="1",
             game_version=GameVersion("1.19.4"),
             dependencies={"foo": "1", "fabric-loader": "0.16"},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={"abcd": foo, "fedc": bar},
             missing_mods=frozenset(),
             unknown_mods={},
@@ -208,6 +212,8 @@ class TestList:
             version="1",
             game_version=GameVersion("1.19.4"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={"Foo": "a", "bar": "b"},
@@ -272,6 +278,8 @@ class TestList:
             version="1",
             game_version=GameVersion("1.19.4"),
             dependencies={},
+            loaders=set(),
+            unknown_dependencies=set(),
             mods={},
             missing_mods=set(),
             unknown_mods={},
@@ -473,6 +481,9 @@ class TestList:
                             "",
                         ],
                     ],
+                ),
+                UnknownDependencies(
+                    {"foo"},
                 ),
                 MissingMods(
                     {"baz.jar"},
@@ -747,6 +758,9 @@ class TestList:
                             "",
                         ],
                     ],
+                ),
+                UnknownDependencies(
+                    {"foo"},
                 ),
                 MissingMods(
                     {"baz.jar"},
