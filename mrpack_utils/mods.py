@@ -18,7 +18,7 @@ class ModpackError(Exception):
     pass
 
 
-type VersionHash = str
+type _FileHash = str
 type ProjectID = str
 
 
@@ -112,9 +112,9 @@ class _MrpackFile:
         dependencies: Mapping[str, str],
         loaders: Set[str],
         unknown_dependencies: Set[str],
-        mod_hashes: Set[VersionHash],
-        mod_jars: Mapping[VersionHash, str],
-        mod_envs: Mapping[VersionHash, Env],
+        mod_hashes: Set[_FileHash],
+        mod_jars: Mapping[_FileHash, str],
+        mod_envs: Mapping[_FileHash, Env],
         unknown_mods: Mapping[str, str],
         other_files: Mapping[str, str],
     ) -> None:
@@ -156,15 +156,15 @@ class _MrpackFile:
         return self._unknown_dependencies
 
     @property
-    def mod_hashes(self) -> frozenset[VersionHash]:
+    def mod_hashes(self) -> frozenset[_FileHash]:
         return self._mod_hashes
 
     @property
-    def mod_jars(self) -> frozendict[VersionHash, str]:
+    def mod_jars(self) -> frozendict[_FileHash, str]:
         return self._mod_jars
 
     @property
-    def mod_envs(self) -> frozendict[VersionHash, Env]:
+    def mod_envs(self) -> frozendict[_FileHash, Env]:
         return self._mod_envs
 
     @property
@@ -382,9 +382,9 @@ class Modpack:
         return self._other_files
 
     @staticmethod
-    def _fetch_versions(
-        hashes: Set[VersionHash],
-    ) -> tuple[dict[VersionHash, dict[str, Any]], frozenset[VersionHash]]:
+    def _fetch_file_info(
+        hashes: Set[_FileHash],
+    ) -> tuple[dict[_FileHash, dict[str, Any]], frozenset[_FileHash]]:
         versions_response = requests.post(
             "https://api.modrinth.com/v2/version_files",
             json={"hashes": sorted(hashes), "algorithm": "sha512"},
@@ -404,8 +404,8 @@ class Modpack:
         return versions, known_hashes
 
     @staticmethod
-    def _fetch_projects(versions: Mapping[VersionHash, Mapping[str, Any]]) -> list[dict[str, Any]]:
-        ids = {versions[mod_hash]["project_id"] for mod_hash in versions}
+    def _fetch_projects(file_info: Mapping[_FileHash, Mapping[str, Any]]) -> list[dict[str, Any]]:
+        ids = {file_info[mod_hash]["project_id"] for mod_hash in file_info}
         projects_response = requests.get(
             "https://api.modrinth.com/v2/projects",
             {"ids": "[" + ", ".join(f'"{mod_id}"' for mod_id in sorted(ids)) + "]"},
@@ -416,12 +416,12 @@ class Modpack:
 
     @staticmethod
     def _load(*mrpacks: _MrpackFile) -> "tuple[Modpack, ...]":
-        all_hashes: set[VersionHash] = set()
+        all_hashes: set[_FileHash] = set()
         for mrpack in mrpacks:
             all_hashes |= mrpack.mod_hashes
 
-        versions, known_hashes = Modpack._fetch_versions(all_hashes)
-        projects = Modpack._fetch_projects(versions)
+        file_info, known_hashes = Modpack._fetch_file_info(all_hashes)
+        projects = Modpack._fetch_projects(file_info)
 
         mod_stubs = {}
         for project in projects:
@@ -448,12 +448,12 @@ class Modpack:
             missing_mods = set()
             for mod_hash in mrpack.mod_hashes:
                 if mod_hash in known_hashes:
-                    mod_id = versions[mod_hash]["project_id"]
+                    mod_id = file_info[mod_hash]["project_id"]
                     mod_stub = mod_stubs[mod_id]
                     mods[mod_id] = Mod(
                         name=mod_stub.name,
                         slug=mod_stub.slug,
-                        version=versions[mod_hash]["version_number"],
+                        version=file_info[mod_hash]["version_number"],
                         original_env=mod_stub.env,
                         overridden_env=mrpack.mod_envs.get(mod_hash, mod_stub.env),
                         mod_license=mod_stub.mod_license,
