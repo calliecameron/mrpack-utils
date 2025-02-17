@@ -332,7 +332,6 @@ class TestList:
                         "id": "baz",
                         "title": "Foo",
                         "slug": "foo",
-                        "game_versions": ["1.19.2", "1.20"],
                         "client_side": "optional",
                         "server_side": "required",
                         "license": {"id": "MIT"},
@@ -343,6 +342,35 @@ class TestList:
                         "id": "quux",
                         "title": "Bar",
                         "slug": "bar",
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/baz/version?loaders=["fabric", "minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "AA",
+                        "project_id": "baz",
+                        "loaders": ["fabric"],
+                        "game_versions": ["1.19.2"],
+                    },
+                    {
+                        "id": "BB",
+                        "project_id": "baz",
+                        "loaders": ["fabric", "minecraft"],
+                        "game_versions": ["1.20"],
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/quux/version?loaders=["fabric", "minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "CC",
+                        "project_id": "quux",
+                        "loaders": ["minecraft"],
                         "game_versions": ["1.19.4"],
                     },
                 ],
@@ -544,7 +572,6 @@ class TestList:
                         "id": "baz",
                         "title": "Foo",
                         "slug": "foo",
-                        "game_versions": ["1.19.2", "1.20"],
                         "client_side": "optional",
                         "server_side": "required",
                         "license": {"id": "MIT"},
@@ -555,6 +582,35 @@ class TestList:
                         "id": "quux",
                         "title": "Bar",
                         "slug": "bar",
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/baz/version?loaders=["fabric", "minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "AA",
+                        "project_id": "baz",
+                        "loaders": ["fabric"],
+                        "game_versions": ["1.19.2"],
+                    },
+                    {
+                        "id": "BB",
+                        "project_id": "baz",
+                        "loaders": ["fabric", "minecraft"],
+                        "game_versions": ["1.20"],
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/quux/version?loaders=["fabric", "minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "CC",
+                        "project_id": "quux",
+                        "loaders": ["minecraft"],
                         "game_versions": ["1.19.4"],
                     },
                 ],

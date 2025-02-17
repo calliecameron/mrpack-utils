@@ -3,8 +3,9 @@ import functools
 import json
 import pathlib
 import re
+import sys
 import zipfile
-from collections.abc import Mapping, Sequence, Set
+from collections.abc import Iterable, Mapping, Sequence, Set
 from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Any, cast
@@ -20,6 +21,7 @@ class ModpackError(Exception):
 
 type _FileHash = str
 type ProjectID = str
+type _VersionID = str
 
 
 class Requirement(Enum):
@@ -84,7 +86,7 @@ class GameVersion:
         return ".".join(str(segment) for segment in self._version)
 
     @staticmethod
-    def from_list(versions: Sequence[str]) -> "frozenset[GameVersion]":
+    def from_iterable(versions: Iterable[str]) -> "frozenset[GameVersion]":
         # We deliberately skip over any versions that don't parse
         out = set()
         for version in versions:
@@ -241,7 +243,7 @@ class _ModStub:
     mod_license: str
     source_url: str
     issues_url: str
-    game_versions: Set[GameVersion]
+    versions: Set[_VersionID]
 
 
 class Mod:
@@ -415,13 +417,39 @@ class Modpack:
         return cast(list[dict[str, Any]], projects_response.json())
 
     @staticmethod
+    def _fetch_versions(
+        projects: Sequence[Mapping[str, Any]],
+        loaders: Set[str],
+    ) -> dict[_VersionID, dict[str, Any]]:
+        loaders_param = "[" + ", ".join(f'"{loader}"' for loader in sorted(loaders)) + "]"
+        versions = {}
+        for i, project in enumerate(sorted(projects, key=lambda p: p["title"].lower())):
+            sys.stderr.write(
+                f"Fetching versions for mod {i + 1} of {len(projects)}: {project['title']}...\n",
+            )
+            versions_response = requests.get(
+                f"https://api.modrinth.com/v2/project/{project['id']}/version",
+                {
+                    "loaders": loaders_param,
+                },
+                timeout=10,
+            )
+            versions_response.raise_for_status()
+            for version in versions_response.json():
+                versions[version["id"]] = version
+        return cast(dict[_VersionID, dict[str, Any]], versions)
+
+    @staticmethod
     def _load(*mrpacks: _MrpackFile) -> "tuple[Modpack, ...]":
         all_hashes: set[_FileHash] = set()
+        loaders: set[str] = set()
         for mrpack in mrpacks:
             all_hashes |= mrpack.mod_hashes
+            loaders |= mrpack.loaders
 
         file_info, known_hashes = Modpack._fetch_file_info(all_hashes)
         projects = Modpack._fetch_projects(file_info)
+        versions = Modpack._fetch_versions(projects, loaders)
 
         mod_stubs = {}
         for project in projects:
@@ -437,7 +465,13 @@ class Modpack:
                     # Sometimes the API returns None for these - force them to be strings
                     source_url=project.get("source_url", "") or "",
                     issues_url=project.get("issues_url", "") or "",
-                    game_versions=GameVersion.from_list(project["game_versions"]),
+                    versions=frozenset(
+                        {
+                            version
+                            for version in versions
+                            if versions[version]["project_id"] == project["id"]
+                        },
+                    ),
                 )
             except Exception as e:  # pragma nocover
                 raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
@@ -450,6 +484,10 @@ class Modpack:
                 if mod_hash in known_hashes:
                     mod_id = file_info[mod_hash]["project_id"]
                     mod_stub = mod_stubs[mod_id]
+                    game_versions = set()
+                    for version in mod_stub.versions:
+                        if frozenset(versions[version]["loaders"]) & mrpack.loaders:
+                            game_versions.update(versions[version]["game_versions"])
                     mods[mod_id] = Mod(
                         name=mod_stub.name,
                         slug=mod_stub.slug,
@@ -459,7 +497,7 @@ class Modpack:
                         mod_license=mod_stub.mod_license,
                         source_url=mod_stub.source_url,
                         issues_url=mod_stub.issues_url,
-                        game_versions=mod_stub.game_versions,
+                        game_versions=GameVersion.from_iterable(game_versions),
                     )
                 else:
                     missing_mods.add(mrpack.mod_jars[mod_hash])

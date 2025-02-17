@@ -67,8 +67,10 @@ class TestGameVersion:
         with pytest.raises(NotImplementedError):
             assert GameVersion("1.20") < "1.20"
 
-    def test_from_list(self) -> None:
-        assert GameVersion.from_list(["1.19", "1.20-dev", "1.18.4", "1.19", "foo"]) == frozenset(
+    def test_from_iterable(self) -> None:
+        assert GameVersion.from_iterable(
+            ["1.19", "1.20-dev", "1.18.4", "1.19", "foo"],
+        ) == frozenset(
             [GameVersion("1.19"), GameVersion("1.18.4")],
         )
 
@@ -142,8 +144,8 @@ class TestModpack:
             name="Test Modpack",
             version="1",
             game_version=GameVersion("1.19.4"),
-            dependencies=frozendict({"foo": "1"}),
-            loaders={"minecraft"},
+            dependencies=frozendict({"foo": "1", "fabric-loader": "2"}),
+            loaders={"minecraft", "fabric"},
             unknown_dependencies={"foo"},
             mod_hashes=frozenset(["abcd", "fedc", "pqrs"]),
             mod_jars=frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
@@ -157,8 +159,8 @@ class TestModpack:
             name="Test Modpack",
             version="2",
             game_version=GameVersion("1.19.4"),
-            dependencies=frozendict({"foo": "2"}),
-            loaders={"minecraft"},
+            dependencies=frozendict({"foo": "2", "fabric-loader": "3", "forge": "1"}),
+            loaders={"minecraft", "fabric", "forge"},
             unknown_dependencies={"foo"},
             mod_hashes=frozenset(["abcd", "lmno", "pqrs"]),
             mod_jars=frozendict({"abcd": "foo.jar", "lmno": "bar.jar", "pqrs": "baz.jar"}),
@@ -221,18 +223,54 @@ class TestModpack:
                         "id": "baz",
                         "title": "Foo",
                         "slug": "foo",
-                        "game_versions": ["1.19.2", "1.20"],
                     },
                     {
                         "id": "quux",
                         "title": "Bar",
                         "slug": "bar",
-                        "game_versions": ["1.19.4"],
                         "client_side": "optional",
                         "server_side": "optional",
                         "license": {"id": "MIT"},
                         "source_url": "example.com",
                         "issues_url": "example2.com",
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/baz/version?loaders=["fabric", "forge", '
+                '"minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "AA",
+                        "project_id": "baz",
+                        "loaders": ["fabric"],
+                        "game_versions": ["1.19.2"],
+                    },
+                    {
+                        "id": "BB",
+                        "project_id": "baz",
+                        "loaders": ["fabric", "minecraft"],
+                        "game_versions": ["1.20"],
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/quux/version?loaders=["fabric", "forge", '
+                '"minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "CC",
+                        "project_id": "quux",
+                        "loaders": ["minecraft"],
+                        "game_versions": ["1.19.4"],
+                    },
+                    {
+                        "id": "DD",
+                        "project_id": "quux",
+                        "loaders": ["forge"],
+                        "game_versions": ["1.20"],
                     },
                 ],
             )
@@ -244,8 +282,8 @@ class TestModpack:
         assert modpack.name == "Test Modpack"
         assert modpack.version == "1"
         assert modpack.game_version == GameVersion("1.19.4")
-        assert modpack.dependencies == frozendict({"foo": "1"})
-        assert modpack.loaders == frozenset({"minecraft"})
+        assert modpack.dependencies == frozendict({"foo": "1", "fabric-loader": "2"})
+        assert modpack.loaders == frozenset({"minecraft", "fabric"})
         assert modpack.unknown_dependencies == frozenset({"foo"})
 
         mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
@@ -292,8 +330,8 @@ class TestModpack:
         assert modpack.name == "Test Modpack"
         assert modpack.version == "2"
         assert modpack.game_version == GameVersion("1.19.4")
-        assert modpack.dependencies == frozendict({"foo": "2"})
-        assert modpack.loaders == frozenset({"minecraft"})
+        assert modpack.dependencies == frozendict({"foo": "2", "fabric-loader": "3", "forge": "1"})
+        assert modpack.loaders == frozenset({"minecraft", "fabric", "forge"})
         assert modpack.unknown_dependencies == frozenset({"foo"})
 
         mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
@@ -312,8 +350,8 @@ class TestModpack:
         assert mods[0].mod_license == "MIT"
         assert mods[0].source_url == "example.com"
         assert mods[0].issues_url == "example2.com"
-        assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
-        assert mods[0].latest_game_version == GameVersion("1.19.4")
+        assert mods[0].game_versions == frozenset([GameVersion("1.19.4"), GameVersion("1.20")])
+        assert mods[0].latest_game_version == GameVersion("1.20")
 
         assert mods[1].name == "Foo"
         assert mods[1].link == "https://modrinth.com/mod/foo"
@@ -373,18 +411,46 @@ class TestModpack:
                         "id": "foo",
                         "title": "Foo",
                         "slug": "foo",
-                        "game_versions": ["1.19.2", "1.20"],
                     },
                     {
                         "id": "bar",
                         "title": "Bar",
                         "slug": "bar",
-                        "game_versions": ["1.19.4"],
                         "client_side": "optional",
                         "server_side": "optional",
                         "license": {"id": "MIT"},
                         "source_url": "example.com",
                         "issues_url": "example2.com",
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/foo/version?loaders=["fabric", "minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "AA",
+                        "project_id": "foo",
+                        "loaders": ["fabric"],
+                        "game_versions": ["1.19.2"],
+                    },
+                    {
+                        "id": "BB",
+                        "project_id": "foo",
+                        "loaders": ["fabric", "minecraft"],
+                        "game_versions": ["1.20"],
+                    },
+                ],
+            )
+            m.get(
+                'https://api.modrinth.com/v2/project/bar/version?loaders=["fabric", "minecraft"]',
+                complete_qs=True,
+                json=[
+                    {
+                        "id": "CC",
+                        "project_id": "bar",
+                        "loaders": ["minecraft"],
+                        "game_versions": ["1.19.4"],
                     },
                 ],
             )
