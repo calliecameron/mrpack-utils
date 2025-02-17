@@ -36,11 +36,8 @@ TESTDATA2_DEPS := $(addprefix testdata/test2/,$(TESTDATA))
 testdata/test2.mrpack: $(TESTDATA2_DEPS)
 	cd testdata/test2 && zip ../test2.mrpack $(TESTDATA2)
 
-SUBDIR_ROOTS := mrpack_utils testdata tests
-DIRS := . $(shell find $(SUBDIR_ROOTS) -type d)
-CLEAN_PATTERNS := *~ .*~ *.pyc .mypy_cache __pycache__
-CLEAN := $(foreach DIR,$(DIRS),$(addprefix $(DIR)/,$(CLEAN_PATTERNS)))
-
 .PHONY: clean
 clean:
-	rm -rf $(CLEAN) testdata/*.mrpack .deps-installed
+	rm -f .coverage .deps-installed testdata/*.mrpack
+	find . -depth '(' -type d '(' -name '.mypy_cache' -o -name '.ruff_cache' -o -name '.pytest_cache' -o -name '__pycache__' ')' ')' -exec rm -r '{}' ';'
+	find . '(' -type f -name '*~' ')' -delete
