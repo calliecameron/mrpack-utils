@@ -414,7 +414,7 @@ class Modpack:
             timeout=10,
         )
         projects_response.raise_for_status()
-        return cast(list[dict[str, Any]], projects_response.json())
+        return cast("list[dict[str, Any]]", projects_response.json())
 
     @staticmethod
     def _fetch_versions(
@@ -437,7 +437,7 @@ class Modpack:
             versions_response.raise_for_status()
             for version in versions_response.json():
                 versions[version["id"]] = version
-        return cast(dict[_VersionID, dict[str, Any]], versions)
+        return cast("dict[_VersionID, dict[str, Any]]", versions)
 
     @staticmethod
     def _load(*mrpacks: _MrpackFile) -> "tuple[Modpack, ...]":

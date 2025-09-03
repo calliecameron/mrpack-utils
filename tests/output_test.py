@@ -7,7 +7,7 @@ from mrpack_utils.output import (
     render_csv,
 )
 
-# ruff: noqa: E741,S101
+# ruff: noqa: S101
 
 
 class TestTable:
