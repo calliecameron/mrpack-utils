@@ -105,13 +105,17 @@ source = { editable = "." }
 dependencies = [
     { name = "attrs" },
     { name = "frozendict" },
+    { name = "requests" },
+    { name = "tabulate" },
+]
+
+[package.dev-dependencies]
+dev = [
     { name = "mypy" },
     { name = "pytest" },
     { name = "pytest-cov" },
-    { name = "requests" },
     { name = "requests-mock" },
     { name = "ruff" },
-    { name = "tabulate" },
     { name = "types-requests" },
     { name = "types-tabulate" },
 ]
@@ -120,13 +124,17 @@ dependencies = [
 requires-dist = [
     { name = "attrs", specifier = "==25.1.0" },
     { name = "frozendict", specifier = "==2.4.6" },
+    { name = "requests", specifier = "==2.32.3" },
+    { name = "tabulate", specifier = "==0.9.0" },
+]
+
+[package.metadata.requires-dev]
+dev = [
     { name = "mypy", specifier = "==1.15.0" },
     { name = "pytest", specifier = "==8.3.4" },
     { name = "pytest-cov", specifier = "==6.0.0" },
-    { name = "requests", specifier = "==2.32.3" },
     { name = "requests-mock", specifier = "==1.12.1" },
     { name = "ruff", specifier = "==0.9.6" },
-    { name = "tabulate", specifier = "==0.9.0" },
     { name = "types-requests", specifier = "==2.32.0.20241016" },
     { name = "types-tabulate", specifier = "==0.9.0.20241207" },
 ]
