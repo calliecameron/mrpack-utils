@@ -1,13 +1,13 @@
 # mrpack-utils
 
-Utilities for managing Modrinth-format (mrpack) Minecraft modpacks.
+Utilities for working with Modrinth-format (mrpack) Minecraft modpacks.
 
-All commands are read only.
+All commands are read-only.
 
 ## List modpack contents
 
 ```shell
-./mrpack list mods.mrpack
+uv run mrpack list mods.mrpack
 ```
 
 ## Check for compatibility with newer game versions
@@ -18,7 +18,7 @@ version of the mod exists that is compatible with the given game versions, and
 reports which mods are not compatible:
 
 ```shell
-./mrpack list --check-version 1.20 --check-version 1.20.1 mods.mrpack
+uv run mrpack list --check-version 1.20 --check-version 1.20.1 mods.mrpack
 ```
 
 Limitations:
@@ -32,5 +32,5 @@ Limitations:
 ## Diff modpack versions
 
 ```shell
-./mrpack diff v1.mrpack v2.mrpack
+uv run mrpack diff v1.mrpack v2.mrpack
 ```

@@ -1,3 +1,33 @@
+[project]
+name = "mrpack-utils"
+version = "0.0.0"
+description = "Utilities for working with Modrinth-format (mrpack) Minecraft modpacks"
+readme = "README.md"
+authors = [
+    { name = "Callie Cameron", email = "cjcameron7@gmail.com" }
+]
+requires-python = "==3.12.9"
+dependencies = [
+    "attrs==25.1.0",
+    "frozendict==2.4.6",
+    "mypy==1.15.0",
+    "pytest==8.3.4",
+    "pytest-cov==6.0.0",
+    "requests==2.32.3",
+    "requests-mock==1.12.1",
+    "ruff==0.9.6",
+    "tabulate==0.9.0",
+    "types-requests==2.32.0.20241016",
+    "types-tabulate==0.9.0.20241207",
+]
+
+[project.scripts]
+mrpack = "mrpack_utils.main:main"
+
+[build-system]
+requires = ["uv_build>=0.8.14,<0.9.0"]
+build-backend = "uv_build"
+
 [tool.mypy]
 mypy_path = "stubs"
 python_version = "3.12"
@@ -18,7 +48,3 @@ ignore = [
     "T20",
     "TRY003",
 ]
-
-[tool.pip-tools]
-generate-hashes = true
-strip-extras = true

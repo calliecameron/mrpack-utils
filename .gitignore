@@ -1,8 +1,5 @@
 *~
 /.coverage
-/.deps-installed
-/.env
-/.env.leave
 /.vscode/
 /testdata/*.mrpack
 __pycache__/

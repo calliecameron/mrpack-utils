@@ -1,25 +1,15 @@
 .PHONY: all
 all: lint test
 
-.PHONY: deps
-deps: .deps-installed
-
-.deps-installed: requirements.txt
-	pip install -r requirements.txt
-	touch .deps-installed
-
-requirements.txt: requirements.in pyproject.toml
-	pip-compile -q
-
 .PHONY: lint
-lint: deps
-	ruff check .
-	ruff format --diff .
-	mypy --strict .
+lint:
+	uv run ruff check .
+	uv run ruff format --diff .
+	uv run mypy --strict .
 
 .PHONY: test
-test: testdata deps
-	pytest --cov-report=term-missing --cov=mrpack_utils tests
+test: testdata
+	uv run pytest --cov-report=term-missing --cov=mrpack_utils tests
 
 .PHONY: testdata
 testdata: testdata/test1.mrpack testdata/test2.mrpack
@@ -38,6 +28,6 @@ testdata/test2.mrpack: $(TESTDATA2_DEPS)
 
 .PHONY: clean
 clean:
-	rm -f .coverage .deps-installed testdata/*.mrpack
+	rm -f .coverage testdata/*.mrpack
 	find . -depth '(' -type d '(' -name '.mypy_cache' -o -name '.ruff_cache' -o -name '.pytest_cache' -o -name '__pycache__' ')' ')' -exec rm -r '{}' ';'
 	find . '(' -type f -name '*~' ')' -delete
