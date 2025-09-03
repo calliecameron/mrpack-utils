@@ -17,7 +17,7 @@ def _table_converter(data: Sequence[Sequence[str]]) -> tuple[tuple[str, ...], ..
 
 class Element(ABC):
     @abstractmethod
-    def render(self) -> str:  # pragma nocover
+    def render(self) -> str:  # pragma: no cover
         raise NotImplementedError
 
 

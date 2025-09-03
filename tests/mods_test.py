@@ -2,77 +2,10 @@ import pytest
 import requests_mock
 from frozendict import frozendict
 
-from mrpack_utils.mods import (
-    Env,
-    GameVersion,
-    Mod,
-    Modpack,
-    ModpackError,
-    Requirement,
-    _MrpackFile,
-)
+from mrpack_utils.mods import Mod, Modpack, ModpackError, _MrpackFile
+from mrpack_utils.types import Env, GameVersion, Requirement, Sha512
 
-# ruff: noqa: S101,PT011
-
-
-class TestRequirement:
-    def test_from_str(self) -> None:
-        assert Requirement.from_str("") == Requirement.UNKNOWN
-        assert Requirement.from_str("unknown") == Requirement.UNKNOWN
-        assert Requirement.from_str("required") == Requirement.REQUIRED
-        assert Requirement.from_str("optional") == Requirement.OPTIONAL
-        assert Requirement.from_str("unsupported") == Requirement.UNSUPPORTED
-        with pytest.raises(ValueError):
-            Requirement.from_str("foo")
-
-
-class TestEnv:
-    def test_from_dict(self) -> None:
-        e = Env.from_dict({"client": "required", "server": "optional"})
-        assert e.client == Requirement.REQUIRED
-        assert e.server == Requirement.OPTIONAL
-
-        with pytest.raises(ValueError):
-            Env.from_dict({"client": "required"})
-        with pytest.raises(ValueError):
-            Env.from_dict({"client": "required", "server": "foo"})
-
-
-class TestGameVersion:
-    def test_version(self) -> None:
-        assert str(GameVersion("1.20.1")) == "1.20.1"
-        assert str(GameVersion("1.19")) == "1.19"
-        with pytest.raises(ValueError):
-            GameVersion("1")
-        with pytest.raises(ValueError):
-            GameVersion("a")
-        with pytest.raises(ValueError):
-            GameVersion("19.2-dev")
-
-    def test_eq(self) -> None:
-        assert GameVersion("1.19.4") == GameVersion("1.19.4")
-        assert GameVersion("1.19.4") != GameVersion("1.20")
-        with pytest.raises(NotImplementedError):
-            assert GameVersion("1.20") == "1.20"
-
-    def test_hash(self) -> None:
-        assert hash(GameVersion("1.19.4")) == hash(GameVersion("1.19.4"))
-        assert hash(GameVersion("1.19.4")) != hash(GameVersion("1.20"))
-
-    def test_lt(self) -> None:
-        assert GameVersion("1.19.4") < GameVersion("1.20")
-        assert GameVersion("1.2") < GameVersion("1.10")
-        assert GameVersion("1.20") < GameVersion("1.20.1")
-        assert GameVersion("1.20") > GameVersion("1.19.4")
-        with pytest.raises(NotImplementedError):
-            assert GameVersion("1.20") < "1.20"
-
-    def test_from_iterable(self) -> None:
-        assert GameVersion.from_iterable(
-            ["1.19", "1.20-dev", "1.18.4", "1.19", "foo"],
-        ) == frozenset(
-            [GameVersion("1.19"), GameVersion("1.18.4")],
-        )
+# ruff: noqa: S101
 
 
 class TestMrpackFile:
@@ -84,11 +17,37 @@ class TestMrpackFile:
         assert m.dependencies == frozendict({"fabric-loader": "0.16", "foo": "1"})
         assert m.loaders == frozenset({"minecraft", "fabric"})
         assert m.unknown_dependencies == frozenset({"foo"})
-        assert m.mod_hashes == frozenset(["abcd", "fedc", "pqrs"])
-        assert m.mod_jars == frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"})
+        assert m.mod_hashes == frozenset(
+            [
+                Sha512(
+                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                Sha512(
+                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                Sha512(
+                    "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+            ],
+        )
+        assert m.mod_jars == frozendict(
+            {
+                Sha512(
+                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): "foo.jar",
+                Sha512(
+                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): "bar.jar",
+                Sha512(
+                    "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): "baz.jar",
+            },
+        )
         assert m.mod_envs == frozendict(
             {
-                "abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                Sha512(
+                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
             },
         )
         assert m.unknown_mods == frozendict(
@@ -147,10 +106,38 @@ class TestModpack:
             dependencies=frozendict({"foo": "1", "fabric-loader": "2"}),
             loaders={"minecraft", "fabric"},
             unknown_dependencies={"foo"},
-            mod_hashes=frozenset(["abcd", "fedc", "pqrs"]),
-            mod_jars=frozendict({"abcd": "foo.jar", "fedc": "bar.jar", "pqrs": "baz.jar"}),
+            mod_hashes=frozenset(
+                [
+                    Sha512(
+                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    Sha512(
+                        "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    Sha512(
+                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                ],
+            ),
+            mod_jars=frozendict(
+                {
+                    Sha512(
+                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): "foo.jar",
+                    Sha512(
+                        "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): "bar.jar",
+                    Sha512(
+                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): "baz.jar",
+                },
+            ),
             mod_envs=frozendict(
-                {"abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)},
+                {
+                    Sha512(
+                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                },
             ),
             unknown_mods=frozendict({"overrides/mods/unknown.jar": "a"}),
             other_files=frozendict({"overrides/config/foo.txt": "b"}),
@@ -162,10 +149,38 @@ class TestModpack:
             dependencies=frozendict({"foo": "2", "fabric-loader": "3", "forge": "1"}),
             loaders={"minecraft", "fabric", "forge"},
             unknown_dependencies={"foo"},
-            mod_hashes=frozenset(["abcd", "lmno", "pqrs"]),
-            mod_jars=frozendict({"abcd": "foo.jar", "lmno": "bar.jar", "pqrs": "baz.jar"}),
+            mod_hashes=frozenset(
+                [
+                    Sha512(
+                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    Sha512(
+                        "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    Sha512(
+                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                ],
+            ),
+            mod_jars=frozendict(
+                {
+                    Sha512(
+                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): "foo.jar",
+                    Sha512(
+                        "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): "bar.jar",
+                    Sha512(
+                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): "baz.jar",
+                },
+            ),
             mod_envs=frozendict(
-                {"abcd": Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL)},
+                {
+                    Sha512(
+                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ): Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                },
             ),
             unknown_mods=frozendict({"overrides/mods/unknown.jar": "c"}),
             other_files=frozendict({"overrides/config/foo.txt": "d"}),
@@ -175,40 +190,40 @@ class TestModpack:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
                 json={
-                    "abcd": {
+                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
                         "project_id": "baz",
                         "version_number": "1.2.3",
                         "files": [
                             {
                                 "hashes": {
-                                    "sha512": "abcd",
+                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
                                 },
                             },
                             {
                                 "hashes": {
-                                    "sha512": "wxyz",
+                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
                                 },
                             },
                         ],
                     },
-                    "fedc": {
+                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
                         "project_id": "quux",
                         "version_number": "4.5.6",
                         "files": [
                             {
                                 "hashes": {
-                                    "sha512": "fedc",
+                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
                                 },
                             },
                         ],
                     },
-                    "lmno": {
+                    "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
                         "project_id": "quux",
                         "version_number": "4.5.7",
                         "files": [
                             {
                                 "hashes": {
-                                    "sha512": "lmno",
+                                    "sha512": "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
                                 },
                             },
                         ],
@@ -379,24 +394,24 @@ class TestModpack:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
                 json={
-                    "abcd": {
+                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
                         "project_id": "foo",
                         "version_number": "1.2.3",
                         "files": [
                             {
                                 "hashes": {
-                                    "sha512": "abcd",
+                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
                                 },
                             },
                         ],
                     },
-                    "fedc": {
+                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
                         "project_id": "bar",
                         "version_number": "4.5.6",
                         "files": [
                             {
                                 "hashes": {
-                                    "sha512": "fedc",
+                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
                                 },
                             },
                         ],

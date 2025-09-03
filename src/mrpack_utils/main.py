@@ -3,8 +3,8 @@ from collections.abc import Sequence
 
 import mrpack_utils.commands.diff
 import mrpack_utils.commands.list
-from mrpack_utils.mods import GameVersion
 from mrpack_utils.output import render, render_csv
+from mrpack_utils.types import GameVersion
 
 
 def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover

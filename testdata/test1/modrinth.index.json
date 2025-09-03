@@ -1,35 +1,36 @@
 {
-    "formatVersion": 1,
-    "name": "Test Modpack",
-    "versionId": "1.1",
-    "game": "minecraft",
-    "files": [
-        {
-            "path": "mods/foo.jar",
-            "hashes": {
-                "sha512": "abcd"
-            },
-            "env": {
-                "client": "required",
-                "server": "optional"
-            }
-        },
-        {
-            "path": "mods/bar.jar",
-            "hashes": {
-                "sha512": "fedc"
-            }
-        },
-        {
-            "path": "mods/baz.jar",
-            "hashes": {
-                "sha512": "pqrs"
-            }
-        }
-    ],
-    "dependencies": {
-        "minecraft": "1.19.4",
-        "fabric-loader": "0.16",
-        "foo": "1"
+  "formatVersion": 1,
+  "name": "Test Modpack",
+  "versionId": "1.1",
+  "game": "minecraft",
+  "summary": "First test modpack",
+  "files": [
+    {
+      "path": "mods/foo.jar",
+      "hashes": {
+        "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "env": {
+        "client": "required",
+        "server": "optional"
+      }
+    },
+    {
+      "path": "mods/bar.jar",
+      "hashes": {
+        "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      }
+    },
+    {
+      "path": "mods/baz.jar",
+      "hashes": {
+        "sha512": "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      }
     }
+  ],
+  "dependencies": {
+    "minecraft": "1.19.4",
+    "fabric-loader": "0.16",
+    "foo": "1"
+  }
 }

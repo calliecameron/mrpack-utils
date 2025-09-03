@@ -2,8 +2,9 @@ from collections.abc import Sequence, Set
 
 from frozendict import frozendict
 
-from mrpack_utils.mods import GameVersion, Mod, Modpack
+from mrpack_utils.mods import Mod, Modpack
 from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
+from mrpack_utils.types import GameVersion
 
 IncompatibleModMap = frozendict[GameVersion, frozenset[Mod]]
 

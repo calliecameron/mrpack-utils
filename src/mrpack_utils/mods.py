@@ -1,98 +1,24 @@
-import contextlib
-import functools
 import json
 import pathlib
-import re
 import sys
 import zipfile
-from collections.abc import Iterable, Mapping, Sequence, Set
+from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass
-from enum import Enum, auto
 from typing import Any, cast
 
 import requests
 from frozendict import frozendict
 from requests.utils import requote_uri
 
+from mrpack_utils.types import Env, GameVersion, Requirement, Sha512
+
 
 class ModpackError(Exception):
     pass
 
 
-type _FileHash = str
 type ProjectID = str
 type _VersionID = str
-
-
-class Requirement(Enum):
-    UNKNOWN = auto()
-    REQUIRED = auto()
-    OPTIONAL = auto()
-    UNSUPPORTED = auto()
-
-    @staticmethod
-    def from_str(s: str) -> "Requirement":
-        if not s or s == "unknown":
-            return Requirement.UNKNOWN
-        if s == "required":
-            return Requirement.REQUIRED
-        if s == "optional":
-            return Requirement.OPTIONAL
-        if s == "unsupported":
-            return Requirement.UNSUPPORTED
-        raise ValueError(
-            "Requirement value must be one of {required, optional, unsupported}, got '" + s + "'",
-        )
-
-
-@dataclass(frozen=True, kw_only=True)
-class Env:
-    client: Requirement
-    server: Requirement
-
-    @staticmethod
-    def from_dict(env: Mapping[str, str]) -> "Env":
-        if env.keys() != frozenset(["client", "server"]):
-            raise ValueError("Env must have keys {client, server}, got " + str(env.keys()))
-        return Env(
-            client=Requirement.from_str(env["client"]),
-            server=Requirement.from_str(env["server"]),
-        )
-
-
-@functools.total_ordering
-class GameVersion:
-    def __init__(self, version: str) -> None:
-        super().__init__()
-        match = re.fullmatch(r"[0-9]+\.[0-9]+(\.[0-9]+)?", version)
-        if match is None:
-            raise ValueError("Not a valid game version: " + version)
-        self._version = tuple(int(segment) for segment in version.split("."))
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, GameVersion):
-            raise NotImplementedError
-        return self._version == other._version
-
-    def __hash__(self) -> int:
-        return hash(self._version)
-
-    def __lt__(self, other: object) -> bool:
-        if not isinstance(other, GameVersion):
-            raise NotImplementedError
-        return self._version < other._version
-
-    def __repr__(self) -> str:
-        return ".".join(str(segment) for segment in self._version)
-
-    @staticmethod
-    def from_iterable(versions: Iterable[str]) -> "frozenset[GameVersion]":
-        # We deliberately skip over any versions that don't parse
-        out = set()
-        for version in versions:
-            with contextlib.suppress(ValueError):
-                out.add(GameVersion(version))
-        return frozenset(out)
 
 
 class _MrpackFile:
@@ -114,9 +40,9 @@ class _MrpackFile:
         dependencies: Mapping[str, str],
         loaders: Set[str],
         unknown_dependencies: Set[str],
-        mod_hashes: Set[_FileHash],
-        mod_jars: Mapping[_FileHash, str],
-        mod_envs: Mapping[_FileHash, Env],
+        mod_hashes: Set[Sha512],
+        mod_jars: Mapping[Sha512, str],
+        mod_envs: Mapping[Sha512, Env],
         unknown_mods: Mapping[str, str],
         other_files: Mapping[str, str],
     ) -> None:
@@ -158,15 +84,15 @@ class _MrpackFile:
         return self._unknown_dependencies
 
     @property
-    def mod_hashes(self) -> frozenset[_FileHash]:
+    def mod_hashes(self) -> frozenset[Sha512]:
         return self._mod_hashes
 
     @property
-    def mod_jars(self) -> frozendict[_FileHash, str]:
+    def mod_jars(self) -> frozendict[Sha512, str]:
         return self._mod_jars
 
     @property
-    def mod_envs(self) -> frozendict[_FileHash, Env]:
+    def mod_envs(self) -> frozendict[Sha512, Env]:
         return self._mod_envs
 
     @property
@@ -219,12 +145,13 @@ class _MrpackFile:
                 dependencies=dependencies,
                 loaders=loaders,
                 unknown_dependencies=unknown_dependencies,
-                mod_hashes=frozenset(file["hashes"]["sha512"] for file in j["files"]),
+                mod_hashes=frozenset(Sha512(file["hashes"]["sha512"]) for file in j["files"]),
                 mod_jars={
-                    file["hashes"]["sha512"]: file["path"].split("/")[-1] for file in j["files"]
+                    Sha512(file["hashes"]["sha512"]): file["path"].split("/")[-1]
+                    for file in j["files"]
                 },
                 mod_envs={
-                    file["hashes"]["sha512"]: Env.from_dict(file["env"])
+                    Sha512(file["hashes"]["sha512"]): Env.load(file["env"])
                     for file in j["files"]
                     if "env" in file
                 },
@@ -385,19 +312,20 @@ class Modpack:
 
     @staticmethod
     def _fetch_file_info(
-        hashes: Set[_FileHash],
-    ) -> tuple[dict[_FileHash, dict[str, Any]], frozenset[_FileHash]]:
+        hashes: Set[Sha512],
+    ) -> tuple[dict[Sha512, dict[str, Any]], frozenset[Sha512]]:
         versions_response = requests.post(
             "https://api.modrinth.com/v2/version_files",
-            json={"hashes": sorted(hashes), "algorithm": "sha512"},
+            json={"hashes": sorted(str(h) for h in hashes), "algorithm": "sha512"},
             timeout=10,
         )
         versions_response.raise_for_status()
         versions = versions_response.json()
+        versions = {Sha512(k): v for (k, v) in versions.items()}
 
         known_hashes = frozenset(
             {
-                file["hashes"]["sha512"]
+                Sha512(file["hashes"]["sha512"])
                 for version in versions
                 for file in versions[version]["files"]
             },
@@ -406,7 +334,7 @@ class Modpack:
         return versions, known_hashes
 
     @staticmethod
-    def _fetch_projects(file_info: Mapping[_FileHash, Mapping[str, Any]]) -> list[dict[str, Any]]:
+    def _fetch_projects(file_info: Mapping[Sha512, Mapping[str, Any]]) -> list[dict[str, Any]]:
         ids = {file_info[mod_hash]["project_id"] for mod_hash in file_info}
         projects_response = requests.get(
             "https://api.modrinth.com/v2/projects",
@@ -441,7 +369,7 @@ class Modpack:
 
     @staticmethod
     def _load(*mrpacks: _MrpackFile) -> "tuple[Modpack, ...]":
-        all_hashes: set[_FileHash] = set()
+        all_hashes: set[Sha512] = set()
         loaders: set[str] = set()
         for mrpack in mrpacks:
             all_hashes |= mrpack.mod_hashes
@@ -473,7 +401,7 @@ class Modpack:
                         },
                     ),
                 )
-            except Exception as e:  # pragma nocover
+            except Exception as e:  # pragma: no cover
                 raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
 
         modpacks = []
