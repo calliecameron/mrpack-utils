@@ -1,6 +1,8 @@
 from collections.abc import Mapping
 
+from mrpack_utils.moddb import ModDB
 from mrpack_utils.mods import Modpack
+from mrpack_utils.mrpack import Mrpack
 from mrpack_utils.output import Element, MissingMods, Table, UnknownDependencies
 
 
@@ -46,7 +48,11 @@ def _other_files(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
 
 
 def run(old_file: str, new_file: str) -> tuple[Element, ...]:
-    old, new = Modpack.from_files(old_file, new_file)
+    old_mrpack = Mrpack.load(old_file)
+    new_mrpack = Mrpack.load(new_file)
+    db = ModDB.load([old_mrpack, new_mrpack], True)
+    old = Modpack.load(old_mrpack, db)
+    new = Modpack.load(new_mrpack, db)
 
     return (
         Table(

@@ -234,9 +234,3 @@ class Modpack:
                 if p.parts[1] != "mods"
             },
         )
-
-    @staticmethod
-    def from_files(*files: str) -> "tuple[Modpack, ...]":
-        mrpacks = [Mrpack.load(f) for f in files]
-        db = ModDB.load(mrpacks, True)
-        return tuple(Modpack.load(mrpack, db) for mrpack in mrpacks)

@@ -2,7 +2,9 @@ from collections.abc import Sequence, Set
 
 from frozendict import frozendict
 
+from mrpack_utils.moddb import ModDB
 from mrpack_utils.mods import Mod, Modpack
+from mrpack_utils.mrpack import Mrpack
 from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
 from mrpack_utils.types import GameVersion
 
@@ -127,7 +129,9 @@ def run(
     game_versions: Set[GameVersion],
     dev: bool,
 ) -> tuple[Element, ...]:
-    (modpack,) = Modpack.from_files(mrpack_file)
+    mrpack = Mrpack.load(mrpack_file)
+    db = ModDB.load([mrpack], True)
+    modpack = Modpack.load(mrpack, db)
     game_versions = set(game_versions)
     game_versions.add(modpack.game_version)
 
