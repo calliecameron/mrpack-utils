@@ -205,6 +205,16 @@ class File:
 
 
 class Index:  # noqa: PLW1641
+    _LOADERS = frozendict(
+        {
+            "minecraft": "minecraft",
+            "forge": "forge",
+            "neoforge": "neoforge",
+            "fabric-loader": "fabric",
+            "quilt-loader": "quilt",
+        },
+    )
+
     _FORMAT_VERSION = 1
     _GAME = "minecraft"
     _SCHEMA = make_json_schema(
@@ -283,10 +293,16 @@ class Index:  # noqa: PLW1641
         self._files = frozendict(fs)
 
         self._dependencies = frozendict(dependencies)
+        self._known_dependencies = frozenset(self._dependencies & Index._LOADERS.keys())
+        self._unknown_dependencies = frozenset(self._dependencies - Index._LOADERS.keys())
 
         if "minecraft" not in self._dependencies:
             raise ValueError("Missing 'minecraft' dependency")
         self._game_version = GameVersion(self._dependencies["minecraft"])
+
+        self._loaders = frozenset(
+            {Index._LOADERS[d] for d in self._dependencies if d in Index._LOADERS},
+        )
 
     @property
     def name(self) -> str:
@@ -309,8 +325,20 @@ class Index:  # noqa: PLW1641
         return self._dependencies
 
     @property
+    def known_dependencies(self) -> frozenset[str]:
+        return self._known_dependencies
+
+    @property
+    def unknown_dependencies(self) -> frozenset[str]:
+        return self._unknown_dependencies
+
+    @property
     def game_version(self) -> GameVersion:
         return self._game_version
+
+    @property
+    def loaders(self) -> frozenset[str]:
+        return self._loaders
 
     @override
     def __eq__(self, other: object) -> bool:

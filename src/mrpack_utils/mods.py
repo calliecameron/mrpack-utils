@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from frozendict import frozendict
 from requests.utils import requote_uri
 
-from mrpack_utils import api
+from mrpack_utils.moddb import ModDB
 from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import ID, Env, GameVersion, Sha512
+from mrpack_utils.types import ID, Env, GameVersion
 
 
 class ModpackError(Exception):
@@ -96,16 +96,6 @@ class Mod:
 
 
 class Modpack:
-    _LOADERS = frozendict(
-        {
-            "minecraft": "minecraft",
-            "forge": "forge",
-            "neoforge": "neoforge",
-            "fabric-loader": "fabric",
-            "quilt-loader": "quilt",
-        },
-    )
-
     def __init__(
         self,
         *,
@@ -173,27 +163,11 @@ class Modpack:
         return self._other_files
 
     @staticmethod
-    def _map_loaders(mrpack: Mrpack) -> frozenset[str]:
-        out = set()
-        for d in mrpack.index.dependencies:
-            if d in Modpack._LOADERS:
-                out.add(Modpack._LOADERS[d])
-        return frozenset(out)
-
-    @staticmethod
     def _load(*mrpacks: Mrpack) -> "tuple[Modpack, ...]":
-        all_hashes: set[Sha512] = set()
-        loaders: set[str] = set()
-        for mrpack in mrpacks:
-            all_hashes |= mrpack.index.files.keys()
-            loaders |= Modpack._map_loaders(mrpack)
-
-        file_infos = api.get_file_details(all_hashes)
-        projects = api.get_projects({f.project_id for f in file_infos.values()})
-        versions = api.get_versions(projects.values(), loaders)
+        db = ModDB.load(mrpacks, True)
 
         mod_stubs = {}
-        for project in projects.values():
+        for project in db.projects.values():
             try:
                 mod_stubs[project.project_id] = _ModStub(
                     name=project.title,
@@ -205,8 +179,8 @@ class Modpack:
                     versions=frozenset(
                         {
                             version
-                            for version in versions
-                            if versions[version].project_id == project.project_id
+                            for version in db.versions
+                            if db.versions[version].project_id == project.project_id
                         },
                     ),
                 )
@@ -218,18 +192,18 @@ class Modpack:
             mods = {}
             missing_mods = set()
             for mod_hash in mrpack.index.files:
-                if mod_hash in file_infos:
-                    file_info = file_infos[mod_hash]
-                    mod_id = file_info.project_id
+                if mod_hash in db.files:
+                    file = db.files[mod_hash]
+                    mod_id = file.project_id
                     mod_stub = mod_stubs[mod_id]
                     game_versions: set[str] = set()
                     for version in mod_stub.versions:
-                        if versions[version].loaders & Modpack._map_loaders(mrpack):
-                            game_versions.update(versions[version].game_versions)
+                        if db.versions[version].loaders & mrpack.index.loaders:
+                            game_versions.update(db.versions[version].game_versions)
                     mods[mod_id] = Mod(
                         name=mod_stub.name,
                         slug=mod_stub.slug,
-                        version=file_info.version_number,
+                        version=file.version_number,
                         original_env=mod_stub.env,
                         overridden_env=mrpack.index.files[mod_hash].env or mod_stub.env,
                         mod_license=mod_stub.mod_license,
@@ -247,8 +221,8 @@ class Modpack:
                     dependencies={
                         k: v for (k, v) in mrpack.index.dependencies.items() if k != "minecraft"
                     },
-                    loaders=Modpack._map_loaders(mrpack),
-                    unknown_dependencies=mrpack.index.dependencies.keys() - Modpack._LOADERS.keys(),
+                    loaders=mrpack.index.loaders,
+                    unknown_dependencies=mrpack.index.unknown_dependencies,
                     mods=mods,
                     missing_mods=missing_mods,
                     unknown_mods={

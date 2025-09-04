@@ -1,0 +1,63 @@
+from collections.abc import Collection, Mapping
+
+from frozendict import frozendict
+
+from mrpack_utils.api import File, Project, Version, get_file_details, get_projects, get_versions
+from mrpack_utils.mrpack import Mrpack
+from mrpack_utils.types import ID, Sha512
+
+
+class ModDB:
+    def __init__(
+        self,
+        *,
+        files: Mapping[Sha512, File],
+        projects: Mapping[ID, Project],
+        versions: Mapping[ID, Version],
+    ) -> None:
+        super().__init__()
+        self._files = frozendict(files)
+        self._projects = frozendict(projects)
+        self._versions = frozendict(versions)
+
+    @property
+    def files(self) -> frozendict[Sha512, File]:
+        return self._files
+
+    def file(self, sha512: Sha512) -> File | None:
+        return self._files.get(sha512)
+
+    @property
+    def projects(self) -> frozendict[ID, Project]:
+        return self._projects
+
+    def project(self, project_id: ID) -> Project | None:
+        return self._projects.get(project_id)
+
+    @property
+    def versions(self) -> frozendict[ID, Version]:
+        return self._versions
+
+    def version(self, version_id: ID) -> Version | None:
+        return self._versions.get(version_id)
+
+    @staticmethod
+    def load(mrpacks: Collection[Mrpack], fetch_versions: bool) -> "ModDB":
+        hashes: set[Sha512] = set()
+        loaders: set[str] = set()
+        for mrpack in mrpacks:
+            hashes |= mrpack.index.files.keys()
+            loaders |= mrpack.index.loaders
+
+        files = get_file_details(hashes)
+        projects = get_projects({f.project_id for f in files.values()})
+
+        versions: frozendict[ID, Version] = frozendict()
+        if fetch_versions:
+            versions = get_versions(projects.values(), loaders)
+
+        return ModDB(
+            files=files,
+            projects=projects,
+            versions=versions,
+        )

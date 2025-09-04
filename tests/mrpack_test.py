@@ -532,15 +532,24 @@ class TestIndex:
             version="1.0",
             summary="foo",
             files={f1, f2},
-            dependencies={"minecraft": "1.20.1", "foo": "2"},
+            dependencies={
+                "minecraft": "1.20.1",
+                "fabric-loader": "0.16",
+                "foo": "2",
+            },
         )
 
         assert i.name == "Test Modpack"
         assert i.version == "1.0"
         assert i.summary == "foo"
         assert i.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
-        assert i.dependencies == frozendict({"minecraft": "1.20.1", "foo": "2"})
+        assert i.dependencies == frozendict(
+            {"minecraft": "1.20.1", "foo": "2", "fabric-loader": "0.16"},
+        )
+        assert i.known_dependencies == frozenset({"minecraft", "fabric-loader"})
+        assert i.unknown_dependencies == frozenset({"foo"})
         assert i.game_version == GameVersion("1.20.1")
+        assert i.loaders == frozenset({"minecraft", "fabric"})
 
         # Duplicate hashes
         with pytest.raises(ValueError):
@@ -611,6 +620,7 @@ class TestIndex:
                 "dependencies": {
                     "minecraft": "1.20.1",
                     "foo": "2",
+                    "fabric-loader": "0.16",
                 },
             },
         )
@@ -619,8 +629,13 @@ class TestIndex:
         assert i1.version == "1.0"
         assert i1.summary == "foo"
         assert i1.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
-        assert i1.dependencies == frozendict({"minecraft": "1.20.1", "foo": "2"})
+        assert i1.dependencies == frozendict(
+            {"minecraft": "1.20.1", "foo": "2", "fabric-loader": "0.16"},
+        )
+        assert i1.known_dependencies == frozenset({"minecraft", "fabric-loader"})
+        assert i1.unknown_dependencies == frozenset({"foo"})
         assert i1.game_version == GameVersion("1.20.1")
+        assert i1.loaders == frozenset({"minecraft", "fabric"})
 
         i2 = Index.load(
             {
@@ -644,7 +659,10 @@ class TestIndex:
         assert i2.summary == ""
         assert i2.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
         assert i2.dependencies == frozendict({"minecraft": "1.20.1", "foo": "2"})
+        assert i2.known_dependencies == frozenset({"minecraft"})
+        assert i2.unknown_dependencies == frozenset({"foo"})
         assert i2.game_version == GameVersion("1.20.1")
+        assert i2.loaders == frozenset({"minecraft"})
 
         assert i1 == i1  # noqa: PLR0124
         assert i1 != i2
