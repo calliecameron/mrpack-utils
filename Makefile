@@ -12,7 +12,7 @@ test: testdata
 	uv run pytest --cov-report=term-missing --cov=mrpack_utils tests
 
 .PHONY: testdata
-testdata: testdata/test1.mrpack testdata/test2.mrpack
+testdata: testdata/test1.mrpack testdata/test2.mrpack testdata/bad1.mrpack
 
 TESTDATA1 := $(shell find testdata/test1 -type f -printf '%P\n')
 TESTDATA1_DEPS := $(addprefix testdata/test1/,$(TESTDATA))
@@ -25,6 +25,12 @@ TESTDATA2_DEPS := $(addprefix testdata/test2/,$(TESTDATA))
 
 testdata/test2.mrpack: $(TESTDATA2_DEPS)
 	cd testdata/test2 && zip ../test2.mrpack $(TESTDATA2)
+
+TESTDATA_BAD1 := $(shell find testdata/bad1 -type f -printf '%P\n')
+TESTDATA_BAD1_DEPS := $(addprefix testdata/bad1/,$(TESTDATA))
+
+testdata/bad1.mrpack: $(TESTDATA_BAD1_DEPS)
+	cd testdata/bad1 && zip ../bad1.mrpack $(TESTDATA_BAD1)
 
 .PHONY: clean
 clean:

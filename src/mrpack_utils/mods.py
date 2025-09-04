@@ -1,7 +1,5 @@
-import json
-import pathlib
+import binascii
 import sys
-import zipfile
 from collections.abc import Mapping, Sequence, Set
 from dataclasses import dataclass
 from typing import Any, cast
@@ -10,6 +8,7 @@ import requests
 from frozendict import frozendict
 from requests.utils import requote_uri
 
+from mrpack_utils.mrpack import Mrpack
 from mrpack_utils.types import Env, GameVersion, Requirement, Sha512
 
 
@@ -19,147 +18,6 @@ class ModpackError(Exception):
 
 type ProjectID = str
 type _VersionID = str
-
-
-class _MrpackFile:
-    _LOADERS = frozendict(
-        {
-            "forge": "forge",
-            "neoforge": "neoforge",
-            "fabric-loader": "fabric",
-            "quilt-loader": "quilt",
-        },
-    )
-
-    def __init__(
-        self,
-        *,
-        name: str,
-        version: str,
-        game_version: GameVersion,
-        dependencies: Mapping[str, str],
-        loaders: Set[str],
-        unknown_dependencies: Set[str],
-        mod_hashes: Set[Sha512],
-        mod_jars: Mapping[Sha512, str],
-        mod_envs: Mapping[Sha512, Env],
-        unknown_mods: Mapping[str, str],
-        other_files: Mapping[str, str],
-    ) -> None:
-        super().__init__()
-        self._name = name
-        self._version = version
-        self._game_version = game_version
-        self._dependencies = frozendict(dependencies)
-        self._loaders = frozenset(loaders)
-        self._unknown_dependencies = frozenset(unknown_dependencies)
-        self._mod_hashes = frozenset(mod_hashes)
-        self._mod_jars = frozendict(mod_jars)
-        self._mod_envs = frozendict(mod_envs)
-        self._unknown_mods = frozendict(unknown_mods)
-        self._other_files = frozendict(other_files)
-
-    @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def version(self) -> str:
-        return self._version
-
-    @property
-    def game_version(self) -> GameVersion:
-        return self._game_version
-
-    @property
-    def dependencies(self) -> frozendict[str, str]:
-        return self._dependencies
-
-    @property
-    def loaders(self) -> frozenset[str]:
-        return self._loaders
-
-    @property
-    def unknown_dependencies(self) -> frozenset[str]:
-        return self._unknown_dependencies
-
-    @property
-    def mod_hashes(self) -> frozenset[Sha512]:
-        return self._mod_hashes
-
-    @property
-    def mod_jars(self) -> frozendict[Sha512, str]:
-        return self._mod_jars
-
-    @property
-    def mod_envs(self) -> frozendict[Sha512, Env]:
-        return self._mod_envs
-
-    @property
-    def unknown_mods(self) -> frozendict[str, str]:
-        return self._unknown_mods
-
-    @property
-    def other_files(self) -> frozendict[str, str]:
-        return self._other_files
-
-    @staticmethod
-    def from_file(filename: str) -> "_MrpackFile":
-        try:
-            with zipfile.ZipFile(filename) as z:
-                with z.open("modrinth.index.json") as f:
-                    j = json.load(f)
-
-                unknown_mods: dict[str, str] = {}
-                other_files: dict[str, str] = {}
-                for file in z.infolist():
-                    if file.filename != "modrinth.index.json" and not file.is_dir():
-                        path = pathlib.PurePath(file.filename)
-                        if path.suffix == ".jar" and str(path.parent) in (
-                            "overrides/mods",
-                            "server-overrides/mods",
-                            "client-overrides/mods",
-                        ):
-                            target = unknown_mods
-                        else:
-                            target = other_files
-                        target[file.filename] = f"{file.CRC:08x}"
-
-            dependencies = j["dependencies"]
-            game_version = dependencies["minecraft"]
-            del dependencies["minecraft"]
-
-            # 'minecraft' is used for resource packs, and is always a valid loader
-            loaders = {"minecraft"}
-            unknown_dependencies = set()
-            for dep in sorted(dependencies):
-                if dep in _MrpackFile._LOADERS:
-                    loaders.add(_MrpackFile._LOADERS[dep])
-                else:
-                    unknown_dependencies.add(dep)
-
-            return _MrpackFile(
-                name=j["name"],
-                version=j["versionId"],
-                game_version=GameVersion(game_version),
-                dependencies=dependencies,
-                loaders=loaders,
-                unknown_dependencies=unknown_dependencies,
-                mod_hashes=frozenset(Sha512(file["hashes"]["sha512"]) for file in j["files"]),
-                mod_jars={
-                    Sha512(file["hashes"]["sha512"]): file["path"].split("/")[-1]
-                    for file in j["files"]
-                },
-                mod_envs={
-                    Sha512(file["hashes"]["sha512"]): Env.load(file["env"])
-                    for file in j["files"]
-                    if "env" in file
-                },
-                unknown_mods=unknown_mods,
-                other_files=other_files,
-            )
-        except Exception as e:
-            raise ModpackError("Failed to load mrpack file: " + str(e)) from e
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -244,6 +102,16 @@ class Mod:
 
 
 class Modpack:
+    _LOADERS = frozendict(
+        {
+            "minecraft": "minecraft",
+            "forge": "forge",
+            "neoforge": "neoforge",
+            "fabric-loader": "fabric",
+            "quilt-loader": "quilt",
+        },
+    )
+
     def __init__(
         self,
         *,
@@ -368,12 +236,20 @@ class Modpack:
         return cast("dict[_VersionID, dict[str, Any]]", versions)
 
     @staticmethod
-    def _load(*mrpacks: _MrpackFile) -> "tuple[Modpack, ...]":
+    def _map_loaders(mrpack: Mrpack) -> frozenset[str]:
+        out = set()
+        for d in mrpack.index.dependencies:
+            if d in Modpack._LOADERS:
+                out.add(Modpack._LOADERS[d])
+        return frozenset(out)
+
+    @staticmethod
+    def _load(*mrpacks: Mrpack) -> "tuple[Modpack, ...]":
         all_hashes: set[Sha512] = set()
         loaders: set[str] = set()
         for mrpack in mrpacks:
-            all_hashes |= mrpack.mod_hashes
-            loaders |= mrpack.loaders
+            all_hashes |= mrpack.index.files.keys()
+            loaders |= Modpack._map_loaders(mrpack)
 
         file_info, known_hashes = Modpack._fetch_file_info(all_hashes)
         projects = Modpack._fetch_projects(file_info)
@@ -408,39 +284,53 @@ class Modpack:
         for mrpack in mrpacks:
             mods = {}
             missing_mods = set()
-            for mod_hash in mrpack.mod_hashes:
+            for mod_hash in mrpack.index.files:
                 if mod_hash in known_hashes:
                     mod_id = file_info[mod_hash]["project_id"]
                     mod_stub = mod_stubs[mod_id]
                     game_versions = set()
                     for version in mod_stub.versions:
-                        if frozenset(versions[version]["loaders"]) & mrpack.loaders:
+                        if frozenset(versions[version]["loaders"]) & Modpack._map_loaders(mrpack):
                             game_versions.update(versions[version]["game_versions"])
                     mods[mod_id] = Mod(
                         name=mod_stub.name,
                         slug=mod_stub.slug,
                         version=file_info[mod_hash]["version_number"],
                         original_env=mod_stub.env,
-                        overridden_env=mrpack.mod_envs.get(mod_hash, mod_stub.env),
+                        overridden_env=mrpack.index.files[mod_hash].env or mod_stub.env,
                         mod_license=mod_stub.mod_license,
                         source_url=mod_stub.source_url,
                         issues_url=mod_stub.issues_url,
                         game_versions=GameVersion.from_iterable(game_versions),
                     )
                 else:
-                    missing_mods.add(mrpack.mod_jars[mod_hash])
+                    missing_mods.add(str(mrpack.index.files[mod_hash].path.parts[-1]))
             modpacks.append(
                 Modpack(
-                    name=mrpack.name,
-                    version=mrpack.version,
-                    game_version=mrpack.game_version,
-                    dependencies=mrpack.dependencies,
-                    loaders=mrpack.loaders,
-                    unknown_dependencies=mrpack.unknown_dependencies,
+                    name=mrpack.index.name,
+                    version=mrpack.index.version,
+                    game_version=mrpack.index.game_version,
+                    dependencies={
+                        k: v for (k, v) in mrpack.index.dependencies.items() if k != "minecraft"
+                    },
+                    loaders=Modpack._map_loaders(mrpack),
+                    unknown_dependencies=mrpack.index.dependencies.keys() - Modpack._LOADERS.keys(),
                     mods=mods,
                     missing_mods=missing_mods,
-                    unknown_mods=mrpack.unknown_mods,
-                    other_files=mrpack.other_files,
+                    unknown_mods={
+                        str(p): f"{binascii.crc32(o.data):08x}"
+                        for (p, o) in (
+                            mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
+                        ).items()
+                        if p.parts[1] == "mods"
+                    },
+                    other_files={
+                        str(p): f"{binascii.crc32(o.data):08x}"
+                        for (p, o) in (
+                            mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
+                        ).items()
+                        if p.parts[1] != "mods"
+                    },
                 ),
             )
 
@@ -448,4 +338,4 @@ class Modpack:
 
     @staticmethod
     def from_files(*files: str) -> "tuple[Modpack, ...]":
-        return Modpack._load(*[_MrpackFile.from_file(f) for f in files])
+        return Modpack._load(*[Mrpack.load(f) for f in files])

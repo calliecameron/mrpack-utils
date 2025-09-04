@@ -75,6 +75,8 @@ class TestEnv:
             Env.load({"client": "required"})
         with pytest.raises(jsonschema.ValidationError):
             Env.load({"client": "required", "server": "foo"})
+        with pytest.raises(jsonschema.ValidationError):
+            Env.load({"client": "required", "server": "optional", "foo": "bar"})
 
 
 class TestSha1:

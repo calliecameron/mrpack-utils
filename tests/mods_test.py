@@ -1,72 +1,11 @@
-import pytest
 import requests_mock
 from frozendict import frozendict
 
-from mrpack_utils.mods import Mod, Modpack, ModpackError, _MrpackFile
-from mrpack_utils.types import Env, GameVersion, Requirement, Sha512
+from mrpack_utils.mods import Mod, Modpack
+from mrpack_utils.mrpack import File, Hashes, Index, Mrpack, Override
+from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: S101
-
-
-class TestMrpackFile:
-    def test_from_file(self) -> None:
-        m = _MrpackFile.from_file("testdata/test1.mrpack")
-        assert m.name == "Test Modpack"
-        assert m.version == "1.1"
-        assert m.game_version == GameVersion("1.19.4")
-        assert m.dependencies == frozendict({"fabric-loader": "0.16", "foo": "1"})
-        assert m.loaders == frozenset({"minecraft", "fabric"})
-        assert m.unknown_dependencies == frozenset({"foo"})
-        assert m.mod_hashes == frozenset(
-            [
-                Sha512(
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ),
-                Sha512(
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ),
-                Sha512(
-                    "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ),
-            ],
-        )
-        assert m.mod_jars == frozendict(
-            {
-                Sha512(
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): "foo.jar",
-                Sha512(
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): "bar.jar",
-                Sha512(
-                    "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): "baz.jar",
-            },
-        )
-        assert m.mod_envs == frozendict(
-            {
-                Sha512(
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-            },
-        )
-        assert m.unknown_mods == frozendict(
-            {
-                "client-overrides/mods/baz-1.0.0.jar": "a2c6f513",
-                "client-overrides/mods/foo-1.2.3.jar": "d6902afc",
-                "overrides/mods/foo-1.2.3.jar": "d6902afc",
-                "server-overrides/mods/bar-1.0.0.jar": "7123eea6",
-            },
-        )
-        assert m.other_files == frozendict(
-            {
-                "overrides/config/foo.txt": "7e3265a8",
-                "server-overrides/config/bar.txt": "04a2b3e9",
-            },
-        )
-
-        with pytest.raises(ModpackError):
-            _MrpackFile.from_file("testdata/modrinth.index.json")
 
 
 class TestMod:
@@ -99,91 +38,140 @@ class TestMod:
 
 class TestModpack:
     def test_load(self) -> None:
-        mrpack1 = _MrpackFile(
-            name="Test Modpack",
-            version="1",
-            game_version=GameVersion("1.19.4"),
-            dependencies=frozendict({"foo": "1", "fabric-loader": "2"}),
-            loaders={"minecraft", "fabric"},
-            unknown_dependencies={"foo"},
-            mod_hashes=frozenset(
-                [
-                    Sha512(
-                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        mrpack1 = Mrpack(
+            index=Index(
+                name="Test Modpack",
+                version="1",
+                summary="",
+                files={
+                    File(
+                        path="mods/foo.jar",
+                        hashes=Hashes(
+                            sha1=Sha1("0000000000000000000000000000000000000000"),
+                            sha512=Sha512(
+                                "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            ),
+                            others={},
+                        ),
+                        env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                        downloads=set(),
+                        size=10,
                     ),
-                    Sha512(
-                        "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    File(
+                        path="mods/bar.jar",
+                        hashes=Hashes(
+                            sha1=Sha1("0000000000000000000000000000000000000000"),
+                            sha512=Sha512(
+                                "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            ),
+                            others={},
+                        ),
+                        env=None,
+                        downloads=set(),
+                        size=10,
                     ),
-                    Sha512(
-                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    File(
+                        path="mods/baz.jar",
+                        hashes=Hashes(
+                            sha1=Sha1("0000000000000000000000000000000000000000"),
+                            sha512=Sha512(
+                                "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            ),
+                            others={},
+                        ),
+                        env=None,
+                        downloads=set(),
+                        size=10,
                     ),
-                ],
-            ),
-            mod_jars=frozendict(
-                {
-                    Sha512(
-                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): "foo.jar",
-                    Sha512(
-                        "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): "bar.jar",
-                    Sha512(
-                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): "baz.jar",
                 },
+                dependencies=frozendict(
+                    {
+                        "minecraft": "1.19.4",
+                        "foo": "1",
+                        "fabric-loader": "2",
+                    },
+                ),
             ),
-            mod_envs=frozendict(
-                {
-                    Sha512(
-                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-                },
-            ),
-            unknown_mods=frozendict({"overrides/mods/unknown.jar": "a"}),
-            other_files=frozendict({"overrides/config/foo.txt": "b"}),
+            overrides={
+                Override(
+                    path="overrides/mods/unknown.jar",
+                    data=b"foo\n",
+                ),
+                Override(
+                    path="overrides/config/foo.txt",
+                    data=b"bar\n",
+                ),
+            },
+            client_overrides=set(),
+            server_overrides=set(),
         )
-        mrpack2 = _MrpackFile(
-            name="Test Modpack",
-            version="2",
-            game_version=GameVersion("1.19.4"),
-            dependencies=frozendict({"foo": "2", "fabric-loader": "3", "forge": "1"}),
-            loaders={"minecraft", "fabric", "forge"},
-            unknown_dependencies={"foo"},
-            mod_hashes=frozenset(
-                [
-                    Sha512(
-                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+        mrpack2 = Mrpack(
+            index=Index(
+                name="Test Modpack",
+                version="2",
+                summary="",
+                files={
+                    File(
+                        path="mods/foo.jar",
+                        hashes=Hashes(
+                            sha1=Sha1("0000000000000000000000000000000000000000"),
+                            sha512=Sha512(
+                                "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            ),
+                            others={},
+                        ),
+                        env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                        downloads=set(),
+                        size=10,
                     ),
-                    Sha512(
-                        "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    File(
+                        path="mods/bar.jar",
+                        hashes=Hashes(
+                            sha1=Sha1("0000000000000000000000000000000000000000"),
+                            sha512=Sha512(
+                                "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            ),
+                            others={},
+                        ),
+                        env=None,
+                        downloads=set(),
+                        size=10,
                     ),
-                    Sha512(
-                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    File(
+                        path="mods/baz.jar",
+                        hashes=Hashes(
+                            sha1=Sha1("0000000000000000000000000000000000000000"),
+                            sha512=Sha512(
+                                "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            ),
+                            others={},
+                        ),
+                        env=None,
+                        downloads=set(),
+                        size=10,
                     ),
-                ],
-            ),
-            mod_jars=frozendict(
-                {
-                    Sha512(
-                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): "foo.jar",
-                    Sha512(
-                        "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): "bar.jar",
-                    Sha512(
-                        "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): "baz.jar",
                 },
+                dependencies=frozendict(
+                    {
+                        "minecraft": "1.19.4",
+                        "foo": "2",
+                        "fabric-loader": "3",
+                        "forge": "1",
+                    },
+                ),
             ),
-            mod_envs=frozendict(
-                {
-                    Sha512(
-                        "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-                },
-            ),
-            unknown_mods=frozendict({"overrides/mods/unknown.jar": "c"}),
-            other_files=frozendict({"overrides/config/foo.txt": "d"}),
+            overrides={
+                Override(
+                    path="overrides/mods/unknown.jar",
+                    data=b"foo\n",
+                ),
+                Override(
+                    path="overrides/config/foo.txt",
+                    data=b"bar\n",
+                ),
+            },
+            client_overrides=set(),
+            server_overrides=set(),
         )
 
         with requests_mock.Mocker() as m:
@@ -338,8 +326,8 @@ class TestModpack:
         assert mods[1].latest_game_version == GameVersion("1.20")
 
         assert modpack.missing_mods == frozenset({"baz.jar"})
-        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "a"})
-        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "b"})
+        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "7e3265a8"})
+        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "04a2b3e9"})
 
         modpack = modpacks[1]
         assert modpack.name == "Test Modpack"
@@ -386,8 +374,8 @@ class TestModpack:
         assert mods[1].latest_game_version == GameVersion("1.20")
 
         assert modpack.missing_mods == frozenset({"baz.jar"})
-        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "c"})
-        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "d"})
+        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "7e3265a8"})
+        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "04a2b3e9"})
 
     def test_from_files(self) -> None:
         with requests_mock.Mocker() as m:
