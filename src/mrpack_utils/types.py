@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Self, override
+from typing import Protocol, Self, override
 
 
 @functools.total_ordering
@@ -18,11 +18,13 @@ class GameVersion:
             raise ValueError("Not a valid game version: " + version)
         self._version = tuple(int(segment) for segment in version.split("."))
 
+    @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, GameVersion):
             raise NotImplementedError
         return self._version == other._version
 
+    @override
     def __hash__(self) -> int:
         return hash(self._version)
 
@@ -31,6 +33,7 @@ class GameVersion:
             raise NotImplementedError
         return self._version < other._version
 
+    @override
     def __repr__(self) -> str:
         return ".".join(str(segment) for segment in self._version)
 
@@ -80,6 +83,14 @@ class Env:
         )
 
 
+class _HashFn(Protocol):
+    @property
+    def digest_size(self) -> int: ...
+    def update(self, data: bytes) -> None: ...
+    def hexdigest(self) -> str: ...
+
+
+@functools.total_ordering
 class _Hash(ABC):
     def __init__(self, h: str) -> None:
         super().__init__()
@@ -93,25 +104,11 @@ class _Hash(ABC):
 
     @classmethod
     @abstractmethod
-    def _hexdigest(cls, data: bytes) -> str:
+    def _hash_fn(cls) -> _HashFn:
         raise NotImplementedError  # pragma: no cover
 
-    @classmethod
-    @abstractmethod
-    def _digest_size(cls) -> int:
-        raise NotImplementedError  # pragma: no cover
-
-    @classmethod
-    def _hash_len(cls) -> int:
-        return cls._digest_size() * 2
-
-    @override
-    def __str__(self) -> str:
-        return self._hash
-
-    @override
-    def __repr__(self) -> str:
-        return str(self)
+    def _hash_len(self) -> int:
+        return self._hash_fn().digest_size * 2
 
     @override
     def __eq__(self, other: object) -> bool:
@@ -123,30 +120,31 @@ class _Hash(ABC):
     def __hash__(self) -> int:
         return hash(self._hash)
 
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            raise NotImplementedError
+        return self._hash < other._hash
+
+    @override
+    def __repr__(self) -> str:
+        return self._hash
+
     @classmethod
     def from_data(cls, data: bytes) -> Self:
-        return cls(cls._hexdigest(data))
+        fn = cls._hash_fn()
+        fn.update(data)
+        return cls(fn.hexdigest())
 
 
 class Sha1(_Hash):
     @override
     @classmethod
-    def _hexdigest(cls, data: bytes) -> str:
-        return hashlib.sha1(data).hexdigest()  # noqa: S324
-
-    @override
-    @classmethod
-    def _digest_size(cls) -> int:
-        return hashlib.sha1().digest_size  # noqa: S324
+    def _hash_fn(cls) -> _HashFn:
+        return hashlib.sha1()  # noqa: S324
 
 
 class Sha512(_Hash):
     @override
     @classmethod
-    def _hexdigest(cls, data: bytes) -> str:
-        return hashlib.sha512(data).hexdigest()
-
-    @override
-    @classmethod
-    def _digest_size(cls) -> int:
-        return hashlib.sha512().digest_size
+    def _hash_fn(cls) -> _HashFn:
+        return hashlib.sha512()

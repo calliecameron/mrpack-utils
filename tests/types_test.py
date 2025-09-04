@@ -74,21 +74,21 @@ class TestSha1:
         assert str(h1) == "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15"
         assert str(h2) == "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15"
         assert str(h3) == "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15"
-        assert repr(h1) == "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15"
-        assert repr(h2) == "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15"
-        assert repr(h3) == "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15"
         assert h1 == h2
         assert h1 == h3
         assert h2 == h3
         assert hash(h1) == hash(h2)
         assert hash(h1) == hash(h3)
         assert hash(h2) == hash(h3)
+        assert h1 < Sha1("ff00000000000000000000000000000000000000")
 
     def test_invalid(self) -> None:
         with pytest.raises(ValueError):
             Sha1("foo")
         with pytest.raises(NotImplementedError):
             assert Sha1.from_data(b"foo\n") == b"foo\n"
+        with pytest.raises(NotImplementedError):
+            assert Sha1.from_data(b"foo\n") < b"foo\n"
 
 
 class TestSha512:
@@ -115,27 +115,21 @@ class TestSha512:
             "0cf9180a764aba863a67b6d72f0918bc131c6772642cb2dce5a34f0a702f9470"
             "ddc2bf125c12198b1995c233c34b4afd346c54a2334c350a948a51b6e8b4e6b6"
         )
-        assert repr(h1) == (
-            "0cf9180a764aba863a67b6d72f0918bc131c6772642cb2dce5a34f0a702f9470"
-            "ddc2bf125c12198b1995c233c34b4afd346c54a2334c350a948a51b6e8b4e6b6"
-        )
-        assert repr(h2) == (
-            "0cf9180a764aba863a67b6d72f0918bc131c6772642cb2dce5a34f0a702f9470"
-            "ddc2bf125c12198b1995c233c34b4afd346c54a2334c350a948a51b6e8b4e6b6"
-        )
-        assert repr(h3) == (
-            "0cf9180a764aba863a67b6d72f0918bc131c6772642cb2dce5a34f0a702f9470"
-            "ddc2bf125c12198b1995c233c34b4afd346c54a2334c350a948a51b6e8b4e6b6"
-        )
         assert h1 == h2
         assert h1 == h3
         assert h2 == h3
         assert hash(h1) == hash(h2)
         assert hash(h1) == hash(h3)
         assert hash(h2) == hash(h3)
+        assert h1 < Sha512(
+            "ff0000000000000000000000000000000000000000000000000000000000000000"
+            "00000000000000000000000000000000000000000000000000000000000000",
+        )
 
     def test_invalid(self) -> None:
         with pytest.raises(ValueError):
             Sha512("foo")
         with pytest.raises(NotImplementedError):
             assert Sha512.from_data(b"foo\n") == b"foo\n"
+        with pytest.raises(NotImplementedError):
+            assert Sha512.from_data(b"foo\n") < b"foo\n"
