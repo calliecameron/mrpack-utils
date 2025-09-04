@@ -163,9 +163,7 @@ class Modpack:
         return self._other_files
 
     @staticmethod
-    def _load(*mrpacks: Mrpack) -> "tuple[Modpack, ...]":
-        db = ModDB.load(mrpacks, True)
-
+    def load(mrpack: Mrpack, db: ModDB) -> "Modpack":
         mod_stubs = {}
         for project in db.projects.values():
             try:
@@ -187,63 +185,58 @@ class Modpack:
             except Exception as e:  # pragma: no cover
                 raise ModpackError(f"Failed to load mod {project.title}: {e}") from e
 
-        modpacks = []
-        for mrpack in mrpacks:
-            mods = {}
-            missing_mods = set()
-            for mod_hash in mrpack.index.files:
-                if mod_hash in db.files:
-                    file = db.files[mod_hash]
-                    mod_id = file.project_id
-                    mod_stub = mod_stubs[mod_id]
-                    game_versions: set[str] = set()
-                    for version in mod_stub.versions:
-                        if db.versions[version].loaders & mrpack.index.loaders:
-                            game_versions.update(db.versions[version].game_versions)
-                    mods[mod_id] = Mod(
-                        name=mod_stub.name,
-                        slug=mod_stub.slug,
-                        version=file.version_number,
-                        original_env=mod_stub.env,
-                        overridden_env=mrpack.index.files[mod_hash].env or mod_stub.env,
-                        mod_license=mod_stub.mod_license,
-                        source_url=mod_stub.source_url,
-                        issues_url=mod_stub.issues_url,
-                        game_versions=GameVersion.from_iterable(game_versions),
-                    )
-                else:
-                    missing_mods.add(str(mrpack.index.files[mod_hash].path.parts[-1]))
-            modpacks.append(
-                Modpack(
-                    name=mrpack.index.name,
-                    version=mrpack.index.version,
-                    game_version=mrpack.index.game_version,
-                    dependencies={
-                        k: v for (k, v) in mrpack.index.dependencies.items() if k != "minecraft"
-                    },
-                    loaders=mrpack.index.loaders,
-                    unknown_dependencies=mrpack.index.unknown_dependencies,
-                    mods=mods,
-                    missing_mods=missing_mods,
-                    unknown_mods={
-                        str(p): f"{binascii.crc32(o.data):08x}"
-                        for (p, o) in (
-                            mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
-                        ).items()
-                        if p.parts[1] == "mods"
-                    },
-                    other_files={
-                        str(p): f"{binascii.crc32(o.data):08x}"
-                        for (p, o) in (
-                            mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
-                        ).items()
-                        if p.parts[1] != "mods"
-                    },
-                ),
-            )
+        mods = {}
+        missing_mods = set()
+        for mod_hash in mrpack.index.files:
+            if mod_hash in db.files:
+                file = db.files[mod_hash]
+                mod_id = file.project_id
+                mod_stub = mod_stubs[mod_id]
+                game_versions: set[str] = set()
+                for version in mod_stub.versions:
+                    if db.versions[version].loaders & mrpack.index.loaders:
+                        game_versions.update(db.versions[version].game_versions)
+                mods[mod_id] = Mod(
+                    name=mod_stub.name,
+                    slug=mod_stub.slug,
+                    version=file.version_number,
+                    original_env=mod_stub.env,
+                    overridden_env=mrpack.index.files[mod_hash].env or mod_stub.env,
+                    mod_license=mod_stub.mod_license,
+                    source_url=mod_stub.source_url,
+                    issues_url=mod_stub.issues_url,
+                    game_versions=GameVersion.from_iterable(game_versions),
+                )
+            else:
+                missing_mods.add(str(mrpack.index.files[mod_hash].path.parts[-1]))
 
-        return tuple(modpacks)
+        return Modpack(
+            name=mrpack.index.name,
+            version=mrpack.index.version,
+            game_version=mrpack.index.game_version,
+            dependencies={k: v for (k, v) in mrpack.index.dependencies.items() if k != "minecraft"},
+            loaders=mrpack.index.loaders,
+            unknown_dependencies=mrpack.index.unknown_dependencies,
+            mods=mods,
+            missing_mods=missing_mods,
+            unknown_mods={
+                str(p): f"{binascii.crc32(o.data):08x}"
+                for (p, o) in (
+                    mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
+                ).items()
+                if p.parts[1] == "mods"
+            },
+            other_files={
+                str(p): f"{binascii.crc32(o.data):08x}"
+                for (p, o) in (
+                    mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
+                ).items()
+                if p.parts[1] != "mods"
+            },
+        )
 
     @staticmethod
     def from_files(*files: str) -> "tuple[Modpack, ...]":
-        return Modpack._load(*[Mrpack.load(f) for f in files])
+        mrpacks = [Mrpack.load(f) for f in files]
+        db = ModDB.load(mrpacks, True)
+        return tuple(Modpack.load(mrpack, db) for mrpack in mrpacks)

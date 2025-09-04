@@ -1,9 +1,11 @@
 import requests_mock
 from frozendict import frozendict
 
+from mrpack_utils import api
+from mrpack_utils.moddb import ModDB
 from mrpack_utils.mods import Mod, Modpack
 from mrpack_utils.mrpack import File, Hashes, Index, Mrpack, Override
-from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
+from mrpack_utils.types import ID, Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: S101
 
@@ -38,18 +40,18 @@ class TestMod:
 
 class TestModpack:
     def test_load(self) -> None:
-        mrpack1 = Mrpack(
+        mrpack = Mrpack(
             index=Index(
                 name="Test Modpack",
                 version="1",
                 summary="",
                 files={
                     File(
-                        path="mods/foo.jar",
+                        path="mods/a.jar",
                         hashes=Hashes(
                             sha1=Sha1("0000000000000000000000000000000000000000"),
                             sha512=Sha512(
-                                "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                                "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                             ),
                             others={},
                         ),
@@ -58,11 +60,11 @@ class TestModpack:
                         size=10,
                     ),
                     File(
-                        path="mods/bar.jar",
+                        path="mods/b.jar",
                         hashes=Hashes(
                             sha1=Sha1("0000000000000000000000000000000000000000"),
                             sha512=Sha512(
-                                "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                                "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                             ),
                             others={},
                         ),
@@ -71,11 +73,11 @@ class TestModpack:
                         size=10,
                     ),
                     File(
-                        path="mods/baz.jar",
+                        path="mods/c.jar",
                         hashes=Hashes(
                             sha1=Sha1("0000000000000000000000000000000000000000"),
                             sha512=Sha512(
-                                "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                                "c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                             ),
                             others={},
                         ),
@@ -105,183 +107,84 @@ class TestModpack:
             client_overrides=set(),
             server_overrides=set(),
         )
-        mrpack2 = Mrpack(
-            index=Index(
-                name="Test Modpack",
-                version="2",
-                summary="",
-                files={
-                    File(
-                        path="mods/foo.jar",
-                        hashes=Hashes(
-                            sha1=Sha1("0000000000000000000000000000000000000000"),
-                            sha512=Sha512(
-                                "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                            ),
-                            others={},
-                        ),
-                        env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-                        downloads=set(),
-                        size=10,
+
+        db = ModDB(
+            files={
+                Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): api.File(
+                    sha512=Sha512(
+                        "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                     ),
-                    File(
-                        path="mods/bar.jar",
-                        hashes=Hashes(
-                            sha1=Sha1("0000000000000000000000000000000000000000"),
-                            sha512=Sha512(
-                                "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                            ),
-                            others={},
-                        ),
-                        env=None,
-                        downloads=set(),
-                        size=10,
-                    ),
-                    File(
-                        path="mods/baz.jar",
-                        hashes=Hashes(
-                            sha1=Sha1("0000000000000000000000000000000000000000"),
-                            sha512=Sha512(
-                                "dcba0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                            ),
-                            others={},
-                        ),
-                        env=None,
-                        downloads=set(),
-                        size=10,
-                    ),
-                },
-                dependencies=frozendict(
-                    {
-                        "minecraft": "1.19.4",
-                        "foo": "2",
-                        "fabric-loader": "3",
-                        "forge": "1",
-                    },
+                    project_id=ID("a0000000"),
+                    version_number="1.2.3",
                 ),
-            ),
-            overrides={
-                Override(
-                    path="overrides/mods/unknown.jar",
-                    data=b"foo\n",
-                ),
-                Override(
-                    path="overrides/config/foo.txt",
-                    data=b"bar\n",
+                Sha512(
+                    "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): api.File(
+                    sha512=Sha512(
+                        "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    project_id=ID("b0000000"),
+                    version_number="4.5.6",
                 ),
             },
-            client_overrides=set(),
-            server_overrides=set(),
+            projects={
+                ID("a0000000"): api.Project(
+                    project_id=ID("a0000000"),
+                    slug="a",
+                    title="A",
+                    env=Env(
+                        client=Requirement.UNKNOWN,
+                        server=Requirement.UNKNOWN,
+                    ),
+                    project_license="",
+                    source_url="",
+                    issues_url="",
+                ),
+                ID("b0000000"): api.Project(
+                    project_id=ID("b0000000"),
+                    slug="b",
+                    title="B",
+                    env=Env(
+                        client=Requirement.OPTIONAL,
+                        server=Requirement.OPTIONAL,
+                    ),
+                    project_license="MIT",
+                    source_url="example.com",
+                    issues_url="example2.com",
+                ),
+            },
+            versions={
+                ID("A0000000"): api.Version(
+                    version_id=ID("A0000000"),
+                    project_id=ID("a0000000"),
+                    loaders={"fabric"},
+                    game_versions={"1.19.2"},
+                ),
+                ID("A1000000"): api.Version(
+                    version_id=ID("A1000000"),
+                    project_id=ID("a0000000"),
+                    loaders={"fabric", "minecraft"},
+                    game_versions={"1.20"},
+                ),
+                ID("B0000000"): api.Version(
+                    version_id=ID("B0000000"),
+                    project_id=ID("b0000000"),
+                    loaders={"minecraft"},
+                    game_versions={"1.19.4"},
+                ),
+                ID("B1000000"): api.Version(
+                    version_id=ID("B1000000"),
+                    project_id=ID("b0000000"),
+                    loaders={"forge"},
+                    game_versions={"1.20"},
+                ),
+            },
         )
 
-        with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.7",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                        "client_side": "optional",
-                        "server_side": "optional",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "forge", '
-                '"minecraft"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "forge", '
-                '"minecraft"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "quux0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                    {
-                        "id": "DD000000",
-                        "project_id": "quux0000",
-                        "loaders": ["forge"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            modpacks = Modpack._load(mrpack1, mrpack2)  # noqa: SLF001
+        modpack = Modpack.load(mrpack, db)
 
-        assert len(modpacks) == 2  # noqa: PLR2004
-
-        modpack = modpacks[0]
         assert modpack.name == "Test Modpack"
         assert modpack.version == "1"
         assert modpack.game_version == GameVersion("1.19.4")
@@ -291,89 +194,42 @@ class TestModpack:
 
         mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
         assert len(mods) == 2  # noqa: PLR2004
-        assert mods[0].name == "Bar"
-        assert mods[0].link == "https://modrinth.com/mod/bar"
-        assert mods[0].version == "4.5.6"
-        assert mods[0].original_env == Env(
-            client=Requirement.OPTIONAL,
-            server=Requirement.OPTIONAL,
-        )
-        assert mods[0].overridden_env == Env(
-            client=Requirement.OPTIONAL,
-            server=Requirement.OPTIONAL,
-        )
-        assert mods[0].mod_license == "MIT"
-        assert mods[0].source_url == "example.com"
-        assert mods[0].issues_url == "example2.com"
-        assert mods[0].game_versions == frozenset([GameVersion("1.19.4")])
-        assert mods[0].latest_game_version == GameVersion("1.19.4")
 
-        assert mods[1].name == "Foo"
-        assert mods[1].link == "https://modrinth.com/mod/foo"
-        assert mods[1].version == "1.2.3"
-        assert mods[1].original_env == Env(
+        assert mods[0].name == "A"
+        assert mods[0].link == "https://modrinth.com/mod/a"
+        assert mods[0].version == "1.2.3"
+        assert mods[0].original_env == Env(
             client=Requirement.UNKNOWN,
             server=Requirement.UNKNOWN,
         )
-        assert mods[1].overridden_env == Env(
+        assert mods[0].overridden_env == Env(
             client=Requirement.REQUIRED,
             server=Requirement.OPTIONAL,
         )
-        assert mods[1].mod_license == ""
-        assert mods[1].source_url == ""
-        assert mods[1].issues_url == ""
-        assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
-        assert mods[1].latest_game_version == GameVersion("1.20")
-
-        assert modpack.missing_mods == frozenset({"baz.jar"})
-        assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "7e3265a8"})
-        assert modpack.other_files == frozendict({"overrides/config/foo.txt": "04a2b3e9"})
-
-        modpack = modpacks[1]
-        assert modpack.name == "Test Modpack"
-        assert modpack.version == "2"
-        assert modpack.game_version == GameVersion("1.19.4")
-        assert modpack.dependencies == frozendict({"foo": "2", "fabric-loader": "3", "forge": "1"})
-        assert modpack.loaders == frozenset({"minecraft", "fabric", "forge"})
-        assert modpack.unknown_dependencies == frozenset({"foo"})
-
-        mods = sorted(modpack.mods.values(), key=lambda m: m.name.lower())
-        assert len(mods) == 2  # noqa: PLR2004
-        assert mods[0].name == "Bar"
-        assert mods[0].link == "https://modrinth.com/mod/bar"
-        assert mods[0].version == "4.5.7"
-        assert mods[0].original_env == Env(
-            client=Requirement.OPTIONAL,
-            server=Requirement.OPTIONAL,
-        )
-        assert mods[0].overridden_env == Env(
-            client=Requirement.OPTIONAL,
-            server=Requirement.OPTIONAL,
-        )
-        assert mods[0].mod_license == "MIT"
-        assert mods[0].source_url == "example.com"
-        assert mods[0].issues_url == "example2.com"
-        assert mods[0].game_versions == frozenset([GameVersion("1.19.4"), GameVersion("1.20")])
+        assert mods[0].mod_license == ""
+        assert mods[0].source_url == ""
+        assert mods[0].issues_url == ""
+        assert mods[0].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
         assert mods[0].latest_game_version == GameVersion("1.20")
 
-        assert mods[1].name == "Foo"
-        assert mods[1].link == "https://modrinth.com/mod/foo"
-        assert mods[1].version == "1.2.3"
+        assert mods[1].name == "B"
+        assert mods[1].link == "https://modrinth.com/mod/b"
+        assert mods[1].version == "4.5.6"
         assert mods[1].original_env == Env(
-            client=Requirement.UNKNOWN,
-            server=Requirement.UNKNOWN,
-        )
-        assert mods[1].overridden_env == Env(
-            client=Requirement.REQUIRED,
+            client=Requirement.OPTIONAL,
             server=Requirement.OPTIONAL,
         )
-        assert mods[1].mod_license == ""
-        assert mods[1].source_url == ""
-        assert mods[1].issues_url == ""
-        assert mods[1].game_versions == frozenset([GameVersion("1.19.2"), GameVersion("1.20")])
-        assert mods[1].latest_game_version == GameVersion("1.20")
+        assert mods[1].overridden_env == Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.OPTIONAL,
+        )
+        assert mods[1].mod_license == "MIT"
+        assert mods[1].source_url == "example.com"
+        assert mods[1].issues_url == "example2.com"
+        assert mods[1].game_versions == frozenset([GameVersion("1.19.4")])
+        assert mods[1].latest_game_version == GameVersion("1.19.4")
 
-        assert modpack.missing_mods == frozenset({"baz.jar"})
+        assert modpack.missing_mods == frozenset({"c.jar"})
         assert modpack.unknown_mods == frozendict({"overrides/mods/unknown.jar": "7e3265a8"})
         assert modpack.other_files == frozendict({"overrides/config/foo.txt": "04a2b3e9"})
 
