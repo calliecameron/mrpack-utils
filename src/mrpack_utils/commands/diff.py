@@ -1,7 +1,7 @@
 from collections.abc import Mapping
 
 from mrpack_utils.moddb import ModDB
-from mrpack_utils.mods import Modpack
+from mrpack_utils.modpack import Modpack
 from mrpack_utils.mrpack import Mrpack
 from mrpack_utils.output import Element, MissingMods, Table, UnknownDependencies
 

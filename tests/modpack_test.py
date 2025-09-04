@@ -2,7 +2,7 @@ from frozendict import frozendict
 
 from mrpack_utils import api
 from mrpack_utils.moddb import ModDB
-from mrpack_utils.mods import Mod, Modpack
+from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.mrpack import File, Hashes, Index, Mrpack, Override
 from mrpack_utils.types import ID, Env, GameVersion, Requirement, Sha1, Sha512
 

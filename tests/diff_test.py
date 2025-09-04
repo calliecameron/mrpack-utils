@@ -8,7 +8,7 @@ from mrpack_utils.commands.diff import (
     _unknown_mods,
     run,
 )
-from mrpack_utils.mods import Mod, Modpack
+from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.output import MissingMods, Table, UnknownDependencies
 from mrpack_utils.types import ID, Env, GameVersion, Requirement
 

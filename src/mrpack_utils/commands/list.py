@@ -3,7 +3,7 @@ from collections.abc import Sequence, Set
 from frozendict import frozendict
 
 from mrpack_utils.moddb import ModDB
-from mrpack_utils.mods import Mod, Modpack
+from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.mrpack import Mrpack
 from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
 from mrpack_utils.types import GameVersion
