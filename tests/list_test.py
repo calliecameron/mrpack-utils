@@ -11,7 +11,7 @@ from mrpack_utils.commands.list import (
 )
 from mrpack_utils.mods import Mod, Modpack
 from mrpack_utils.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
-from mrpack_utils.types import Env, GameVersion, Requirement
+from mrpack_utils.types import ID, Env, GameVersion, Requirement
 
 # ruff: noqa: S101
 
@@ -121,7 +121,7 @@ class TestList:
             dependencies={"foo": "1", "fabric-loader": "0.16"},
             loaders=set(),
             unknown_dependencies=set(),
-            mods={"abcd": foo, "fedc": bar},
+            mods={ID("abcd0000"): foo, ID("fedc0000"): bar},
             missing_mods=frozenset(),
             unknown_mods={},
             other_files={},
@@ -291,7 +291,7 @@ class TestList:
                 "https://api.modrinth.com/v2/version_files",
                 json={
                     "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz",
+                        "project_id": "baz00000",
                         "version_number": "1.2.3",
                         "files": [
                             {
@@ -307,7 +307,7 @@ class TestList:
                         ],
                     },
                     "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux",
+                        "project_id": "quux0000",
                         "version_number": "4.5.6",
                         "files": [
                             {
@@ -320,11 +320,11 @@ class TestList:
                 },
             )
             m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz", "quux"]',
+                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
                 complete_qs=True,
                 json=[
                     {
-                        "id": "baz",
+                        "id": "baz00000",
                         "title": "Foo",
                         "slug": "foo",
                         "client_side": "optional",
@@ -334,37 +334,37 @@ class TestList:
                         "issues_url": "example2.com",
                     },
                     {
-                        "id": "quux",
+                        "id": "quux0000",
                         "title": "Bar",
                         "slug": "bar",
                     },
                 ],
             )
             m.get(
-                'https://api.modrinth.com/v2/project/baz/version?loaders=["fabric", "minecraft"]',
+                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
                 complete_qs=True,
                 json=[
                     {
-                        "id": "AA",
-                        "project_id": "baz",
+                        "id": "AA000000",
+                        "project_id": "baz00000",
                         "loaders": ["fabric"],
                         "game_versions": ["1.19.2"],
                     },
                     {
-                        "id": "BB",
-                        "project_id": "baz",
+                        "id": "BB000000",
+                        "project_id": "baz00000",
                         "loaders": ["fabric", "minecraft"],
                         "game_versions": ["1.20"],
                     },
                 ],
             )
             m.get(
-                'https://api.modrinth.com/v2/project/quux/version?loaders=["fabric", "minecraft"]',
+                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
                 complete_qs=True,
                 json=[
                     {
-                        "id": "CC",
-                        "project_id": "quux",
+                        "id": "CC000000",
+                        "project_id": "quux0000",
                         "loaders": ["minecraft"],
                         "game_versions": ["1.19.4"],
                     },
@@ -531,7 +531,7 @@ class TestList:
                 "https://api.modrinth.com/v2/version_files",
                 json={
                     "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz",
+                        "project_id": "baz00000",
                         "version_number": "1.2.3",
                         "files": [
                             {
@@ -547,7 +547,7 @@ class TestList:
                         ],
                     },
                     "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux",
+                        "project_id": "quux0000",
                         "version_number": "4.5.6",
                         "files": [
                             {
@@ -560,11 +560,11 @@ class TestList:
                 },
             )
             m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz", "quux"]',
+                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
                 complete_qs=True,
                 json=[
                     {
-                        "id": "baz",
+                        "id": "baz00000",
                         "title": "Foo",
                         "slug": "foo",
                         "client_side": "optional",
@@ -574,37 +574,37 @@ class TestList:
                         "issues_url": "example2.com",
                     },
                     {
-                        "id": "quux",
+                        "id": "quux0000",
                         "title": "Bar",
                         "slug": "bar",
                     },
                 ],
             )
             m.get(
-                'https://api.modrinth.com/v2/project/baz/version?loaders=["fabric", "minecraft"]',
+                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
                 complete_qs=True,
                 json=[
                     {
-                        "id": "AA",
-                        "project_id": "baz",
+                        "id": "AA000000",
+                        "project_id": "baz00000",
                         "loaders": ["fabric"],
                         "game_versions": ["1.19.2"],
                     },
                     {
-                        "id": "BB",
-                        "project_id": "baz",
+                        "id": "BB000000",
+                        "project_id": "baz00000",
                         "loaders": ["fabric", "minecraft"],
                         "game_versions": ["1.20"],
                     },
                 ],
             )
             m.get(
-                'https://api.modrinth.com/v2/project/quux/version?loaders=["fabric", "minecraft"]',
+                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
                 complete_qs=True,
                 json=[
                     {
-                        "id": "CC",
-                        "project_id": "quux",
+                        "id": "CC000000",
+                        "project_id": "quux0000",
                         "loaders": ["minecraft"],
                         "game_versions": ["1.19.4"],
                     },

@@ -7,7 +7,7 @@ from typing import Any, override
 import jsonschema
 from frozendict import frozendict
 
-from mrpack_utils.types import Env, GameVersion, Sha1, Sha512, json_schema
+from mrpack_utils.types import Env, GameVersion, Sha1, Sha512, make_json_schema
 
 
 class MrpackError(Exception):
@@ -55,7 +55,7 @@ class Hashes:
         },
     )
 
-    _SCHEMA = json_schema(SCHEMA_FRAGMENT)
+    _SCHEMA = make_json_schema(SCHEMA_FRAGMENT)
 
     def __init__(self, *, sha1: Sha1, sha512: Sha512, others: Mapping[str, str]) -> None:
         super().__init__()
@@ -136,7 +136,7 @@ class File:
         },
     )
 
-    _SCHEMA = json_schema(SCHEMA_FRAGMENT)
+    _SCHEMA = make_json_schema(SCHEMA_FRAGMENT)
 
     def __init__(
         self,
@@ -207,7 +207,7 @@ class File:
 class Index:  # noqa: PLW1641
     _FORMAT_VERSION = 1
     _GAME = "minecraft"
-    _SCHEMA = json_schema(
+    _SCHEMA = make_json_schema(
         {
             "type": "object",
             "properties": {

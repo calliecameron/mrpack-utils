@@ -12,7 +12,7 @@ import jsonschema
 from frozendict import frozendict
 
 
-def json_schema(fragment: Mapping[str, Any]) -> frozendict[str, Any]:
+def make_json_schema(fragment: Mapping[str, Any]) -> frozendict[str, Any]:
     d = dict(fragment)
     d["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     return frozendict(d)
@@ -76,7 +76,7 @@ class Requirement(Enum):
 
     @staticmethod
     def _schema() -> frozendict[str, Any]:
-        return json_schema(Requirement.schema_fragment())
+        return make_json_schema(Requirement.schema_fragment())
 
     @staticmethod
     def load(s: str) -> "Requirement":
@@ -110,7 +110,7 @@ class Env:
         },
     )
 
-    _SCHEMA = json_schema(SCHEMA_FRAGMENT)
+    _SCHEMA = make_json_schema(SCHEMA_FRAGMENT)
 
     client: Requirement
     server: Requirement
@@ -189,3 +189,31 @@ class Sha512(_Hash):
     @classmethod
     def _hash_fn(cls) -> _HashFn:
         return hashlib.sha512()
+
+
+@functools.total_ordering
+class ID:
+    def __init__(self, i: str) -> None:
+        super().__init__()
+        if len(i) != 8:  # noqa: PLR2004
+            raise ValueError(f"'{i}' is not a valid ID (8-digit string)")
+        self._id = i
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, ID):
+            raise NotImplementedError
+        return self._id == other._id
+
+    @override
+    def __hash__(self) -> int:
+        return hash(self._id)
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, ID):
+            raise NotImplementedError
+        return self._id < other._id
+
+    @override
+    def __repr__(self) -> str:
+        return self._id

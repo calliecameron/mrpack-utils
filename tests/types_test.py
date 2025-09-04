@@ -1,9 +1,9 @@
 import jsonschema
 import pytest
 
-from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
+from mrpack_utils.types import ID, Env, GameVersion, Requirement, Sha1, Sha512
 
-# ruff: noqa: S101,PT011
+# ruff: noqa: PT011,S101
 
 
 class TestGameVersion:
@@ -147,3 +147,25 @@ class TestSha512:
             assert Sha512.from_data(b"foo\n") == b"foo\n"
         with pytest.raises(NotImplementedError):
             assert Sha512.from_data(b"foo\n") < b"foo\n"
+
+
+class TestID:
+    def test_valid(self) -> None:
+        i1 = ID("foobarba")
+        assert str(i1) == "foobarba"
+
+        i2 = ID("zquuxyay")
+        assert str(i2) == "zquuxyay"
+
+        assert i1 == i1  # noqa: PLR0124
+        assert i1 != i2
+        with pytest.raises(NotImplementedError):
+            assert i1 == "foobarba"
+
+        assert i1 < i2
+        with pytest.raises(NotImplementedError):
+            assert i1 < "foo"
+
+    def test_invalid(self) -> None:
+        with pytest.raises(ValueError):
+            ID("foo")

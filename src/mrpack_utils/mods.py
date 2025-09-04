@@ -1,23 +1,17 @@
 import binascii
-import sys
-from collections.abc import Mapping, Sequence, Set
+from collections.abc import Mapping, Set
 from dataclasses import dataclass
-from typing import Any, cast
 
-import requests
 from frozendict import frozendict
 from requests.utils import requote_uri
 
+from mrpack_utils import api
 from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import Env, GameVersion, Requirement, Sha512
+from mrpack_utils.types import ID, Env, GameVersion, Sha512
 
 
 class ModpackError(Exception):
     pass
-
-
-type ProjectID = str
-type _VersionID = str
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -28,7 +22,7 @@ class _ModStub:
     mod_license: str
     source_url: str
     issues_url: str
-    versions: Set[_VersionID]
+    versions: Set[ID]
 
 
 class Mod:
@@ -121,7 +115,7 @@ class Modpack:
         dependencies: Mapping[str, str],
         loaders: Set[str],
         unknown_dependencies: Set[str],
-        mods: Mapping[ProjectID, Mod],
+        mods: Mapping[ID, Mod],
         missing_mods: Set[str],
         unknown_mods: Mapping[str, str],
         other_files: Mapping[str, str],
@@ -163,7 +157,7 @@ class Modpack:
         return self._unknown_dependencies
 
     @property
-    def mods(self) -> frozendict[ProjectID, Mod]:
+    def mods(self) -> frozendict[ID, Mod]:
         return self._mods
 
     @property
@@ -177,63 +171,6 @@ class Modpack:
     @property
     def other_files(self) -> frozendict[str, str]:
         return self._other_files
-
-    @staticmethod
-    def _fetch_file_info(
-        hashes: Set[Sha512],
-    ) -> tuple[dict[Sha512, dict[str, Any]], frozenset[Sha512]]:
-        versions_response = requests.post(
-            "https://api.modrinth.com/v2/version_files",
-            json={"hashes": sorted(str(h) for h in hashes), "algorithm": "sha512"},
-            timeout=10,
-        )
-        versions_response.raise_for_status()
-        versions = versions_response.json()
-        versions = {Sha512(k): v for (k, v) in versions.items()}
-
-        known_hashes = frozenset(
-            {
-                Sha512(file["hashes"]["sha512"])
-                for version in versions
-                for file in versions[version]["files"]
-            },
-        )
-
-        return versions, known_hashes
-
-    @staticmethod
-    def _fetch_projects(file_info: Mapping[Sha512, Mapping[str, Any]]) -> list[dict[str, Any]]:
-        ids = {file_info[mod_hash]["project_id"] for mod_hash in file_info}
-        projects_response = requests.get(
-            "https://api.modrinth.com/v2/projects",
-            {"ids": "[" + ", ".join(f'"{mod_id}"' for mod_id in sorted(ids)) + "]"},
-            timeout=10,
-        )
-        projects_response.raise_for_status()
-        return cast("list[dict[str, Any]]", projects_response.json())
-
-    @staticmethod
-    def _fetch_versions(
-        projects: Sequence[Mapping[str, Any]],
-        loaders: Set[str],
-    ) -> dict[_VersionID, dict[str, Any]]:
-        loaders_param = "[" + ", ".join(f'"{loader}"' for loader in sorted(loaders)) + "]"
-        versions = {}
-        for i, project in enumerate(sorted(projects, key=lambda p: p["title"].lower())):
-            sys.stderr.write(
-                f"Fetching versions for mod {i + 1} of {len(projects)}: {project['title']}...\n",
-            )
-            versions_response = requests.get(
-                f"https://api.modrinth.com/v2/project/{project['id']}/version",
-                {
-                    "loaders": loaders_param,
-                },
-                timeout=10,
-            )
-            versions_response.raise_for_status()
-            for version in versions_response.json():
-                versions[version["id"]] = version
-        return cast("dict[_VersionID, dict[str, Any]]", versions)
 
     @staticmethod
     def _map_loaders(mrpack: Mrpack) -> frozenset[str]:
@@ -251,51 +188,48 @@ class Modpack:
             all_hashes |= mrpack.index.files.keys()
             loaders |= Modpack._map_loaders(mrpack)
 
-        file_info, known_hashes = Modpack._fetch_file_info(all_hashes)
-        projects = Modpack._fetch_projects(file_info)
-        versions = Modpack._fetch_versions(projects, loaders)
+        file_infos = api.get_file_details(all_hashes)
+        projects = api.get_projects({f.project_id for f in file_infos.values()})
+        versions = api.get_versions(projects.values(), loaders)
 
         mod_stubs = {}
-        for project in projects:
+        for project in projects.values():
             try:
-                mod_stubs[project["id"]] = _ModStub(
-                    name=project["title"],
-                    slug=project["slug"],
-                    env=Env(
-                        client=Requirement.from_str(project.get("client_side", "")),
-                        server=Requirement.from_str(project.get("server_side", "")),
-                    ),
-                    mod_license="" if "license" not in project else project["license"]["id"],
-                    # Sometimes the API returns None for these - force them to be strings
-                    source_url=project.get("source_url", "") or "",
-                    issues_url=project.get("issues_url", "") or "",
+                mod_stubs[project.project_id] = _ModStub(
+                    name=project.title,
+                    slug=project.slug,
+                    env=project.env,
+                    mod_license=project.project_license,
+                    source_url=project.source_url,
+                    issues_url=project.issues_url,
                     versions=frozenset(
                         {
                             version
                             for version in versions
-                            if versions[version]["project_id"] == project["id"]
+                            if versions[version].project_id == project.project_id
                         },
                     ),
                 )
             except Exception as e:  # pragma: no cover
-                raise ModpackError(f"Failed to load mod {project['title']}: {e}") from e
+                raise ModpackError(f"Failed to load mod {project.title}: {e}") from e
 
         modpacks = []
         for mrpack in mrpacks:
             mods = {}
             missing_mods = set()
             for mod_hash in mrpack.index.files:
-                if mod_hash in known_hashes:
-                    mod_id = file_info[mod_hash]["project_id"]
+                if mod_hash in file_infos:
+                    file_info = file_infos[mod_hash]
+                    mod_id = file_info.project_id
                     mod_stub = mod_stubs[mod_id]
-                    game_versions = set()
+                    game_versions: set[str] = set()
                     for version in mod_stub.versions:
-                        if frozenset(versions[version]["loaders"]) & Modpack._map_loaders(mrpack):
-                            game_versions.update(versions[version]["game_versions"])
+                        if versions[version].loaders & Modpack._map_loaders(mrpack):
+                            game_versions.update(versions[version].game_versions)
                     mods[mod_id] = Mod(
                         name=mod_stub.name,
                         slug=mod_stub.slug,
-                        version=file_info[mod_hash]["version_number"],
+                        version=file_info.version_number,
                         original_env=mod_stub.env,
                         overridden_env=mrpack.index.files[mod_hash].env or mod_stub.env,
                         mod_license=mod_stub.mod_license,
