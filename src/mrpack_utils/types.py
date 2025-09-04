@@ -6,7 +6,16 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Protocol, Self, override
+from typing import Any, Protocol, Self, override
+
+import jsonschema
+from frozendict import frozendict
+
+
+def json_schema(fragment: Mapping[str, Any]) -> frozendict[str, Any]:
+    d = dict(fragment)
+    d["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+    return frozendict(d)
 
 
 @functools.total_ordering
@@ -54,32 +63,64 @@ class Requirement(Enum):
     UNSUPPORTED = auto()
 
     @staticmethod
-    def from_str(s: str) -> "Requirement":
-        if not s or s == "unknown":
-            return Requirement.UNKNOWN
-        if s == "required":
-            return Requirement.REQUIRED
-        if s == "optional":
-            return Requirement.OPTIONAL
-        if s == "unsupported":
-            return Requirement.UNSUPPORTED
-        raise ValueError(
-            "Requirement value must be one of {required, optional, unsupported}, got '" + s + "'",
+    def schema_fragment() -> frozendict[str, Any]:
+        return frozendict(
+            {
+                "enum": [
+                    Requirement.REQUIRED.name.lower(),
+                    Requirement.OPTIONAL.name.lower(),
+                    Requirement.UNSUPPORTED.name.lower(),
+                ],
+            },
         )
+
+    @staticmethod
+    def _schema() -> frozendict[str, Any]:
+        return json_schema(Requirement.schema_fragment())
+
+    @staticmethod
+    def load(s: str) -> "Requirement":
+        jsonschema.validate(s, Requirement._schema())
+        return Requirement.from_str(s)
+
+    @staticmethod
+    def from_str(s: str) -> "Requirement":
+        if not s:
+            return Requirement.UNKNOWN
+        valid = {v.lower() for v in Requirement.__members__}
+        if s not in valid:
+            raise ValueError(f"Requirement value must be one of [{sorted(valid)}], got '{s}'")
+        return Requirement[s.upper()]
 
 
 @dataclass(frozen=True, kw_only=True)
 class Env:
+    SCHEMA_FRAGMENT = frozendict(
+        {
+            "type": "object",
+            "properties": {
+                "client": Requirement.schema_fragment(),
+                "server": Requirement.schema_fragment(),
+            },
+            "required": [
+                "client",
+                "server",
+            ],
+            "additionalProperties": False,
+        },
+    )
+
+    _SCHEMA = json_schema(SCHEMA_FRAGMENT)
+
     client: Requirement
     server: Requirement
 
     @staticmethod
     def load(env: Mapping[str, str]) -> "Env":
-        if env.keys() != frozenset(["client", "server"]):
-            raise ValueError("Env must have keys {client, server}, got " + str(env.keys()))
+        jsonschema.validate(env, Env._SCHEMA)
         return Env(
-            client=Requirement.from_str(env["client"]),
-            server=Requirement.from_str(env["server"]),
+            client=Requirement.load(env["client"]),
+            server=Requirement.load(env["server"]),
         )
 
 

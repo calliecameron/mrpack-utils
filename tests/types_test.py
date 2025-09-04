@@ -1,3 +1,4 @@
+import jsonschema
 import pytest
 
 from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
@@ -52,16 +53,27 @@ class TestRequirement:
         with pytest.raises(ValueError):
             Requirement.from_str("foo")
 
+    def test_load(self) -> None:
+        with pytest.raises(jsonschema.ValidationError):
+            Requirement.load("")
+        with pytest.raises(jsonschema.ValidationError):
+            Requirement.load("unknown")
+        assert Requirement.load("required") == Requirement.REQUIRED
+        assert Requirement.load("optional") == Requirement.OPTIONAL
+        assert Requirement.load("unsupported") == Requirement.UNSUPPORTED
+        with pytest.raises(jsonschema.ValidationError):
+            Requirement.load("foo")
+
 
 class TestEnv:
-    def test_from_dict(self) -> None:
+    def test_load(self) -> None:
         e = Env.load({"client": "required", "server": "optional"})
         assert e.client == Requirement.REQUIRED
         assert e.server == Requirement.OPTIONAL
 
-        with pytest.raises(ValueError):
+        with pytest.raises(jsonschema.ValidationError):
             Env.load({"client": "required"})
-        with pytest.raises(ValueError):
+        with pytest.raises(jsonschema.ValidationError):
             Env.load({"client": "required", "server": "foo"})
 
 
