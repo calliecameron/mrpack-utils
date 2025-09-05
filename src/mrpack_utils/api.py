@@ -6,13 +6,13 @@ import jsonschema
 import requests
 from frozendict import frozendict
 
-from mrpack_utils.types import ID, Env, Requirement, Sha512, make_json_schema
+from mrpack_utils.types import Env, ProjectID, Requirement, Sha512, VersionID, make_json_schema
 
 
 @dataclass(frozen=True, kw_only=True)
 class File:
     sha512: Sha512
-    project_id: ID
+    project_id: ProjectID
     version_number: str
 
 
@@ -85,7 +85,7 @@ def get_file_details(hashes: Set[Sha512]) -> frozendict[Sha512, File]:
 
     out = {}
     for version in j.values():
-        project_id = ID(version["project_id"])
+        project_id = ProjectID(version["project_id"])
         version_number = version.get("version_number", "")
         for file in version["files"]:
             h = Sha512(file["hashes"]["sha512"])
@@ -101,7 +101,7 @@ def get_file_details(hashes: Set[Sha512]) -> frozendict[Sha512, File]:
 
 @dataclass(frozen=True, kw_only=True)
 class Project:
-    project_id: ID
+    project_id: ProjectID
     slug: str
     title: str
     env: Env
@@ -162,7 +162,7 @@ _GET_PROJECTS_SCHEMA = make_json_schema(
 )
 
 
-def get_projects(ids: Set[ID]) -> frozendict[ID, Project]:
+def get_projects(ids: Set[ProjectID]) -> frozendict[ProjectID, Project]:
     if not ids:
         return frozendict()
 
@@ -179,7 +179,7 @@ def get_projects(ids: Set[ID]) -> frozendict[ID, Project]:
 
     out = {}
     for project in j:
-        project_id = ID(project["id"])
+        project_id = ProjectID(project["id"])
         if project_id in out:
             raise ValueError(f"Duplicate project ID in get_projects '{project_id}'")
         out[project_id] = Project(
@@ -201,8 +201,8 @@ def get_projects(ids: Set[ID]) -> frozendict[ID, Project]:
 
 @dataclass(frozen=True, kw_only=True)
 class Version:
-    version_id: ID
-    project_id: ID
+    version_id: VersionID
+    project_id: ProjectID
     loaders: Set[str]
     game_versions: Set[str]
 
@@ -245,7 +245,10 @@ _GET_VERSIONS_SCHEMA = make_json_schema(
 )
 
 
-def get_versions(projects: Collection[Project], loaders: Set[str]) -> frozendict[ID, Version]:
+def get_versions(
+    projects: Collection[Project],
+    loaders: Set[str],
+) -> frozendict[VersionID, Version]:
     if not projects or not loaders:
         return frozendict()
 
@@ -268,12 +271,12 @@ def get_versions(projects: Collection[Project], loaders: Set[str]) -> frozendict
         jsonschema.validate(j, _GET_VERSIONS_SCHEMA)
 
         for version in j:
-            version_id = ID(version["id"])
+            version_id = VersionID(version["id"])
             if version_id in out:
                 raise ValueError(f"Duplicate version ID in get_versions '{version_id}'")
             out[version_id] = Version(
                 version_id=version_id,
-                project_id=ID(version["project_id"]),
+                project_id=ProjectID(version["project_id"]),
                 loaders=frozenset(version.get("loaders", [])),
                 game_versions=frozenset(version.get("game_versions", [])),
             )

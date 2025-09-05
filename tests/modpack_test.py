@@ -4,7 +4,7 @@ from mrpack_utils import api
 from mrpack_utils.moddb import ModDB
 from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.mrpack import File, Hashes, Index, Mrpack, Override
-from mrpack_utils.types import ID, Env, GameVersion, Requirement, Sha1, Sha512
+from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
 
 # ruff: noqa: S101
 
@@ -115,7 +115,7 @@ class TestModpack:
                     sha512=Sha512(
                         "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                     ),
-                    project_id=ID("a0000000"),
+                    project_id=ProjectID("a0000000"),
                     version_number="1.2.3",
                 ),
                 Sha512(
@@ -124,13 +124,13 @@ class TestModpack:
                     sha512=Sha512(
                         "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                     ),
-                    project_id=ID("b0000000"),
+                    project_id=ProjectID("b0000000"),
                     version_number="4.5.6",
                 ),
             },
             projects={
-                ID("a0000000"): api.Project(
-                    project_id=ID("a0000000"),
+                ProjectID("a0000000"): api.Project(
+                    project_id=ProjectID("a0000000"),
                     slug="a",
                     title="A",
                     env=Env(
@@ -141,8 +141,8 @@ class TestModpack:
                     source_url="",
                     issues_url="",
                 ),
-                ID("b0000000"): api.Project(
-                    project_id=ID("b0000000"),
+                ProjectID("b0000000"): api.Project(
+                    project_id=ProjectID("b0000000"),
                     slug="b",
                     title="B",
                     env=Env(
@@ -155,27 +155,27 @@ class TestModpack:
                 ),
             },
             versions={
-                ID("A0000000"): api.Version(
-                    version_id=ID("A0000000"),
-                    project_id=ID("a0000000"),
+                VersionID("A0000000"): api.Version(
+                    version_id=VersionID("A0000000"),
+                    project_id=ProjectID("a0000000"),
                     loaders={"fabric"},
                     game_versions={"1.19.2"},
                 ),
-                ID("A1000000"): api.Version(
-                    version_id=ID("A1000000"),
-                    project_id=ID("a0000000"),
+                VersionID("A1000000"): api.Version(
+                    version_id=VersionID("A1000000"),
+                    project_id=ProjectID("a0000000"),
                     loaders={"fabric", "minecraft"},
                     game_versions={"1.20"},
                 ),
-                ID("B0000000"): api.Version(
-                    version_id=ID("B0000000"),
-                    project_id=ID("b0000000"),
+                VersionID("B0000000"): api.Version(
+                    version_id=VersionID("B0000000"),
+                    project_id=ProjectID("b0000000"),
                     loaders={"minecraft"},
                     game_versions={"1.19.4"},
                 ),
-                ID("B1000000"): api.Version(
-                    version_id=ID("B1000000"),
-                    project_id=ID("b0000000"),
+                VersionID("B1000000"): api.Version(
+                    version_id=VersionID("B1000000"),
+                    project_id=ProjectID("b0000000"),
                     loaders={"forge"},
                     game_versions={"1.20"},
                 ),

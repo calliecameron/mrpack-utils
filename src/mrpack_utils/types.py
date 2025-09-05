@@ -192,7 +192,7 @@ class Sha512(_Hash):
 
 
 @functools.total_ordering
-class ID:
+class _ID:
     def __init__(self, i: str) -> None:
         super().__init__()
         if len(i) != 8:  # noqa: PLR2004
@@ -201,7 +201,7 @@ class ID:
 
     @override
     def __eq__(self, other: object) -> bool:
-        if not isinstance(other, ID):
+        if not isinstance(other, self.__class__):
             raise NotImplementedError
         return self._id == other._id
 
@@ -210,10 +210,18 @@ class ID:
         return hash(self._id)
 
     def __lt__(self, other: object) -> bool:
-        if not isinstance(other, ID):
+        if not isinstance(other, self.__class__):
             raise NotImplementedError
         return self._id < other._id
 
     @override
     def __repr__(self) -> str:
         return self._id
+
+
+class ProjectID(_ID):
+    pass
+
+
+class VersionID(_ID):
+    pass

@@ -1,7 +1,7 @@
 import jsonschema
 import pytest
 
-from mrpack_utils.types import ID, Env, GameVersion, Requirement, Sha1, Sha512
+from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
 
 # ruff: noqa: PT011,S101
 
@@ -151,21 +151,43 @@ class TestSha512:
 
 class TestID:
     def test_valid(self) -> None:
-        i1 = ID("foobarba")
-        assert str(i1) == "foobarba"
+        p1 = ProjectID("foobarba")
+        assert str(p1) == "foobarba"
 
-        i2 = ID("zquuxyay")
-        assert str(i2) == "zquuxyay"
+        p2 = ProjectID("zquuxyay")
+        assert str(p2) == "zquuxyay"
 
-        assert i1 == i1  # noqa: PLR0124
-        assert i1 != i2
+        assert p1 == p1  # noqa: PLR0124
+        assert p1 != p2
         with pytest.raises(NotImplementedError):
-            assert i1 == "foobarba"
+            assert p1 == "foobarba"
 
-        assert i1 < i2
+        assert p1 < p2
         with pytest.raises(NotImplementedError):
-            assert i1 < "foo"
+            assert p1 < "foo"
+
+        v1 = VersionID("foobarba")
+        assert str(v1) == "foobarba"
+
+        v2 = VersionID("zquuxyay")
+        assert str(v2) == "zquuxyay"
+
+        assert v1 == v1  # noqa: PLR0124
+        assert v1 != v2
+        with pytest.raises(NotImplementedError):
+            assert v1 == "foobarba"
+
+        assert v1 < v2
+        with pytest.raises(NotImplementedError):
+            assert v1 < "foo"
+
+        with pytest.raises(NotImplementedError):
+            assert p1 == v1
+        with pytest.raises(NotImplementedError):
+            assert p1 < v1
 
     def test_invalid(self) -> None:
         with pytest.raises(ValueError):
-            ID("foo")
+            ProjectID("foo")
+        with pytest.raises(ValueError):
+            VersionID("foo")

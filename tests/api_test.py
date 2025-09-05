@@ -4,7 +4,7 @@ import requests_mock
 from frozendict import frozendict
 
 from mrpack_utils.api import File, Project, Version, get_file_details, get_projects, get_versions
-from mrpack_utils.types import ID, Env, Requirement, Sha512
+from mrpack_utils.types import Env, ProjectID, Requirement, Sha512, VersionID
 
 # ruff: noqa: PT011,S101
 
@@ -71,7 +71,7 @@ class TestGetFileDetails:
                         sha512=Sha512(
                             "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
                     ),
                     Sha512(
@@ -80,7 +80,7 @@ class TestGetFileDetails:
                         sha512=Sha512(
                             "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
                     ),
                     Sha512(
@@ -89,7 +89,7 @@ class TestGetFileDetails:
                         sha512=Sha512(
                             "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("b0000000"),
+                        project_id=ProjectID("b0000000"),
                         version_number="4.5.6",
                     ),
                 },
@@ -330,10 +330,10 @@ class TestGetProjects:
                     },
                 ],
             )
-            assert get_projects({ID("a0000000"), ID("b0000000")}) == frozendict(
+            assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == frozendict(
                 {
-                    ID("a0000000"): Project(
-                        project_id=ID("a0000000"),
+                    ProjectID("a0000000"): Project(
+                        project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
                         env=Env(
@@ -344,8 +344,8 @@ class TestGetProjects:
                         source_url="",
                         issues_url="",
                     ),
-                    ID("b0000000"): Project(
-                        project_id=ID("b0000000"),
+                    ProjectID("b0000000"): Project(
+                        project_id=ProjectID("b0000000"),
                         slug="b",
                         title="B",
                         env=Env(
@@ -365,7 +365,7 @@ class TestGetProjects:
                 complete_qs=True,
                 json=[],
             )
-            assert get_projects({ID("a0000000"), ID("b0000000")}) == frozendict()
+            assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == frozendict()
 
         with requests_mock.Mocker() as m:
             m.get(
@@ -381,10 +381,10 @@ class TestGetProjects:
                     },
                 ],
             )
-            assert get_projects({ID("a0000000")}) == frozendict(
+            assert get_projects({ProjectID("a0000000")}) == frozendict(
                 {
-                    ID("a0000000"): Project(
-                        project_id=ID("a0000000"),
+                    ProjectID("a0000000"): Project(
+                        project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
                         env=Env(
@@ -412,7 +412,7 @@ class TestGetProjects:
                 ],
             )
             with pytest.raises(jsonschema.ValidationError):
-                get_projects({ID("a0000000")})
+                get_projects({ProjectID("a0000000")})
 
         # No title
         with requests_mock.Mocker() as m:
@@ -427,7 +427,7 @@ class TestGetProjects:
                 ],
             )
             with pytest.raises(jsonschema.ValidationError):
-                get_projects({ID("a0000000")})
+                get_projects({ProjectID("a0000000")})
 
         # No slug
         with requests_mock.Mocker() as m:
@@ -442,7 +442,7 @@ class TestGetProjects:
                 ],
             )
             with pytest.raises(jsonschema.ValidationError):
-                get_projects({ID("a0000000")})
+                get_projects({ProjectID("a0000000")})
 
         # No license ID
         with requests_mock.Mocker() as m:
@@ -459,7 +459,7 @@ class TestGetProjects:
                 ],
             )
             with pytest.raises(jsonschema.ValidationError):
-                get_projects({ID("a0000000")})
+                get_projects({ProjectID("a0000000")})
 
         # Duplicate items
         with requests_mock.Mocker() as m:
@@ -480,7 +480,7 @@ class TestGetProjects:
                 ],
             )
             with pytest.raises(jsonschema.ValidationError):
-                get_projects({ID("a0000000")})
+                get_projects({ProjectID("a0000000")})
 
         # Duplicate IDs
         with requests_mock.Mocker() as m:
@@ -501,7 +501,7 @@ class TestGetProjects:
                 ],
             )
             with pytest.raises(ValueError):
-                get_projects({ID("a0000000")})
+                get_projects({ProjectID("a0000000")})
 
 
 class TestGetVersions:
@@ -548,7 +548,7 @@ class TestGetVersions:
             assert get_versions(
                 {
                     Project(
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
                         env=Env(
@@ -560,7 +560,7 @@ class TestGetVersions:
                         issues_url="",
                     ),
                     Project(
-                        project_id=ID("b0000000"),
+                        project_id=ProjectID("b0000000"),
                         slug="b",
                         title="B",
                         env=Env(
@@ -578,27 +578,27 @@ class TestGetVersions:
                 },
             ) == frozendict(
                 {
-                    ID("A0000000"): Version(
-                        version_id=ID("A0000000"),
-                        project_id=ID("a0000000"),
+                    VersionID("A0000000"): Version(
+                        version_id=VersionID("A0000000"),
+                        project_id=ProjectID("a0000000"),
                         loaders={"fabric"},
                         game_versions={"1.19.2"},
                     ),
-                    ID("A1000000"): Version(
-                        version_id=ID("A1000000"),
-                        project_id=ID("a0000000"),
+                    VersionID("A1000000"): Version(
+                        version_id=VersionID("A1000000"),
+                        project_id=ProjectID("a0000000"),
                         loaders={"fabric", "minecraft"},
                         game_versions={"1.20"},
                     ),
-                    ID("B0000000"): Version(
-                        version_id=ID("B0000000"),
-                        project_id=ID("b0000000"),
+                    VersionID("B0000000"): Version(
+                        version_id=VersionID("B0000000"),
+                        project_id=ProjectID("b0000000"),
                         loaders={"minecraft"},
                         game_versions={"1.19.4"},
                     ),
-                    ID("B1000000"): Version(
-                        version_id=ID("B1000000"),
-                        project_id=ID("b0000000"),
+                    VersionID("B1000000"): Version(
+                        version_id=VersionID("B1000000"),
+                        project_id=ProjectID("b0000000"),
                         loaders=set(),
                         game_versions=set(),
                     ),
@@ -615,7 +615,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(
@@ -650,7 +650,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(
@@ -682,7 +682,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(
@@ -719,7 +719,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(
@@ -756,7 +756,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(
@@ -793,7 +793,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(
@@ -830,7 +830,7 @@ class TestGetVersions:
                 get_versions(
                     {
                         Project(
-                            project_id=ID("a0000000"),
+                            project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
                             env=Env(

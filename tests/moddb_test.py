@@ -4,7 +4,7 @@ from frozendict import frozendict
 from mrpack_utils import api
 from mrpack_utils.moddb import ModDB
 from mrpack_utils.mrpack import File, Hashes, Index, Mrpack
-from mrpack_utils.types import ID, Env, Requirement, Sha1, Sha512
+from mrpack_utils.types import Env, ProjectID, Requirement, Sha1, Sha512, VersionID
 
 # ruff: noqa: S101
 
@@ -229,7 +229,7 @@ class TestModDB:
                         sha512=Sha512(
                             "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
                     ),
                     Sha512(
@@ -238,7 +238,7 @@ class TestModDB:
                         sha512=Sha512(
                             "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
                     ),
                     Sha512(
@@ -247,7 +247,7 @@ class TestModDB:
                         sha512=Sha512(
                             "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("b0000000"),
+                        project_id=ProjectID("b0000000"),
                         version_number="4.5.6",
                     ),
                     Sha512(
@@ -256,7 +256,7 @@ class TestModDB:
                         sha512=Sha512(
                             "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("b0000000"),
+                        project_id=ProjectID("b0000000"),
                         version_number="4.5.7",
                     ),
                 },
@@ -269,7 +269,7 @@ class TestModDB:
                 sha512=Sha512(
                     "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                 ),
-                project_id=ID("a0000000"),
+                project_id=ProjectID("a0000000"),
                 version_number="1.2.3",
             )
             assert (
@@ -283,8 +283,8 @@ class TestModDB:
 
             assert db.all_projects == frozendict(
                 {
-                    ID("a0000000"): api.Project(
-                        project_id=ID("a0000000"),
+                    ProjectID("a0000000"): api.Project(
+                        project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
                         env=Env(
@@ -295,8 +295,8 @@ class TestModDB:
                         source_url="",
                         issues_url="",
                     ),
-                    ID("b0000000"): api.Project(
-                        project_id=ID("b0000000"),
+                    ProjectID("b0000000"): api.Project(
+                        project_id=ProjectID("b0000000"),
                         slug="b",
                         title="B",
                         env=Env(
@@ -309,8 +309,8 @@ class TestModDB:
                     ),
                 },
             )
-            assert db.project(ID("a0000000")) == api.Project(
-                project_id=ID("a0000000"),
+            assert db.project(ProjectID("a0000000")) == api.Project(
+                project_id=ProjectID("a0000000"),
                 slug="a",
                 title="A",
                 env=Env(
@@ -321,67 +321,67 @@ class TestModDB:
                 source_url="",
                 issues_url="",
             )
-            assert db.project(ID("c0000000")) is None
+            assert db.project(ProjectID("c0000000")) is None
 
             assert db.all_versions == frozendict(
                 {
-                    ID("A0000000"): api.Version(
-                        version_id=ID("A0000000"),
-                        project_id=ID("a0000000"),
+                    VersionID("A0000000"): api.Version(
+                        version_id=VersionID("A0000000"),
+                        project_id=ProjectID("a0000000"),
                         loaders={"fabric"},
                         game_versions={"1.19.2"},
                     ),
-                    ID("A1000000"): api.Version(
-                        version_id=ID("A1000000"),
-                        project_id=ID("a0000000"),
+                    VersionID("A1000000"): api.Version(
+                        version_id=VersionID("A1000000"),
+                        project_id=ProjectID("a0000000"),
                         loaders={"fabric", "minecraft"},
                         game_versions={"1.20"},
                     ),
-                    ID("B0000000"): api.Version(
-                        version_id=ID("B0000000"),
-                        project_id=ID("b0000000"),
+                    VersionID("B0000000"): api.Version(
+                        version_id=VersionID("B0000000"),
+                        project_id=ProjectID("b0000000"),
                         loaders={"minecraft"},
                         game_versions={"1.19.4"},
                     ),
-                    ID("B1000000"): api.Version(
-                        version_id=ID("B1000000"),
-                        project_id=ID("b0000000"),
+                    VersionID("B1000000"): api.Version(
+                        version_id=VersionID("B1000000"),
+                        project_id=ProjectID("b0000000"),
                         loaders={"forge"},
                         game_versions={"1.20"},
                     ),
                 },
             )
-            assert db.version(ID("A0000000")) == api.Version(
-                version_id=ID("A0000000"),
-                project_id=ID("a0000000"),
+            assert db.version(VersionID("A0000000")) == api.Version(
+                version_id=VersionID("A0000000"),
+                project_id=ProjectID("a0000000"),
                 loaders={"fabric"},
                 game_versions={"1.19.2"},
             )
-            assert db.version(ID("C0000000")) is None
+            assert db.version(VersionID("C0000000")) is None
 
             assert db.all_project_versions == frozendict(
                 {
-                    ID("a0000000"): frozenset(
+                    ProjectID("a0000000"): frozenset(
                         {
-                            ID("A0000000"),
-                            ID("A1000000"),
+                            VersionID("A0000000"),
+                            VersionID("A1000000"),
                         },
                     ),
-                    ID("b0000000"): frozenset(
+                    ProjectID("b0000000"): frozenset(
                         {
-                            ID("B0000000"),
-                            ID("B1000000"),
+                            VersionID("B0000000"),
+                            VersionID("B1000000"),
                         },
                     ),
                 },
             )
-            assert db.project_versions(ID("a0000000")) == frozenset(
+            assert db.project_versions(ProjectID("a0000000")) == frozenset(
                 {
-                    ID("A0000000"),
-                    ID("A1000000"),
+                    VersionID("A0000000"),
+                    VersionID("A1000000"),
                 },
             )
-            assert db.project_versions(ID("c0000000")) == frozenset()
+            assert db.project_versions(ProjectID("c0000000")) == frozenset()
 
         with requests_mock.Mocker() as m:
             m.post(
@@ -453,7 +453,7 @@ class TestModDB:
                         sha512=Sha512(
                             "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
                     ),
                     Sha512(
@@ -462,7 +462,7 @@ class TestModDB:
                         sha512=Sha512(
                             "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("a0000000"),
+                        project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
                     ),
                     Sha512(
@@ -471,7 +471,7 @@ class TestModDB:
                         sha512=Sha512(
                             "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("b0000000"),
+                        project_id=ProjectID("b0000000"),
                         version_number="4.5.6",
                     ),
                     Sha512(
@@ -480,7 +480,7 @@ class TestModDB:
                         sha512=Sha512(
                             "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
-                        project_id=ID("b0000000"),
+                        project_id=ProjectID("b0000000"),
                         version_number="4.5.7",
                     ),
                 },
@@ -493,7 +493,7 @@ class TestModDB:
                 sha512=Sha512(
                     "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                 ),
-                project_id=ID("a0000000"),
+                project_id=ProjectID("a0000000"),
                 version_number="1.2.3",
             )
             assert (
@@ -507,8 +507,8 @@ class TestModDB:
 
             assert db.all_projects == frozendict(
                 {
-                    ID("a0000000"): api.Project(
-                        project_id=ID("a0000000"),
+                    ProjectID("a0000000"): api.Project(
+                        project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
                         env=Env(
@@ -519,8 +519,8 @@ class TestModDB:
                         source_url="",
                         issues_url="",
                     ),
-                    ID("b0000000"): api.Project(
-                        project_id=ID("b0000000"),
+                    ProjectID("b0000000"): api.Project(
+                        project_id=ProjectID("b0000000"),
                         slug="b",
                         title="B",
                         env=Env(
@@ -533,8 +533,8 @@ class TestModDB:
                     ),
                 },
             )
-            assert db.project(ID("a0000000")) == api.Project(
-                project_id=ID("a0000000"),
+            assert db.project(ProjectID("a0000000")) == api.Project(
+                project_id=ProjectID("a0000000"),
                 slug="a",
                 title="A",
                 env=Env(
@@ -545,10 +545,10 @@ class TestModDB:
                 source_url="",
                 issues_url="",
             )
-            assert db.project(ID("c0000000")) is None
+            assert db.project(ProjectID("c0000000")) is None
 
             assert db.all_versions == frozendict()
-            assert db.version(ID("A0000000")) is None
+            assert db.version(VersionID("A0000000")) is None
 
             assert db.all_project_versions == frozendict()
-            assert db.project_versions(ID("A0000000")) == frozenset()
+            assert db.project_versions(ProjectID("A0000000")) == frozenset()

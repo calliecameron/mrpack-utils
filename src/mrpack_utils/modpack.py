@@ -6,7 +6,7 @@ from requests.utils import requote_uri
 
 from mrpack_utils.moddb import ModDB
 from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import ID, Env, GameVersion
+from mrpack_utils.types import Env, GameVersion, ProjectID
 
 
 class ModpackError(Exception):
@@ -93,7 +93,7 @@ class Modpack:
         dependencies: Mapping[str, str],
         loaders: Set[str],
         unknown_dependencies: Set[str],
-        mods: Mapping[ID, Mod],
+        mods: Mapping[ProjectID, Mod],
         missing_mods: Set[str],
         unknown_mods: Mapping[str, str],
         other_files: Mapping[str, str],
@@ -135,7 +135,7 @@ class Modpack:
         return self._unknown_dependencies
 
     @property
-    def mods(self) -> frozendict[ID, Mod]:
+    def mods(self) -> frozendict[ProjectID, Mod]:
         return self._mods
 
     @property

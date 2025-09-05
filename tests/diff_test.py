@@ -10,7 +10,7 @@ from mrpack_utils.commands.diff import (
 )
 from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.output import MissingMods, Table, UnknownDependencies
-from mrpack_utils.types import ID, Env, GameVersion, Requirement
+from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement
 
 # ruff: noqa: S101
 
@@ -137,7 +137,7 @@ class TestDiff:
             dependencies={},
             loaders=set(),
             unknown_dependencies=set(),
-            mods={ID("A0000000"): mod1_1, ID("B0000000"): mod2},
+            mods={ProjectID("A0000000"): mod1_1, ProjectID("B0000000"): mod2},
             missing_mods=set(),
             unknown_mods={},
             other_files={},
@@ -149,7 +149,7 @@ class TestDiff:
             dependencies={},
             loaders=set(),
             unknown_dependencies=set(),
-            mods={ID("A0000000"): mod1_2, ID("C0000000"): mod3},
+            mods={ProjectID("A0000000"): mod1_2, ProjectID("C0000000"): mod3},
             missing_mods=set(),
             unknown_mods={},
             other_files={},

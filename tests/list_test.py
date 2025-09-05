@@ -11,7 +11,7 @@ from mrpack_utils.commands.list import (
 )
 from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
-from mrpack_utils.types import ID, Env, GameVersion, Requirement
+from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement
 
 # ruff: noqa: S101
 
@@ -121,7 +121,7 @@ class TestList:
             dependencies={"foo": "1", "fabric-loader": "0.16"},
             loaders=set(),
             unknown_dependencies=set(),
-            mods={ID("abcd0000"): foo, ID("fedc0000"): bar},
+            mods={ProjectID("abcd0000"): foo, ProjectID("fedc0000"): bar},
             missing_mods=frozenset(),
             unknown_mods={},
             other_files={},
