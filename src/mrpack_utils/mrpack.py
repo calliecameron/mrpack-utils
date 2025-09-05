@@ -1,6 +1,7 @@
 import json
 import zipfile
 from collections.abc import Set
+from enum import Enum, auto
 from pathlib import PurePath
 from typing import override
 
@@ -14,10 +15,37 @@ class MrpackError(Exception):
     pass
 
 
+class OverrideType(Enum):
+    GENERAL = auto()
+    CLIENT = auto()
+    SERVER = auto()
+
+    @staticmethod
+    def from_prefix(prefix: str) -> "OverrideType":
+        general_prefix = "overrides"
+        client_prefix = "client-overrides"
+        server_prefix = "server-overrides"
+
+        if prefix == general_prefix:
+            return OverrideType.GENERAL
+        if prefix == client_prefix:
+            return OverrideType.CLIENT
+        if prefix == server_prefix:
+            return OverrideType.SERVER
+        raise ValueError(
+            f"Invalid override prefix '{prefix}'; must be one of [{general_prefix}, "
+            f"{client_prefix}, {server_prefix}]",
+        )
+
+
 class Override:
     def __init__(self, *, path: str, data: bytes) -> None:
         super().__init__()
         self._path = validated_path(path)
+        if len(self._path.parts) < 2:  # noqa: PLR2004
+            raise ValueError(f"Override must be in a subfolder; got '{self._path}'")
+        self._type = OverrideType.from_prefix(self._path.parts[0])
+
         self._data = data
         self._hash = Sha512.from_data(data)
         # This is the same check 'diff' uses to detect binary files
@@ -26,6 +54,10 @@ class Override:
     @property
     def path(self) -> PurePath:
         return self._path
+
+    @property
+    def type(self) -> OverrideType:
+        return self._type
 
     @property
     def data(self) -> bytes:
@@ -56,9 +88,6 @@ class Override:
 
 
 class Mrpack:
-    _OVERRIDES_PREFIX = "overrides"
-    _CLIENT_OVERRIDES_PREFIX = "client-overrides"
-    _SERVER_OVERRIDES_PREFIX = "server-overrides"
     _INDEX_FILENAME = "modrinth.index.json"
 
     def __init__(
@@ -66,44 +95,16 @@ class Mrpack:
         *,
         index: Index,
         overrides: Set[Override],
-        client_overrides: Set[Override],
-        server_overrides: Set[Override],
     ) -> None:
         super().__init__()
         self._index = index
 
-        def _validate_overrides(
-            os: Set[Override],
-            name: str,
-            prefix: str,
-        ) -> frozendict[PurePath, Override]:
-            out = {}
-            for o in os:
-                if o.path.parts[0] != prefix:
-                    raise ValueError(
-                        f"{name.capitalize()} must have a path starting with '{prefix}'; got "
-                        f"'{o.path}",
-                    )
-                if o.path in out:
-                    raise ValueError(f"Duplicate {name} path '{o.path}")
-                out[o.path] = o
-            return frozendict(out)
-
-        self._overrides = _validate_overrides(
-            overrides,
-            "override",
-            Mrpack._OVERRIDES_PREFIX,
-        )
-        self._client_overrides = _validate_overrides(
-            client_overrides,
-            "client override",
-            Mrpack._CLIENT_OVERRIDES_PREFIX,
-        )
-        self._server_overrides = _validate_overrides(
-            server_overrides,
-            "server override",
-            Mrpack._SERVER_OVERRIDES_PREFIX,
-        )
+        out = {}
+        for o in overrides:
+            if o.path in out:
+                raise ValueError(f"Duplicate override path '{o.path}")
+            out[o.path] = o
+        self._overrides = frozendict(out)
 
     @property
     def index(self) -> Index:
@@ -112,14 +113,6 @@ class Mrpack:
     @property
     def overrides(self) -> frozendict[PurePath, Override]:
         return self._overrides
-
-    @property
-    def client_overrides(self) -> frozendict[PurePath, Override]:
-        return self._client_overrides
-
-    @property
-    def server_overrides(self) -> frozendict[PurePath, Override]:
-        return self._server_overrides
 
     @staticmethod
     def from_file(filename: str) -> "Mrpack":
@@ -134,31 +127,13 @@ class Mrpack:
                 index = Index.from_json(j)
 
                 overrides: set[Override] = set()
-                client_overrides: set[Override] = set()
-                server_overrides: set[Override] = set()
-
                 for entry in z.infolist():
                     if entry.filename != Mrpack._INDEX_FILENAME and not entry.is_dir():
-                        path = validated_path(entry.filename)
-                        if path.parts[0] == Mrpack._OVERRIDES_PREFIX:
-                            target = overrides
-                        elif path.parts[0] == Mrpack._CLIENT_OVERRIDES_PREFIX:
-                            target = client_overrides
-                        elif path.parts[0] == Mrpack._SERVER_OVERRIDES_PREFIX:
-                            target = server_overrides
-                        else:
-                            raise ValueError(
-                                f"File with invalid path '{entry.filename}'; must be in "
-                                f"{Mrpack._OVERRIDES_PREFIX}, {Mrpack._CLIENT_OVERRIDES_PREFIX} "
-                                f"or {Mrpack._SERVER_OVERRIDES_PREFIX}",
-                            )
-                        target.add(Override(path=entry.filename, data=z.read(entry)))
+                        overrides.add(Override(path=entry.filename, data=z.read(entry)))
 
             return Mrpack(
                 index=index,
                 overrides=overrides,
-                client_overrides=client_overrides,
-                server_overrides=server_overrides,
             )
         except Exception as e:
             raise MrpackError("Failed to load mrpack file: " + str(e)) from e

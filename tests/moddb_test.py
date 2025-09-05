@@ -67,8 +67,6 @@ class TestModDB:
                 ),
             ),
             overrides=set(),
-            client_overrides=set(),
-            server_overrides=set(),
         )
         mrpack2 = Mrpack(
             index=Index(
@@ -124,8 +122,6 @@ class TestModDB:
                 ),
             ),
             overrides=set(),
-            client_overrides=set(),
-            server_overrides=set(),
         )
 
         with requests_mock.Mocker() as m:

@@ -191,16 +191,12 @@ class Modpack:
             missing_mods=missing_mods,
             unknown_mods={
                 str(p): f"{binascii.crc32(o.data):08x}"
-                for (p, o) in (
-                    mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
-                ).items()
+                for (p, o) in mrpack.overrides.items()
                 if p.parts[1] == "mods"
             },
             other_files={
                 str(p): f"{binascii.crc32(o.data):08x}"
-                for (p, o) in (
-                    mrpack.overrides | mrpack.client_overrides | mrpack.server_overrides
-                ).items()
+                for (p, o) in mrpack.overrides.items()
                 if p.parts[1] != "mods"
             },
         )

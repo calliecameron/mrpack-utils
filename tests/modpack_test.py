@@ -104,8 +104,6 @@ class TestModpack:
                     data=b"bar\n",
                 ),
             },
-            client_overrides=set(),
-            server_overrides=set(),
         )
 
         db = ModDB(
