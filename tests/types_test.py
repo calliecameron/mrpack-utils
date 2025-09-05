@@ -3,7 +3,7 @@ from pathlib import PurePath
 import jsonschema
 import pytest
 
-from mrpack_utils.types import (
+from mrpack.types import (
     Env,
     GameVersion,
     ProjectID,

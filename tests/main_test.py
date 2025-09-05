@@ -1,7 +1,7 @@
 import pytest
 import requests_mock
 
-from mrpack_utils.main import main
+from mrpack.main import main
 from tests import testdata
 
 # ruff: noqa: S101

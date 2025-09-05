@@ -1,5 +1,5 @@
 [project]
-name = "mrpack-utils"
+name = "mrpack"
 version = "0.0.0"
 description = "Utilities for working with Modrinth-format (mrpack) Minecraft modpacks"
 readme = "README.md"
@@ -28,7 +28,7 @@ dev = [
 ]
 
 [project.scripts]
-mrpack = "mrpack_utils.main:main"
+mrpack = "mrpack.main:main"
 
 [build-system]
 requires = ["uv_build>=0.8.14,<0.9.0"]

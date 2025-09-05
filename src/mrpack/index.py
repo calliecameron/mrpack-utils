@@ -5,7 +5,7 @@ from typing import Any, override
 import jsonschema
 from frozendict import frozendict
 
-from mrpack_utils.types import Env, GameVersion, Sha1, Sha512, make_json_schema, validated_path
+from mrpack.types import Env, GameVersion, Sha1, Sha512, make_json_schema, validated_path
 
 
 class Hashes:

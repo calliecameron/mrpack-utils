@@ -3,9 +3,9 @@ from collections.abc import Collection, Mapping
 
 from frozendict import frozendict
 
-from mrpack_utils.api import File, Project, Version, get_file_details, get_projects, get_versions
-from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import ProjectID, Sha512, VersionID
+from mrpack.api import File, Project, Version, get_file_details, get_projects, get_versions
+from mrpack.mrpack import Mrpack
+from mrpack.types import ProjectID, Sha512, VersionID
 
 
 class ModDB:
@@ -60,9 +60,9 @@ class ModDB:
     def load(mrpacks: Collection[Mrpack], fetch_versions: bool) -> "ModDB":
         hashes: set[Sha512] = set()
         loaders: set[str] = set()
-        for mrpack in mrpacks:
-            hashes |= mrpack.index.files.keys()
-            loaders |= mrpack.index.dependencies.loaders
+        for mrp in mrpacks:
+            hashes |= mrp.index.files.keys()
+            loaders |= mrp.index.dependencies.loaders
 
         files = get_file_details(hashes)
         projects = get_projects({f.project_id for f in files.values()})

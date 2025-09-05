@@ -1,6 +1,6 @@
 import requests_mock
 
-from mrpack_utils.commands.list import (
+from mrpack.commands.list import (
     _empty_row,
     _headers,
     _modpack_data,
@@ -9,9 +9,9 @@ from mrpack_utils.commands.list import (
     _unknown_mods,
     run,
 )
-from mrpack_utils.modpack import Mod, Modpack
-from mrpack_utils.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
-from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement
+from mrpack.modpack import Mod, Modpack
+from mrpack.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
+from mrpack.types import Env, GameVersion, ProjectID, Requirement
 from tests import testdata
 
 # ruff: noqa: S101

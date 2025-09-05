@@ -3,8 +3,8 @@ import pytest
 import requests_mock
 from frozendict import frozendict
 
-from mrpack_utils.api import File, Project, Version, get_file_details, get_projects, get_versions
-from mrpack_utils.types import Env, ProjectID, Requirement, Sha512, VersionID
+from mrpack.api import File, Project, Version, get_file_details, get_projects, get_versions
+from mrpack.types import Env, ProjectID, Requirement, Sha512, VersionID
 from tests import testdata
 
 # ruff: noqa: PT011,S101

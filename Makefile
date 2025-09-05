@@ -9,7 +9,7 @@ lint:
 
 .PHONY: test
 test: testdata
-	uv run pytest --cov-report=term-missing --cov=mrpack_utils tests
+	uv run pytest --cov-report=term-missing --cov=mrpack tests
 
 .PHONY: testdata
 testdata: testdata/test1.mrpack testdata/test2.mrpack testdata/bad1.mrpack

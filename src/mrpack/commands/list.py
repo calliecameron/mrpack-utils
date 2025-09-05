@@ -2,11 +2,11 @@ from collections.abc import Sequence, Set
 
 from frozendict import frozendict
 
-from mrpack_utils.moddb import ModDB
-from mrpack_utils.modpack import Mod, Modpack
-from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
-from mrpack_utils.types import GameVersion
+from mrpack.moddb import ModDB
+from mrpack.modpack import Mod, Modpack
+from mrpack.mrpack import Mrpack
+from mrpack.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
+from mrpack.types import GameVersion
 
 IncompatibleModMap = frozendict[GameVersion, frozenset[Mod]]
 
@@ -129,9 +129,9 @@ def run(
     game_versions: Set[GameVersion],
     dev: bool,
 ) -> tuple[Element, ...]:
-    mrpack = Mrpack.from_file(mrpack_file)
-    db = ModDB.load([mrpack], True)
-    modpack = Modpack.load(mrpack, db)
+    mrp = Mrpack.from_file(mrpack_file)
+    db = ModDB.load([mrp], True)
+    modpack = Modpack.load(mrp, db)
     game_versions = set(game_versions)
     game_versions.add(modpack.game_version)
 

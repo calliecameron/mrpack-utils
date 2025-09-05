@@ -1,11 +1,11 @@
 import requests_mock
 from frozendict import frozendict
 
-from mrpack_utils import api
-from mrpack_utils.index import Dependencies, File, Hashes, Index
-from mrpack_utils.moddb import ModDB
-from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
+from mrpack import api
+from mrpack.index import Dependencies, File, Hashes, Index
+from mrpack.moddb import ModDB
+from mrpack.mrpack import Mrpack
+from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
 from tests import testdata
 
 # ruff: noqa: S101

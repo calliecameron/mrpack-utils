@@ -1,4 +1,4 @@
-from mrpack_utils.output import (
+from mrpack.output import (
     IncompatibleMods,
     MissingMods,
     Table,

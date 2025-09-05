@@ -7,8 +7,8 @@ from typing import override
 
 from frozendict import frozendict
 
-from mrpack_utils.index import Index
-from mrpack_utils.types import Sha512, validated_path
+from mrpack.index import Index
+from mrpack.types import Sha512, validated_path
 
 
 class MrpackError(Exception):

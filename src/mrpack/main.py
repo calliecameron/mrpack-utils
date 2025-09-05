@@ -1,10 +1,10 @@
 import argparse
 from collections.abc import Sequence
 
-import mrpack_utils.commands.diff
-import mrpack_utils.commands.list
-from mrpack_utils.output import render, render_csv
-from mrpack_utils.types import GameVersion
+import mrpack.commands.diff
+import mrpack.commands.list
+from mrpack.output import render, render_csv
+from mrpack.types import GameVersion
 
 
 def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
@@ -42,13 +42,13 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
     args = parser.parse_args(args=argv)
 
     if args.command == "list":
-        out = mrpack_utils.commands.list.run(
+        out = mrpack.commands.list.run(
             args.mrpack_file,
             frozenset(args.check_version),
             args.dev,
         )
     elif args.command == "diff":
-        out = mrpack_utils.commands.diff.run(
+        out = mrpack.commands.diff.run(
             args.old_file,
             args.new_file,
         )

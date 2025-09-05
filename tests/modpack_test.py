@@ -1,11 +1,11 @@
 from frozendict import frozendict
 
-from mrpack_utils import api
-from mrpack_utils.index import Dependencies, File, Hashes, Index
-from mrpack_utils.moddb import ModDB
-from mrpack_utils.modpack import Mod, Modpack
-from mrpack_utils.mrpack import Mrpack, Override
-from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
+from mrpack import api
+from mrpack.index import Dependencies, File, Hashes, Index
+from mrpack.moddb import ModDB
+from mrpack.modpack import Mod, Modpack
+from mrpack.mrpack import Mrpack, Override
+from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
 
 # ruff: noqa: S101
 
@@ -40,7 +40,7 @@ class TestMod:
 
 class TestModpack:
     def test_load(self) -> None:
-        mrpack = Mrpack(
+        mrp = Mrpack(
             index=Index(
                 name="Test Modpack",
                 version="1",
@@ -178,7 +178,7 @@ class TestModpack:
             },
         )
 
-        modpack = Modpack.load(mrpack, db)
+        modpack = Modpack.load(mrp, db)
 
         assert modpack.name == "Test Modpack"
         assert modpack.version == "1"

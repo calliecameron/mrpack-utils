@@ -4,9 +4,9 @@ from collections.abc import Mapping, Set
 from frozendict import frozendict
 from requests.utils import requote_uri
 
-from mrpack_utils.moddb import ModDB
-from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import Env, GameVersion, ProjectID
+from mrpack.moddb import ModDB
+from mrpack.mrpack import Mrpack
+from mrpack.types import Env, GameVersion, ProjectID
 
 
 class ModpackError(Exception):
@@ -151,10 +151,10 @@ class Modpack:
         return self._other_files
 
     @staticmethod
-    def load(mrpack: Mrpack, db: ModDB) -> "Modpack":
+    def load(mrp: Mrpack, db: ModDB) -> "Modpack":
         mods = {}
         missing_mods = set()
-        for mod_hash in mrpack.index.files:
+        for mod_hash in mrp.index.files:
             if mod_hash in db.all_files:
                 file = db.all_files[mod_hash]
                 mod_id = file.project_id
@@ -163,7 +163,7 @@ class Modpack:
                 for version in db.project_versions(file.project_id):
                     if (
                         version in db.all_versions
-                        and db.all_versions[version].loaders & mrpack.index.dependencies.loaders
+                        and db.all_versions[version].loaders & mrp.index.dependencies.loaders
                     ):
                         game_versions.update(db.all_versions[version].game_versions)
                 mods[mod_id] = Mod(
@@ -171,32 +171,32 @@ class Modpack:
                     slug=project.slug,
                     version=file.version_number,
                     original_env=project.env,
-                    overridden_env=mrpack.index.files[mod_hash].env or project.env,
+                    overridden_env=mrp.index.files[mod_hash].env or project.env,
                     mod_license=project.project_license,
                     source_url=project.source_url,
                     issues_url=project.issues_url,
                     game_versions=GameVersion.load_multiple(game_versions),
                 )
             else:
-                missing_mods.add(str(mrpack.index.files[mod_hash].path.parts[-1]))
+                missing_mods.add(str(mrp.index.files[mod_hash].path.parts[-1]))
 
         return Modpack(
-            name=mrpack.index.name,
-            version=mrpack.index.version,
-            game_version=mrpack.index.dependencies.game_version,
-            dependencies=mrpack.index.dependencies.others,
-            loaders=mrpack.index.dependencies.loaders,
-            unknown_dependencies=mrpack.index.dependencies.unknown_dependencies,
+            name=mrp.index.name,
+            version=mrp.index.version,
+            game_version=mrp.index.dependencies.game_version,
+            dependencies=mrp.index.dependencies.others,
+            loaders=mrp.index.dependencies.loaders,
+            unknown_dependencies=mrp.index.dependencies.unknown_dependencies,
             mods=mods,
             missing_mods=missing_mods,
             unknown_mods={
                 str(p): f"{binascii.crc32(o.data):08x}"
-                for (p, o) in mrpack.overrides.items()
+                for (p, o) in mrp.overrides.items()
                 if p.parts[1] == "mods"
             },
             other_files={
                 str(p): f"{binascii.crc32(o.data):08x}"
-                for (p, o) in mrpack.overrides.items()
+                for (p, o) in mrp.overrides.items()
                 if p.parts[1] != "mods"
             },
         )

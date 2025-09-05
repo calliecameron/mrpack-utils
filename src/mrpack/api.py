@@ -6,7 +6,7 @@ import jsonschema
 import requests
 from frozendict import frozendict
 
-from mrpack_utils.types import Env, ProjectID, Requirement, Sha512, VersionID, make_json_schema
+from mrpack.types import Env, ProjectID, Requirement, Sha512, VersionID, make_json_schema
 
 
 @dataclass(frozen=True, kw_only=True)

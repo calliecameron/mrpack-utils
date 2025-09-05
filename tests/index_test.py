@@ -4,8 +4,8 @@ import jsonschema
 import pytest
 from frozendict import frozendict
 
-from mrpack_utils.index import Dependencies, File, Hashes, Index
-from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
+from mrpack.index import Dependencies, File, Hashes, Index
+from mrpack.types import Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: PT011, S101
 

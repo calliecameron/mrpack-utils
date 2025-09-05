@@ -1,9 +1,9 @@
 from collections.abc import Mapping
 
-from mrpack_utils.moddb import ModDB
-from mrpack_utils.modpack import Modpack
-from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.output import Element, MissingMods, Table, UnknownDependencies
+from mrpack.moddb import ModDB
+from mrpack.modpack import Modpack
+from mrpack.mrpack import Mrpack
+from mrpack.output import Element, MissingMods, Table, UnknownDependencies
 
 
 def _diff(old: Mapping[str, str], new: Mapping[str, str]) -> list[tuple[str, str, str]]:
