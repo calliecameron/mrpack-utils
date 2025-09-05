@@ -27,6 +27,7 @@ class TestHashes:
         )
         assert h.others == frozendict({"foo": "bar"})
 
+        # Sha1 in others
         with pytest.raises(ValueError):
             Hashes(
                 sha1=Sha1("a000000000000000000000000000000000000000"),
@@ -40,6 +41,7 @@ class TestHashes:
                 },
             )
 
+        # Sha512 in others
         with pytest.raises(ValueError):
             Hashes(
                 sha1=Sha1("a000000000000000000000000000000000000000"),
@@ -140,6 +142,7 @@ class TestHashes:
 
 class TestFile:
     def test_init(self) -> None:
+        # With env
         f1 = File(
             path="a/b",
             hashes=Hashes(
@@ -168,6 +171,7 @@ class TestFile:
         assert f1.downloads == frozenset({"foo", "bar"})
         assert f1.size == 10  # noqa: PLR2004
 
+        # Without env
         f2 = File(
             path="a/b",
             hashes=Hashes(
@@ -219,6 +223,7 @@ class TestFile:
             )
 
     def test_from_json_valid(self) -> None:
+        # With env
         f1 = File.from_json(
             {
                 "path": "a/b",
@@ -254,6 +259,7 @@ class TestFile:
         assert f1.downloads == frozenset({"foo", "bar"})
         assert f1.size == 10  # noqa: PLR2004
 
+        # Without env
         f2 = File.from_json(
             {
                 "path": "a/b",
@@ -482,6 +488,7 @@ class TestDependencies:
         assert d.unknown_dependencies == frozenset({"foo"})
         assert d.loaders == frozenset({"minecraft", "fabric"})
 
+        # Minecraft in others
         with pytest.raises(ValueError):
             Dependencies(
                 game_version=GameVersion("1.20.1"),
