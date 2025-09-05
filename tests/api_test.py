@@ -278,7 +278,7 @@ class TestProject:
             client=Requirement.OPTIONAL,
             server=Requirement.REQUIRED,
         )
-        p = Project(
+        p1 = Project(
             project_id=ProjectID("a0000000"),
             slug="a",
             title="A",
@@ -288,13 +288,36 @@ class TestProject:
             issues_url="I 1",
         )
 
-        assert p.project_id == ProjectID("a0000000")
-        assert p.slug == "a"
-        assert p.title == "A"
-        assert p.env == e
-        assert p.project_license == "MIT"
-        assert p.source_url == "S%201"
-        assert p.issues_url == "I%201"
+        assert p1.project_id == ProjectID("a0000000")
+        assert p1.slug == "a"
+        assert p1.title == "A"
+        assert p1.env == e
+        assert p1.project_license == "MIT"
+        assert p1.source_url == "S%201"
+        assert p1.issues_url == "I%201"
+
+        p2 = Project(
+            project_id=ProjectID("b0000000"),
+            slug="b",
+            title="B",
+            env=e,
+            project_license="MIT",
+            source_url="S",
+            issues_url="I",
+        )
+
+        assert p2.project_id == ProjectID("b0000000")
+        assert p2.slug == "b"
+        assert p2.title == "B"
+        assert p2.env == e
+        assert p2.project_license == "MIT"
+        assert p2.source_url == "S"
+        assert p2.issues_url == "I"
+
+        assert p1 == p1  # noqa: PLR0124
+        assert p1 != p2
+        with pytest.raises(NotImplementedError):
+            assert p1 == "foo"
 
 
 class TestGetProjects:
