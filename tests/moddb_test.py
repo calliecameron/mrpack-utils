@@ -2,10 +2,10 @@ import requests_mock
 from frozendict import frozendict
 
 from mrpack_utils import api
-from mrpack_utils.index import File, Hashes, Index
+from mrpack_utils.index import Dependencies, File, Hashes, Index
 from mrpack_utils.moddb import ModDB
 from mrpack_utils.mrpack import Mrpack
-from mrpack_utils.types import Env, ProjectID, Sha1, Sha512, VersionID
+from mrpack_utils.types import Env, GameVersion, ProjectID, Sha1, Sha512, VersionID
 
 # ruff: noqa: S101
 
@@ -58,11 +58,13 @@ class TestModDB:
                         size=10,
                     ),
                 },
-                dependencies={
-                    "minecraft": "1.19.4",
-                    "foo": "1",
-                    "fabric-loader": "2",
-                },
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={
+                        "foo": "1",
+                        "fabric-loader": "2",
+                    },
+                ),
             ),
             overrides=set(),
             client_overrides=set(),
@@ -114,10 +116,12 @@ class TestModDB:
                         size=10,
                     ),
                 },
-                dependencies={
-                    "minecraft": "1.19.4",
-                    "foo": "2",
-                },
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={
+                        "foo": "2",
+                    },
+                ),
             ),
             overrides=set(),
             client_overrides=set(),

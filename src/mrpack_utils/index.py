@@ -182,7 +182,7 @@ class File:
         )
 
 
-class Index:  # noqa: PLW1641
+class Dependencies:  # noqa: PLW1641
     _LOADERS = frozendict(
         {
             "minecraft": "minecraft",
@@ -193,6 +193,76 @@ class Index:  # noqa: PLW1641
         },
     )
 
+    SCHEMA_FRAGMENT = frozendict(
+        {
+            "type": "object",
+            "properties": {
+                "minecraft": {
+                    "type": "string",
+                },
+            },
+            "patternProperties": {
+                ".*": {
+                    "type": "string",
+                },
+            },
+            "required": [
+                "minecraft",
+            ],
+            "additionalProperties": True,
+        },
+    )
+
+    _SCHEMA = make_json_schema(SCHEMA_FRAGMENT)
+
+    def __init__(self, *, game_version: GameVersion, others: Mapping[str, str]) -> None:
+        super().__init__()
+        self._game_version = game_version
+        if "minecraft" in others:
+            raise ValueError(
+                "'minecraft' must not be in 'others'; it has a dedicated arg",
+            )
+        self._others = frozendict(others)
+
+        self._unknown_dependencies = frozenset(self._others - Dependencies._LOADERS.keys())
+        self._loaders = frozenset(
+            {"minecraft"}
+            | {Dependencies._LOADERS[d] for d in self._others if d in Dependencies._LOADERS},
+        )
+
+    @property
+    def game_version(self) -> GameVersion:
+        return self._game_version
+
+    @property
+    def others(self) -> frozendict[str, str]:
+        return self._others
+
+    @property
+    def unknown_dependencies(self) -> frozenset[str]:
+        return self._unknown_dependencies
+
+    @property
+    def loaders(self) -> frozenset[str]:
+        return self._loaders
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Dependencies):
+            raise NotImplementedError
+        return self._game_version == other._game_version and self._others == other._others
+
+    @staticmethod
+    def from_json(data: Mapping[str, str]) -> "Dependencies":
+        jsonschema.validate(data, Dependencies._SCHEMA)
+        others = {k: v for (k, v) in data.items() if k != "minecraft"}
+        return Dependencies(
+            game_version=GameVersion(data["minecraft"]),
+            others=others,
+        )
+
+
+class Index:  # noqa: PLW1641
     _FORMAT_VERSION = 1
     _GAME = "minecraft"
     _SCHEMA = make_json_schema(
@@ -219,23 +289,7 @@ class Index:  # noqa: PLW1641
                     "items": File.SCHEMA_FRAGMENT,
                     "uniqueItems": True,
                 },
-                "dependencies": {
-                    "type": "object",
-                    "properties": {
-                        "minecraft": {
-                            "type": "string",
-                        },
-                    },
-                    "patternProperties": {
-                        ".*": {
-                            "type": "string",
-                        },
-                    },
-                    "required": [
-                        "minecraft",
-                    ],
-                    "additionalProperties": True,
-                },
+                "dependencies": Dependencies.SCHEMA_FRAGMENT,
             },
             "required": [
                 "formatVersion",
@@ -256,7 +310,7 @@ class Index:  # noqa: PLW1641
         version: str,
         summary: str,
         files: Set[File],
-        dependencies: Mapping[str, str],
+        dependencies: Dependencies,
     ) -> None:
         super().__init__()
         self._name = name
@@ -269,18 +323,7 @@ class Index:  # noqa: PLW1641
                 raise ValueError(f"Duplicate file SHA512 '{file.hashes.sha512}'")
             fs[file.hashes.sha512] = file
         self._files = frozendict(fs)
-
-        self._dependencies = frozendict(dependencies)
-        self._known_dependencies = frozenset(self._dependencies & Index._LOADERS.keys())
-        self._unknown_dependencies = frozenset(self._dependencies - Index._LOADERS.keys())
-
-        if "minecraft" not in self._dependencies:
-            raise ValueError("Missing 'minecraft' dependency")
-        self._game_version = GameVersion(self._dependencies["minecraft"])
-
-        self._loaders = frozenset(
-            {Index._LOADERS[d] for d in self._dependencies if d in Index._LOADERS},
-        )
+        self._dependencies = dependencies
 
     @property
     def name(self) -> str:
@@ -299,24 +342,8 @@ class Index:  # noqa: PLW1641
         return self._files
 
     @property
-    def dependencies(self) -> frozendict[str, str]:
+    def dependencies(self) -> Dependencies:
         return self._dependencies
-
-    @property
-    def known_dependencies(self) -> frozenset[str]:
-        return self._known_dependencies
-
-    @property
-    def unknown_dependencies(self) -> frozenset[str]:
-        return self._unknown_dependencies
-
-    @property
-    def game_version(self) -> GameVersion:
-        return self._game_version
-
-    @property
-    def loaders(self) -> frozenset[str]:
-        return self._loaders
 
     @override
     def __eq__(self, other: object) -> bool:
@@ -339,5 +366,5 @@ class Index:  # noqa: PLW1641
             version=data["versionId"],
             summary=data.get("summary", ""),
             files=files,
-            dependencies=data["dependencies"],
+            dependencies=Dependencies.from_json(data["dependencies"]),
         )

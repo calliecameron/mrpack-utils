@@ -62,7 +62,7 @@ class ModDB:
         loaders: set[str] = set()
         for mrpack in mrpacks:
             hashes |= mrpack.index.files.keys()
-            loaders |= mrpack.index.loaders
+            loaders |= mrpack.index.dependencies.loaders
 
         files = get_file_details(hashes)
         projects = get_projects({f.project_id for f in files.values()})

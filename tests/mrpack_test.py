@@ -3,9 +3,9 @@ from pathlib import PurePath
 import pytest
 from frozendict import frozendict
 
-from mrpack_utils.index import File, Hashes, Index
+from mrpack_utils.index import Dependencies, File, Hashes, Index
 from mrpack_utils.mrpack import Mrpack, MrpackError, Override
-from mrpack_utils.types import Env, Requirement, Sha1, Sha512
+from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: PT011, S101
 
@@ -89,7 +89,10 @@ class TestMrpack:
             version="1.0",
             summary="foo",
             files={f1, f2},
-            dependencies={"minecraft": "1.20.1", "foo": "2"},
+            dependencies=Dependencies(
+                game_version=GameVersion("1.20.1"),
+                others={"foo": "2"},
+            ),
         )
 
         o1 = Override(path="overrides/a", data=b"foo\n")
@@ -230,11 +233,13 @@ class TestMrpack:
             version="1.1",
             summary="First test modpack",
             files={f1, f2, f3},
-            dependencies={
-                "minecraft": "1.19.4",
-                "fabric-loader": "0.16",
-                "foo": "1",
-            },
+            dependencies=Dependencies(
+                game_version=GameVersion("1.19.4"),
+                others={
+                    "fabric-loader": "0.16",
+                    "foo": "1",
+                },
+            ),
         )
 
         o1 = Override(path="overrides/config/foo.txt", data=b"foo\n")

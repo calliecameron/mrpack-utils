@@ -163,7 +163,7 @@ class Modpack:
                 for version in db.project_versions(file.project_id):
                     if (
                         version in db.all_versions
-                        and db.all_versions[version].loaders & mrpack.index.loaders
+                        and db.all_versions[version].loaders & mrpack.index.dependencies.loaders
                     ):
                         game_versions.update(db.all_versions[version].game_versions)
                 mods[mod_id] = Mod(
@@ -183,10 +183,10 @@ class Modpack:
         return Modpack(
             name=mrpack.index.name,
             version=mrpack.index.version,
-            game_version=mrpack.index.game_version,
-            dependencies={k: v for (k, v) in mrpack.index.dependencies.items() if k != "minecraft"},
-            loaders=mrpack.index.loaders,
-            unknown_dependencies=mrpack.index.unknown_dependencies,
+            game_version=mrpack.index.dependencies.game_version,
+            dependencies=mrpack.index.dependencies.others,
+            loaders=mrpack.index.dependencies.loaders,
+            unknown_dependencies=mrpack.index.dependencies.unknown_dependencies,
             mods=mods,
             missing_mods=missing_mods,
             unknown_mods={

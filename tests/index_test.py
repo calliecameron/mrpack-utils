@@ -4,7 +4,7 @@ import jsonschema
 import pytest
 from frozendict import frozendict
 
-from mrpack_utils.index import File, Hashes, Index
+from mrpack_utils.index import Dependencies, File, Hashes, Index
 from mrpack_utils.types import Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: PT011, S101
@@ -463,6 +463,93 @@ class TestFile:
             )
 
 
+class TestDependencies:
+    def test_init(self) -> None:
+        d = Dependencies(
+            game_version=GameVersion("1.20.1"),
+            others={
+                "fabric-loader": "0.16",
+                "foo": "2",
+            },
+        )
+        assert d.game_version == GameVersion("1.20.1")
+        assert d.others == frozendict(
+            {
+                "fabric-loader": "0.16",
+                "foo": "2",
+            },
+        )
+        assert d.unknown_dependencies == frozenset({"foo"})
+        assert d.loaders == frozenset({"minecraft", "fabric"})
+
+        with pytest.raises(ValueError):
+            Dependencies(
+                game_version=GameVersion("1.20.1"),
+                others={
+                    "minecraft": "1.20.1",
+                    "fabric-loader": "0.16",
+                    "foo": "2",
+                },
+            )
+
+    def test_from_json_valid(self) -> None:
+        d1 = Dependencies.from_json(
+            {
+                "minecraft": "1.20.1",
+                "fabric-loader": "0.16",
+                "foo": "2",
+            },
+        )
+        assert d1.game_version == GameVersion("1.20.1")
+        assert d1.others == frozendict(
+            {
+                "fabric-loader": "0.16",
+                "foo": "2",
+            },
+        )
+        assert d1.unknown_dependencies == frozenset({"foo"})
+        assert d1.loaders == frozenset({"minecraft", "fabric"})
+
+        d2 = Dependencies.from_json(
+            {
+                "minecraft": "1.19.2",
+                "foo": "0.16",
+            },
+        )
+        assert d2.game_version == GameVersion("1.19.2")
+        assert d2.others == frozendict(
+            {
+                "foo": "0.16",
+            },
+        )
+        assert d2.unknown_dependencies == frozenset({"foo"})
+        assert d2.loaders == frozenset({"minecraft"})
+
+        assert d1 == d1  # noqa: PLR0124
+        assert d1 != d2
+        with pytest.raises(NotImplementedError):
+            assert d1 == "foo"
+
+    def test_from_json_invalid(self) -> None:
+        # No minecraft
+        with pytest.raises(jsonschema.ValidationError):
+            Dependencies.from_json(
+                {
+                    "fabric-loader": "0.16",
+                    "foo": "2",
+                },
+            )
+        # Invalid minecraft
+        with pytest.raises(ValueError):
+            Dependencies.from_json(
+                {
+                    "minecraft": "1.20.1-a",
+                    "fabric-loader": "0.16",
+                    "foo": "2",
+                },
+            )
+
+
 class TestIndex:
     def test_init(self) -> None:
         f1 = File(
@@ -507,30 +594,24 @@ class TestIndex:
             downloads={"foo", "bar"},
             size=20,
         )
+        d = Dependencies(
+            game_version=GameVersion("1.20.1"),
+            others={},
+        )
 
         i = Index(
             name="Test Modpack",
             version="1.0",
             summary="foo",
             files={f1, f2},
-            dependencies={
-                "minecraft": "1.20.1",
-                "fabric-loader": "0.16",
-                "foo": "2",
-            },
+            dependencies=d,
         )
 
         assert i.name == "Test Modpack"
         assert i.version == "1.0"
         assert i.summary == "foo"
         assert i.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
-        assert i.dependencies == frozendict(
-            {"minecraft": "1.20.1", "foo": "2", "fabric-loader": "0.16"},
-        )
-        assert i.known_dependencies == frozenset({"minecraft", "fabric-loader"})
-        assert i.unknown_dependencies == frozenset({"foo"})
-        assert i.game_version == GameVersion("1.20.1")
-        assert i.loaders == frozenset({"minecraft", "fabric"})
+        assert i.dependencies == d
 
         # Duplicate hashes
         with pytest.raises(ValueError):
@@ -539,17 +620,7 @@ class TestIndex:
                 version="1.0",
                 summary="foo",
                 files={f1, f2_f1_hash},
-                dependencies={"minecraft": "1.20.1", "foo": "2"},
-            )
-
-        # No minecraft dependency
-        with pytest.raises(ValueError):
-            Index(
-                name="Test Modpack",
-                version="1.0",
-                summary="foo",
-                files={f1, f2},
-                dependencies={"foo": "2"},
+                dependencies=d,
             )
 
     def test_from_json_valid(self) -> None:
@@ -587,6 +658,18 @@ class TestIndex:
         }
         f2 = File.from_json(f2_raw)
 
+        d1_raw = {
+            "minecraft": "1.20.1",
+            "foo": "2",
+            "fabric-loader": "0.16",
+        }
+        d1 = Dependencies.from_json(d1_raw)
+
+        d2_raw = {
+            "minecraft": "1.19.2",
+        }
+        d2 = Dependencies.from_json(d2_raw)
+
         i1 = Index.from_json(
             {
                 "formatVersion": 1,
@@ -598,11 +681,7 @@ class TestIndex:
                     f1_raw,
                     f2_raw,
                 ],
-                "dependencies": {
-                    "minecraft": "1.20.1",
-                    "foo": "2",
-                    "fabric-loader": "0.16",
-                },
+                "dependencies": d1_raw,
             },
         )
 
@@ -610,13 +689,7 @@ class TestIndex:
         assert i1.version == "1.0"
         assert i1.summary == "foo"
         assert i1.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
-        assert i1.dependencies == frozendict(
-            {"minecraft": "1.20.1", "foo": "2", "fabric-loader": "0.16"},
-        )
-        assert i1.known_dependencies == frozenset({"minecraft", "fabric-loader"})
-        assert i1.unknown_dependencies == frozenset({"foo"})
-        assert i1.game_version == GameVersion("1.20.1")
-        assert i1.loaders == frozenset({"minecraft", "fabric"})
+        assert i1.dependencies == d1
 
         i2 = Index.from_json(
             {
@@ -628,10 +701,7 @@ class TestIndex:
                     f1_raw,
                     f2_raw,
                 ],
-                "dependencies": {
-                    "minecraft": "1.20.1",
-                    "foo": "2",
-                },
+                "dependencies": d2_raw,
             },
         )
 
@@ -639,11 +709,7 @@ class TestIndex:
         assert i2.version == "1.0"
         assert i2.summary == ""
         assert i2.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
-        assert i2.dependencies == frozendict({"minecraft": "1.20.1", "foo": "2"})
-        assert i2.known_dependencies == frozenset({"minecraft"})
-        assert i2.unknown_dependencies == frozenset({"foo"})
-        assert i2.game_version == GameVersion("1.20.1")
-        assert i2.loaders == frozenset({"minecraft"})
+        assert i2.dependencies == d2
 
         assert i1 == i1  # noqa: PLR0124
         assert i1 != i2
@@ -699,6 +765,11 @@ class TestIndex:
             "fileSize": 20,
         }
 
+        d_raw = {
+            "minecraft": "1.20.1",
+            "foo": "2",
+        }
+
         # No format version
         with pytest.raises(jsonschema.ValidationError):
             Index.from_json(
@@ -711,10 +782,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # Wrong format version
@@ -730,10 +798,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # No game
@@ -748,10 +813,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # Wrong game
@@ -767,10 +829,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # No version ID
@@ -785,10 +844,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # No name
@@ -803,10 +859,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # No files
@@ -818,10 +871,7 @@ class TestIndex:
                     "versionId": "1.0",
                     "name": "Test Modpack",
                     "summary": "foo",
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # Duplicate files
@@ -837,10 +887,7 @@ class TestIndex:
                         f1_raw,
                         f1_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # Duplicate hash
@@ -856,10 +903,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw_f1_hash,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                 },
             )
         # No dependencies
@@ -877,24 +921,6 @@ class TestIndex:
                     ],
                 },
             )
-        # No minecraft dependency
-        with pytest.raises(jsonschema.ValidationError):
-            Index.from_json(
-                {
-                    "formatVersion": 1,
-                    "game": "minecraft",
-                    "versionId": "1.0",
-                    "name": "Test Modpack",
-                    "summary": "foo",
-                    "files": [
-                        f1_raw,
-                        f2_raw,
-                    ],
-                    "dependencies": {
-                        "foo": "2",
-                    },
-                },
-            )
         # Extra key
         with pytest.raises(jsonschema.ValidationError):
             Index.from_json(
@@ -908,10 +934,7 @@ class TestIndex:
                         f1_raw,
                         f2_raw,
                     ],
-                    "dependencies": {
-                        "minecraft": "1.20.1",
-                        "foo": "2",
-                    },
+                    "dependencies": d_raw,
                     "foo": "bar",
                 },
             )

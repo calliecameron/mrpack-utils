@@ -1,7 +1,7 @@
 from frozendict import frozendict
 
 from mrpack_utils import api
-from mrpack_utils.index import File, Hashes, Index
+from mrpack_utils.index import Dependencies, File, Hashes, Index
 from mrpack_utils.moddb import ModDB
 from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.mrpack import Mrpack, Override
@@ -86,9 +86,9 @@ class TestModpack:
                         size=10,
                     ),
                 },
-                dependencies=frozendict(
-                    {
-                        "minecraft": "1.19.4",
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={
                         "foo": "1",
                         "fabric-loader": "2",
                     },
