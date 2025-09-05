@@ -80,7 +80,7 @@ def _other_files(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
 def run(old_file: str, new_file: str) -> tuple[Element, ...]:
     old_mrpack = Mrpack.from_file(old_file)
     new_mrpack = Mrpack.from_file(new_file)
-    db = ModDB.load([old_mrpack, new_mrpack], True)
+    db = ModDB.load([old_mrpack, new_mrpack], False)
     old = Modpack.load(old_mrpack, db)
     new = Modpack.load(new_mrpack, db)
 

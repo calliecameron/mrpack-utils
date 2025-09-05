@@ -178,25 +178,3 @@ def test1_test2_diff_calls(m: requests_mock.Mocker) -> None:
             PROJECT_D,
         ],
     )
-    m.get(
-        'https://api.modrinth.com/v2/project/a0000000/version?loaders=["fabric", "minecraft"]',
-        complete_qs=True,
-        json=[
-            VERSION_A0,
-            VERSION_A1,
-        ],
-    )
-    m.get(
-        'https://api.modrinth.com/v2/project/b0000000/version?loaders=["fabric", "minecraft"]',
-        complete_qs=True,
-        json=[
-            VERSION_B0,
-        ],
-    )
-    m.get(
-        'https://api.modrinth.com/v2/project/d0000000/version?loaders=["fabric", "minecraft"]',
-        complete_qs=True,
-        json=[
-            VERSION_D0,
-        ],
-    )
