@@ -134,10 +134,7 @@ class TestModpack:
                     project_id=ProjectID("a0000000"),
                     slug="a",
                     title="A",
-                    env=Env(
-                        client=Requirement.UNKNOWN,
-                        server=Requirement.UNKNOWN,
-                    ),
+                    env=Env.unknown(),
                     project_license="",
                     source_url="",
                     issues_url="",
@@ -198,10 +195,7 @@ class TestModpack:
         assert mods[0].name == "A"
         assert mods[0].link == "https://modrinth.com/mod/a"
         assert mods[0].version == "1.2.3"
-        assert mods[0].original_env == Env(
-            client=Requirement.UNKNOWN,
-            server=Requirement.UNKNOWN,
-        )
+        assert mods[0].original_env == Env.unknown()
         assert mods[0].overridden_env == Env(
             client=Requirement.REQUIRED,
             server=Requirement.OPTIONAL,

@@ -56,8 +56,8 @@ class TestHashes:
                 },
             )
 
-    def test_load_valid(self) -> None:
-        h1 = Hashes.load(
+    def test_from_json_valid(self) -> None:
+        h1 = Hashes.from_json(
             {
                 "sha1": "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15",
                 "sha512": (
@@ -73,7 +73,7 @@ class TestHashes:
         )
         assert h1.others == frozendict({})
 
-        h2 = Hashes.load(
+        h2 = Hashes.from_json(
             {
                 "sha1": "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15",
                 "sha512": (
@@ -95,10 +95,10 @@ class TestHashes:
         with pytest.raises(NotImplementedError):
             assert h1 == "foo"
 
-    def test_load_invalid(self) -> None:
+    def test_from_json_invalid(self) -> None:
         # No sha1
         with pytest.raises(jsonschema.ValidationError):
-            Hashes.load(
+            Hashes.from_json(
                 {
                     "sha512": (
                         "0cf9180a764aba863a67b6d72f0918bc131c6772642cb2dce5a34f0a702f9470dd"
@@ -109,7 +109,7 @@ class TestHashes:
             )
         # No sha512
         with pytest.raises(jsonschema.ValidationError):
-            Hashes.load(
+            Hashes.from_json(
                 {
                     "sha1": "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15",
                     "foo": "bar",
@@ -117,7 +117,7 @@ class TestHashes:
             )
         # Invalid sha1
         with pytest.raises(ValueError):
-            Hashes.load(
+            Hashes.from_json(
                 {
                     "sha1": "a",
                     "sha512": (
@@ -129,7 +129,7 @@ class TestHashes:
             )
         # Invalid sha512
         with pytest.raises(ValueError):
-            Hashes.load(
+            Hashes.from_json(
                 {
                     "sha1": "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15",
                     "sha512": "a",
@@ -218,8 +218,8 @@ class TestFile:
                 size=-1,
             )
 
-    def test_load_valid(self) -> None:
-        f1 = File.load(
+    def test_from_json_valid(self) -> None:
+        f1 = File.from_json(
             {
                 "path": "a/b",
                 "hashes": {
@@ -254,7 +254,7 @@ class TestFile:
         assert f1.downloads == frozenset({"foo", "bar"})
         assert f1.size == 10  # noqa: PLR2004
 
-        f2 = File.load(
+        f2 = File.from_json(
             {
                 "path": "a/b",
                 "hashes": {
@@ -287,10 +287,10 @@ class TestFile:
 
         assert f1 != f2
 
-    def test_invalid(self) -> None:
+    def test_from_json_invalid(self) -> None:
         # No path
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "hashes": {
                         "sha1": "f1d2d2f924e986ac86fdf7b36c94bcdf32beec15",
@@ -312,7 +312,7 @@ class TestFile:
             )
         # Invalid path
         with pytest.raises(ValueError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/../b",
                     "hashes": {
@@ -335,7 +335,7 @@ class TestFile:
             )
         # No hashes
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/b",
                     "env": {
@@ -351,7 +351,7 @@ class TestFile:
             )
         # No downloads
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/b",
                     "hashes": {
@@ -370,7 +370,7 @@ class TestFile:
             )
         # Duplicate downloads
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/b",
                     "hashes": {
@@ -394,7 +394,7 @@ class TestFile:
             )
         # No file size
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/b",
                     "hashes": {
@@ -416,7 +416,7 @@ class TestFile:
             )
         # Bad file size
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/b",
                     "hashes": {
@@ -439,7 +439,7 @@ class TestFile:
             )
         # Extra key
         with pytest.raises(jsonschema.ValidationError):
-            File.load(
+            File.from_json(
                 {
                     "path": "a/b",
                     "hashes": {
@@ -552,7 +552,7 @@ class TestIndex:
                 dependencies={"foo": "2"},
             )
 
-    def test_load_valid(self) -> None:
+    def test_from_json_valid(self) -> None:
         f1_raw = {
             "path": "a/b",
             "hashes": {
@@ -568,7 +568,7 @@ class TestIndex:
             ],
             "fileSize": 10,
         }
-        f1 = File.load(f1_raw)
+        f1 = File.from_json(f1_raw)
 
         f2_raw = {
             "path": "c/d",
@@ -585,9 +585,9 @@ class TestIndex:
             ],
             "fileSize": 20,
         }
-        f2 = File.load(f2_raw)
+        f2 = File.from_json(f2_raw)
 
-        i1 = Index.load(
+        i1 = Index.from_json(
             {
                 "formatVersion": 1,
                 "game": "minecraft",
@@ -618,7 +618,7 @@ class TestIndex:
         assert i1.game_version == GameVersion("1.20.1")
         assert i1.loaders == frozenset({"minecraft", "fabric"})
 
-        i2 = Index.load(
+        i2 = Index.from_json(
             {
                 "formatVersion": 1,
                 "game": "minecraft",
@@ -650,7 +650,7 @@ class TestIndex:
         with pytest.raises(NotImplementedError):
             assert i1 == "foo"
 
-    def test_load_invalid(self) -> None:
+    def test_from_json_invalid(self) -> None:
         f1_raw = {
             "path": "a/b",
             "hashes": {
@@ -701,7 +701,7 @@ class TestIndex:
 
         # No format version
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "game": "minecraft",
                     "versionId": "1.0",
@@ -719,7 +719,7 @@ class TestIndex:
             )
         # Wrong format version
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 2,
                     "game": "minecraft",
@@ -738,7 +738,7 @@ class TestIndex:
             )
         # No game
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "versionId": "1.0",
@@ -756,7 +756,7 @@ class TestIndex:
             )
         # Wrong game
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "foo",
@@ -775,7 +775,7 @@ class TestIndex:
             )
         # No version ID
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -793,7 +793,7 @@ class TestIndex:
             )
         # No name
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -811,7 +811,7 @@ class TestIndex:
             )
         # No files
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -826,7 +826,7 @@ class TestIndex:
             )
         # Duplicate files
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -845,7 +845,7 @@ class TestIndex:
             )
         # Duplicate hash
         with pytest.raises(ValueError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -864,7 +864,7 @@ class TestIndex:
             )
         # No dependencies
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -879,7 +879,7 @@ class TestIndex:
             )
         # No minecraft dependency
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",
@@ -897,7 +897,7 @@ class TestIndex:
             )
         # Extra key
         with pytest.raises(jsonschema.ValidationError):
-            Index.load(
+            Index.from_json(
                 {
                     "formatVersion": 1,
                     "game": "minecraft",

@@ -122,7 +122,7 @@ class Mrpack:
         return self._server_overrides
 
     @staticmethod
-    def load(filename: str) -> "Mrpack":
+    def from_file(filename: str) -> "Mrpack":
         try:
             with zipfile.ZipFile(filename) as z:
                 bad_file = z.testzip()
@@ -131,7 +131,7 @@ class Mrpack:
 
                 with z.open(Mrpack._INDEX_FILENAME) as f:
                     j = json.load(f)
-                index = Index.load(j)
+                index = Index.from_json(j)
 
                 overrides: set[Override] = set()
                 client_overrides: set[Override] = set()

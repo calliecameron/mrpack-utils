@@ -72,7 +72,7 @@ class Hashes:
         return hash((self._sha1, self._sha512, self._others))
 
     @staticmethod
-    def load(data: Mapping[str, str]) -> "Hashes":
+    def from_json(data: Mapping[str, str]) -> "Hashes":
         jsonschema.validate(data, Hashes._SCHEMA)
         others = {k: v for (k, v) in data.items() if k not in {"sha1", "sha512"}}
         return Hashes(
@@ -171,12 +171,12 @@ class File:
         return hash((self._path, self._hashes, self._env, self._downloads, self._size))
 
     @staticmethod
-    def load(data: Mapping[str, Any]) -> "File":
+    def from_json(data: Mapping[str, Any]) -> "File":
         jsonschema.validate(data, File._SCHEMA)
         return File(
             path=data["path"],
-            hashes=Hashes.load(data["hashes"]),
-            env=Env.load(data["env"]) if "env" in data else None,
+            hashes=Hashes.from_json(data["hashes"]),
+            env=Env.from_json(data["env"]) if "env" in data else None,
             downloads=frozenset(data["downloads"]),
             size=data["fileSize"],
         )
@@ -331,9 +331,9 @@ class Index:  # noqa: PLW1641
         )
 
     @staticmethod
-    def load(data: Mapping[str, Any]) -> "Index":
+    def from_json(data: Mapping[str, Any]) -> "Index":
         jsonschema.validate(data, Index._SCHEMA)
-        files = {File.load(file) for file in data["files"]}
+        files = {File.from_json(file) for file in data["files"]}
         return Index(
             name=data["name"],
             version=data["versionId"],

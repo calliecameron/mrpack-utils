@@ -65,8 +65,8 @@ class TestGameVersion:
         with pytest.raises(NotImplementedError):
             assert GameVersion("1.20") < "1.20"
 
-    def test_from_iterable(self) -> None:
-        assert GameVersion.from_iterable(
+    def test_load_multiple(self) -> None:
+        assert GameVersion.load_multiple(
             ["1.19", "1.20-dev", "1.18.4", "1.19", "foo"],
         ) == frozenset(
             [GameVersion("1.19"), GameVersion("1.18.4")],
@@ -83,30 +83,35 @@ class TestRequirement:
         with pytest.raises(ValueError):
             Requirement.from_str("foo")
 
-    def test_load(self) -> None:
+    def test_from_json(self) -> None:
         with pytest.raises(jsonschema.ValidationError):
-            Requirement.load("")
+            Requirement.from_json("")
         with pytest.raises(jsonschema.ValidationError):
-            Requirement.load("unknown")
-        assert Requirement.load("required") == Requirement.REQUIRED
-        assert Requirement.load("optional") == Requirement.OPTIONAL
-        assert Requirement.load("unsupported") == Requirement.UNSUPPORTED
+            Requirement.from_json("unknown")
+        assert Requirement.from_json("required") == Requirement.REQUIRED
+        assert Requirement.from_json("optional") == Requirement.OPTIONAL
+        assert Requirement.from_json("unsupported") == Requirement.UNSUPPORTED
         with pytest.raises(jsonschema.ValidationError):
-            Requirement.load("foo")
+            Requirement.from_json("foo")
 
 
 class TestEnv:
-    def test_load(self) -> None:
-        e = Env.load({"client": "required", "server": "optional"})
+    def test_from_json(self) -> None:
+        e = Env.from_json({"client": "required", "server": "optional"})
         assert e.client == Requirement.REQUIRED
         assert e.server == Requirement.OPTIONAL
 
         with pytest.raises(jsonschema.ValidationError):
-            Env.load({"client": "required"})
+            Env.from_json({"client": "required"})
         with pytest.raises(jsonschema.ValidationError):
-            Env.load({"client": "required", "server": "foo"})
+            Env.from_json({"client": "required", "server": "foo"})
         with pytest.raises(jsonschema.ValidationError):
-            Env.load({"client": "required", "server": "optional", "foo": "bar"})
+            Env.from_json({"client": "required", "server": "optional", "foo": "bar"})
+
+    def test_unknown(self) -> None:
+        e = Env.unknown()
+        assert e.client == Requirement.UNKNOWN
+        assert e.server == Requirement.UNKNOWN
 
 
 class TestSha1:

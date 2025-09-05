@@ -180,8 +180,8 @@ class TestMrpack:
                 server_overrides={so1, so3},
             )
 
-    def test_load(self) -> None:
-        m = Mrpack.load("testdata/test1.mrpack")
+    def test_from_file_valid(self) -> None:
+        m = Mrpack.from_file("testdata/test1.mrpack")
 
         f1 = File(
             path="mods/foo.jar",
@@ -266,10 +266,10 @@ class TestMrpack:
             },
         )
 
-    def test_load_invalid(self) -> None:
+    def test_from_file_invalid(self) -> None:
         # Not a zip file
         with pytest.raises(MrpackError):
-            Mrpack.load("testdata/modrinth.index.json")
+            Mrpack.from_file("testdata/modrinth.index.json")
         # File in invalid location
         with pytest.raises(MrpackError):
-            Mrpack.load("testdata/bad1.mrpack")
+            Mrpack.from_file("testdata/bad1.mrpack")

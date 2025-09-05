@@ -129,7 +129,7 @@ def run(
     game_versions: Set[GameVersion],
     dev: bool,
 ) -> tuple[Element, ...]:
-    mrpack = Mrpack.load(mrpack_file)
+    mrpack = Mrpack.from_file(mrpack_file)
     db = ModDB.load([mrpack], True)
     modpack = Modpack.load(mrpack, db)
     game_versions = set(game_versions)

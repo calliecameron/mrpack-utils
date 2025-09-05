@@ -64,7 +64,7 @@ class GameVersion:
         return ".".join(str(segment) for segment in self._version)
 
     @staticmethod
-    def from_iterable(versions: Iterable[str]) -> "frozenset[GameVersion]":
+    def load_multiple(versions: Iterable[str]) -> "frozenset[GameVersion]":
         # We deliberately skip over any versions that don't parse
         out = set()
         for version in versions:
@@ -96,7 +96,7 @@ class Requirement(Enum):
         return make_json_schema(Requirement.schema_fragment())
 
     @staticmethod
-    def load(s: str) -> "Requirement":
+    def from_json(s: str) -> "Requirement":
         jsonschema.validate(s, Requirement._schema())
         return Requirement.from_str(s)
 
@@ -133,11 +133,18 @@ class Env:
     server: Requirement
 
     @staticmethod
-    def load(env: Mapping[str, str]) -> "Env":
+    def from_json(env: Mapping[str, str]) -> "Env":
         jsonschema.validate(env, Env._SCHEMA)
         return Env(
-            client=Requirement.load(env["client"]),
-            server=Requirement.load(env["server"]),
+            client=Requirement.from_json(env["client"]),
+            server=Requirement.from_json(env["server"]),
+        )
+
+    @staticmethod
+    def unknown() -> "Env":
+        return Env(
+            client=Requirement.UNKNOWN,
+            server=Requirement.UNKNOWN,
         )
 
 

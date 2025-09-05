@@ -175,7 +175,7 @@ class Modpack:
                     mod_license=project.project_license,
                     source_url=project.source_url,
                     issues_url=project.issues_url,
-                    game_versions=GameVersion.from_iterable(game_versions),
+                    game_versions=GameVersion.load_multiple(game_versions),
                 )
             else:
                 missing_mods.add(str(mrpack.index.files[mod_hash].path.parts[-1]))

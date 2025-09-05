@@ -11,7 +11,8 @@ from mrpack_utils.types import Env, ProjectID, Requirement, Sha512, VersionID
 
 class TestGetFileDetails:
     def test_valid(self) -> None:
-        assert get_file_details(set()) == frozendict()
+        with requests_mock.Mocker() as m:
+            assert get_file_details(set()) == frozendict()
 
         with requests_mock.Mocker() as m:
             m.post(
@@ -302,7 +303,8 @@ class TestGetFileDetails:
 
 class TestGetProjects:
     def test_valid(self) -> None:
-        assert get_projects(set()) == frozendict()
+        with requests_mock.Mocker() as m:
+            assert get_projects(set()) == frozendict()
 
         with requests_mock.Mocker() as m:
             m.get(
@@ -324,8 +326,8 @@ class TestGetProjects:
                             "id": "MIT",
                             "foo": "bar",
                         },
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
+                        "source_url": "S",
+                        "issues_url": "I",
                         "foo": "bar",
                     },
                 ],
@@ -336,10 +338,7 @@ class TestGetProjects:
                         project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
-                        env=Env(
-                            client=Requirement.UNKNOWN,
-                            server=Requirement.UNKNOWN,
-                        ),
+                        env=Env.unknown(),
                         project_license="",
                         source_url="",
                         issues_url="",
@@ -353,8 +352,8 @@ class TestGetProjects:
                             server=Requirement.OPTIONAL,
                         ),
                         project_license="MIT",
-                        source_url="example.com",
-                        issues_url="example2.com",
+                        source_url="S",
+                        issues_url="I",
                     ),
                 },
             )
@@ -387,10 +386,7 @@ class TestGetProjects:
                         project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
-                        env=Env(
-                            client=Requirement.UNKNOWN,
-                            server=Requirement.UNKNOWN,
-                        ),
+                        env=Env.unknown(),
                         project_license="",
                         source_url="",
                         issues_url="",
@@ -506,7 +502,8 @@ class TestGetProjects:
 
 class TestGetVersions:
     def test_valid(self) -> None:
-        assert get_versions(set(), set()) == frozendict()
+        with requests_mock.Mocker() as m:
+            assert get_versions(set(), set()) == frozendict()
 
         with requests_mock.Mocker() as m:
             m.get(
@@ -551,10 +548,7 @@ class TestGetVersions:
                         project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
-                        env=Env(
-                            client=Requirement.UNKNOWN,
-                            server=Requirement.UNKNOWN,
-                        ),
+                        env=Env.unknown(),
                         project_license="",
                         source_url="",
                         issues_url="",
@@ -563,10 +557,7 @@ class TestGetVersions:
                         project_id=ProjectID("b0000000"),
                         slug="b",
                         title="B",
-                        env=Env(
-                            client=Requirement.UNKNOWN,
-                            server=Requirement.UNKNOWN,
-                        ),
+                        env=Env.unknown(),
                         project_license="",
                         source_url="",
                         issues_url="",
@@ -618,10 +609,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
@@ -653,10 +641,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
@@ -685,10 +670,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
@@ -722,10 +704,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
@@ -759,10 +738,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
@@ -796,10 +772,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
@@ -833,10 +806,7 @@ class TestGetVersions:
                             project_id=ProjectID("a0000000"),
                             slug="a",
                             title="A",
-                            env=Env(
-                                client=Requirement.UNKNOWN,
-                                server=Requirement.UNKNOWN,
-                            ),
+                            env=Env.unknown(),
                             project_license="",
                             source_url="",
                             issues_url="",
