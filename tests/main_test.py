@@ -2,6 +2,7 @@ import pytest
 import requests_mock
 
 from mrpack_utils.main import main
+from tests import testdata
 
 # ruff: noqa: S101
 
@@ -9,89 +10,8 @@ from mrpack_utils.main import main
 class TestMain:
     def test_list_normal(self, capsys: pytest.CaptureFixture[str]) -> None:
         with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                        "client_side": "optional",
-                        "server_side": "required",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "quux0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
+            testdata.test1_list_calls(m)
+
             main(["--csv", "list", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
@@ -100,8 +20,8 @@ modpack: Test Modpack,,1.1,,,,,
 minecraft,,1.19.4,,,,,
 fabric-loader,,0.16,,,,,
 foo,,1,,,,,
-Bar,https://modrinth.com/mod/bar,4.5.6,unknown,unknown,1.19.4,yes,no
-Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes
+A,https://modrinth.com/mod/a,1.2.3,required,optional,1.20,no,yes
+B,https://modrinth.com/mod/b,4.5.6,unknown,unknown,1.19.4,yes,no
 client-overrides/mods/baz-1.0.0.jar,unknown - probably CurseForge,a2c6f513,unknown,unknown,unknown,check manually,check manually
 client-overrides/mods/foo-1.2.3.jar,unknown - probably CurseForge,d6902afc,unknown,unknown,unknown,check manually,check manually
 overrides/mods/foo-1.2.3.jar,unknown - probably CurseForge,d6902afc,unknown,unknown,unknown,check manually,check manually
@@ -120,8 +40,8 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,
 | minecraft                           |                               | 1.19.4              |             |             |                       |                |                |
 | fabric-loader                       |                               | 0.16                |             |             |                       |                |                |
 | foo                                 |                               | 1                   |             |             |                       |                |                |
-| Bar                                 | https://modrinth.com/mod/bar  | 4.5.6               | unknown     | unknown     | 1.19.4                | yes            | no             |
-| Foo                                 | https://modrinth.com/mod/foo  | 1.2.3               | required    | optional    | 1.20                  | no             | yes            |
+| A                                   | https://modrinth.com/mod/a    | 1.2.3               | required    | optional    | 1.20                  | no             | yes            |
+| B                                   | https://modrinth.com/mod/b    | 4.5.6               | unknown     | unknown     | 1.19.4                | yes            | no             |
 | client-overrides/mods/baz-1.0.0.jar | unknown - probably CurseForge | a2c6f513            | unknown     | unknown     | unknown               | check manually | check manually |
 | client-overrides/mods/foo-1.2.3.jar | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |
 | overrides/mods/foo-1.2.3.jar        | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |
@@ -133,103 +53,22 @@ Modpack dependencies not corresponding to any known mod loader:
   foo
 
 Mods supposed to be on Modrinth, but not found:
-  baz.jar
+  c.jar
 
 For version 1.19.4:
   1 out of 2 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
-    Foo
+    A
 
 For version 1.20:
   1 out of 2 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
-    Bar
+    B
 """  # noqa: E501
             )
 
     def test_list_dev(self, capsys: pytest.CaptureFixture[str]) -> None:
         with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                        "client_side": "optional",
-                        "server_side": "required",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "quux0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
+            testdata.test1_list_calls(m)
+
             main(["--csv", "list", "--dev", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
@@ -238,8 +77,8 @@ modpack: Test Modpack,,1.1,,,,,,,,,,
 minecraft,,1.19.4,,,,,,,,,,
 fabric-loader,,0.16,,,,,,,,,,
 foo,,1,,,,,,,,,,
-Bar,https://modrinth.com/mod/bar,4.5.6,unknown,unknown,1.19.4,yes,no,,unknown,unknown,,
-Foo,https://modrinth.com/mod/foo,1.2.3,required,optional,1.20,no,yes,MIT,optional,required,example.com,example2.com
+A,https://modrinth.com/mod/a,1.2.3,required,optional,1.20,no,yes,MIT,optional,required,S,I
+B,https://modrinth.com/mod/b,4.5.6,unknown,unknown,1.19.4,yes,no,,unknown,unknown,,
 client-overrides/mods/baz-1.0.0.jar,unknown - probably CurseForge,a2c6f513,unknown,unknown,unknown,check manually,check manually,,,,,
 client-overrides/mods/foo-1.2.3.jar,unknown - probably CurseForge,d6902afc,unknown,unknown,unknown,check manually,check manually,,,,,
 overrides/mods/foo-1.2.3.jar,unknown - probably CurseForge,d6902afc,unknown,unknown,unknown,check manually,check manually,,,,,
@@ -252,166 +91,40 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,,,,,,
             main(["list", "--dev", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
-                == """| Name                                | Link                          | Installed version   | On client   | On server   | Latest game version   | 1.19.4         | 1.20           | License   | Modrinth client   | Modrinth server   | Source      | Issues       |
-|-------------------------------------|-------------------------------|---------------------|-------------|-------------|-----------------------|----------------|----------------|-----------|-------------------|-------------------|-------------|--------------|
-| modpack: Test Modpack               |                               | 1.1                 |             |             |                       |                |                |           |                   |                   |             |              |
-| minecraft                           |                               | 1.19.4              |             |             |                       |                |                |           |                   |                   |             |              |
-| fabric-loader                       |                               | 0.16                |             |             |                       |                |                |           |                   |                   |             |              |
-| foo                                 |                               | 1                   |             |             |                       |                |                |           |                   |                   |             |              |
-| Bar                                 | https://modrinth.com/mod/bar  | 4.5.6               | unknown     | unknown     | 1.19.4                | yes            | no             |           | unknown           | unknown           |             |              |
-| Foo                                 | https://modrinth.com/mod/foo  | 1.2.3               | required    | optional    | 1.20                  | no             | yes            | MIT       | optional          | required          | example.com | example2.com |
-| client-overrides/mods/baz-1.0.0.jar | unknown - probably CurseForge | a2c6f513            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |             |              |
-| client-overrides/mods/foo-1.2.3.jar | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |             |              |
-| overrides/mods/foo-1.2.3.jar        | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |             |              |
-| server-overrides/mods/bar-1.0.0.jar | unknown - probably CurseForge | 7123eea6            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |             |              |
-| overrides/config/foo.txt            | non-mod file                  | 7e3265a8            |             |             |                       |                |                |           |                   |                   |             |              |
-| server-overrides/config/bar.txt     | non-mod file                  | 04a2b3e9            |             |             |                       |                |                |           |                   |                   |             |              |
+                == """| Name                                | Link                          | Installed version   | On client   | On server   | Latest game version   | 1.19.4         | 1.20           | License   | Modrinth client   | Modrinth server   | Source   | Issues   |
+|-------------------------------------|-------------------------------|---------------------|-------------|-------------|-----------------------|----------------|----------------|-----------|-------------------|-------------------|----------|----------|
+| modpack: Test Modpack               |                               | 1.1                 |             |             |                       |                |                |           |                   |                   |          |          |
+| minecraft                           |                               | 1.19.4              |             |             |                       |                |                |           |                   |                   |          |          |
+| fabric-loader                       |                               | 0.16                |             |             |                       |                |                |           |                   |                   |          |          |
+| foo                                 |                               | 1                   |             |             |                       |                |                |           |                   |                   |          |          |
+| A                                   | https://modrinth.com/mod/a    | 1.2.3               | required    | optional    | 1.20                  | no             | yes            | MIT       | optional          | required          | S        | I        |
+| B                                   | https://modrinth.com/mod/b    | 4.5.6               | unknown     | unknown     | 1.19.4                | yes            | no             |           | unknown           | unknown           |          |          |
+| client-overrides/mods/baz-1.0.0.jar | unknown - probably CurseForge | a2c6f513            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |          |          |
+| client-overrides/mods/foo-1.2.3.jar | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |          |          |
+| overrides/mods/foo-1.2.3.jar        | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |          |          |
+| server-overrides/mods/bar-1.0.0.jar | unknown - probably CurseForge | 7123eea6            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |          |          |
+| overrides/config/foo.txt            | non-mod file                  | 7e3265a8            |             |             |                       |                |                |           |                   |                   |          |          |
+| server-overrides/config/bar.txt     | non-mod file                  | 04a2b3e9            |             |             |                       |                |                |           |                   |                   |          |          |
 
 Modpack dependencies not corresponding to any known mod loader:
   foo
 
 Mods supposed to be on Modrinth, but not found:
-  baz.jar
+  c.jar
 
 For version 1.19.4:
   1 out of 2 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
-    Foo
+    A
 
 For version 1.20:
   1 out of 2 Modrinth mods are incompatible with this version (CurseForge mods must be checked manually):
-    Bar
+    B
 """  # noqa: E501
             )
 
     def test_diff(self, capsys: pytest.CaptureFixture[str]) -> None:
         with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "abcd2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.4",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "blah0000",
-                        "version_number": "1.0.0",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "blah0000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                        "client_side": "optional",
-                        "server_side": "required",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                    {
-                        "id": "blah0000",
-                        "title": "Quux",
-                        "slug": "quux",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/blah0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "blah0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "DD000000",
-                        "project_id": "quux0000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
+            testdata.test1_test2_diff_calls(m)
 
             main(["--csv", "diff", "testdata/test1.mrpack", "testdata/test2.mrpack"])
             assert (
@@ -420,9 +133,9 @@ For version 1.20:
 modpack version,1.1,1.2
 fabric-loader,0.16,0.17
 foo,1,2
-Foo,1.2.3,1.2.4
-Quux,,1.0.0
-Bar,4.5.6,
+A,1.2.3,1.2.4
+D,,1.0.0
+B,4.5.6,
 client-overrides/mods/baz-1.0.0.jar,a2c6f513,d59e8961
 overrides/mods/foo-1.2.4.jar,,99d1bc3b
 overrides/mods/foo-1.2.3.jar,d6902afc,
@@ -440,9 +153,9 @@ overrides/config/foo.txt,7e3265a8,
 | modpack version                     | 1.1      | 1.2      |
 | fabric-loader                       | 0.16     | 0.17     |
 | foo                                 | 1        | 2        |
-| Foo                                 | 1.2.3    | 1.2.4    |
-| Quux                                |          | 1.0.0    |
-| Bar                                 | 4.5.6    |          |
+| A                                   | 1.2.3    | 1.2.4    |
+| D                                   |          | 1.0.0    |
+| B                                   | 4.5.6    |          |
 | client-overrides/mods/baz-1.0.0.jar | a2c6f513 | d59e8961 |
 | overrides/mods/foo-1.2.4.jar        |          | 99d1bc3b |
 | overrides/mods/foo-1.2.3.jar        | d6902afc |          |
@@ -454,6 +167,6 @@ Modpack dependencies not corresponding to any known mod loader:
   foo
 
 Mods supposed to be on Modrinth, but not found:
-  baz.jar
+  c.jar
 """
             )

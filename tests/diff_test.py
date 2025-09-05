@@ -11,6 +11,7 @@ from mrpack_utils.commands.diff import (
 from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.output import MissingMods, Table, UnknownDependencies
 from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement
+from tests import testdata
 
 # ruff: noqa: S101
 
@@ -242,133 +243,7 @@ class TestDiff:
 
     def test_run(self) -> None:
         with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "abcd2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.4",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc2000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "blah0000",
-                        "version_number": "1.0.0",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "bbbb0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "blah0000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                        "client_side": "optional",
-                        "server_side": "required",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                    {
-                        "id": "blah0000",
-                        "title": "Quux",
-                        "slug": "quux",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/blah0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "blah0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "DD000000",
-                        "project_id": "quux0000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
+            testdata.test1_test2_diff_calls(m)
 
             assert run("testdata/test1.mrpack", "testdata/test2.mrpack") == (
                 Table(
@@ -377,9 +252,9 @@ class TestDiff:
                         ("modpack version", "1.1", "1.2"),
                         ("fabric-loader", "0.16", "0.17"),
                         ("foo", "1", "2"),
-                        ("Foo", "1.2.3", "1.2.4"),
-                        ("Quux", "", "1.0.0"),
-                        ("Bar", "4.5.6", ""),
+                        ("A", "1.2.3", "1.2.4"),
+                        ("D", "", "1.0.0"),
+                        ("B", "4.5.6", ""),
                         ("client-overrides/mods/baz-1.0.0.jar", "a2c6f513", "d59e8961"),
                         ("overrides/mods/foo-1.2.4.jar", "", "99d1bc3b"),
                         ("overrides/mods/foo-1.2.3.jar", "d6902afc", ""),
@@ -389,5 +264,5 @@ class TestDiff:
                     ],
                 ),
                 UnknownDependencies({"foo"}),
-                MissingMods({"baz.jar"}),
+                MissingMods({"c.jar"}),
             )

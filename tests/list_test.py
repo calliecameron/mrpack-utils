@@ -12,6 +12,7 @@ from mrpack_utils.commands.list import (
 from mrpack_utils.modpack import Mod, Modpack
 from mrpack_utils.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
 from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement
+from tests import testdata
 
 # ruff: noqa: S101
 
@@ -287,90 +288,12 @@ class TestList:
 
     def test_run_normal(self) -> None:
         with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                        "client_side": "optional",
-                        "server_side": "required",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "quux0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
-            assert run("testdata/test1.mrpack", frozenset([GameVersion("1.20")]), False) == (
+            testdata.test1_list_calls(m)
+            assert run(
+                "testdata/test1.mrpack",
+                frozenset([GameVersion("1.20")]),
+                False,
+            ) == (
                 Table(
                     [
                         [
@@ -424,24 +347,24 @@ class TestList:
                             "",
                         ],
                         [
-                            "Bar",
-                            "https://modrinth.com/mod/bar",
-                            "4.5.6",
-                            "unknown",
-                            "unknown",
-                            "1.19.4",
-                            "yes",
-                            "no",
-                        ],
-                        [
-                            "Foo",
-                            "https://modrinth.com/mod/foo",
+                            "A",
+                            "https://modrinth.com/mod/a",
                             "1.2.3",
                             "required",
                             "optional",
                             "1.20",
                             "no",
                             "yes",
+                        ],
+                        [
+                            "B",
+                            "https://modrinth.com/mod/b",
+                            "4.5.6",
+                            "unknown",
+                            "unknown",
+                            "1.19.4",
+                            "yes",
+                            "no",
                         ],
                         [
                             "client-overrides/mods/baz-1.0.0.jar",
@@ -509,108 +432,30 @@ class TestList:
                     {"foo"},
                 ),
                 MissingMods(
-                    {"baz.jar"},
+                    {"c.jar"},
                 ),
                 IncompatibleMods(
                     num_mods=2,
                     game_version="1.19.4",
-                    mods={"Foo"},
+                    mods={"A"},
                     curseforge_warning=True,
                 ),
                 IncompatibleMods(
                     num_mods=2,
                     game_version="1.20",
-                    mods={"Bar"},
+                    mods={"B"},
                     curseforge_warning=True,
                 ),
             )
 
     def test_run_dev(self) -> None:
         with requests_mock.Mocker() as m:
-            m.post(
-                "https://api.modrinth.com/v2/version_files",
-                json={
-                    "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "baz00000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "abcd0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "cccc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                    "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "quux0000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "fedc0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                    },
-                },
-            )
-            m.get(
-                'https://api.modrinth.com/v2/projects?ids=["baz00000", "quux0000"]',
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "baz00000",
-                        "title": "Foo",
-                        "slug": "foo",
-                        "client_side": "optional",
-                        "server_side": "required",
-                        "license": {"id": "MIT"},
-                        "source_url": "example.com",
-                        "issues_url": "example2.com",
-                    },
-                    {
-                        "id": "quux0000",
-                        "title": "Bar",
-                        "slug": "bar",
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/baz00000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "AA000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                    },
-                    {
-                        "id": "BB000000",
-                        "project_id": "baz00000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
-                ],
-            )
-            m.get(
-                'https://api.modrinth.com/v2/project/quux0000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
-                complete_qs=True,
-                json=[
-                    {
-                        "id": "CC000000",
-                        "project_id": "quux0000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                ],
-            )
-            assert run("testdata/test1.mrpack", frozenset([GameVersion("1.20")]), True) == (
+            testdata.test1_list_calls(m)
+            assert run(
+                "testdata/test1.mrpack",
+                frozenset([GameVersion("1.20")]),
+                True,
+            ) == (
                 Table(
                     [
                         [
@@ -689,8 +534,23 @@ class TestList:
                             "",
                         ],
                         [
-                            "Bar",
-                            "https://modrinth.com/mod/bar",
+                            "A",
+                            "https://modrinth.com/mod/a",
+                            "1.2.3",
+                            "required",
+                            "optional",
+                            "1.20",
+                            "no",
+                            "yes",
+                            "MIT",
+                            "optional",
+                            "required",
+                            "S",
+                            "I",
+                        ],
+                        [
+                            "B",
+                            "https://modrinth.com/mod/b",
                             "4.5.6",
                             "unknown",
                             "unknown",
@@ -702,21 +562,6 @@ class TestList:
                             "unknown",
                             "",
                             "",
-                        ],
-                        [
-                            "Foo",
-                            "https://modrinth.com/mod/foo",
-                            "1.2.3",
-                            "required",
-                            "optional",
-                            "1.20",
-                            "no",
-                            "yes",
-                            "MIT",
-                            "optional",
-                            "required",
-                            "example.com",
-                            "example2.com",
                         ],
                         [
                             "client-overrides/mods/baz-1.0.0.jar",
@@ -814,18 +659,18 @@ class TestList:
                     {"foo"},
                 ),
                 MissingMods(
-                    {"baz.jar"},
+                    {"c.jar"},
                 ),
                 IncompatibleMods(
                     num_mods=2,
                     game_version="1.19.4",
-                    mods={"Foo"},
+                    mods={"A"},
                     curseforge_warning=True,
                 ),
                 IncompatibleMods(
                     num_mods=2,
                     game_version="1.20",
-                    mods={"Bar"},
+                    mods={"B"},
                     curseforge_warning=True,
                 ),
             )
