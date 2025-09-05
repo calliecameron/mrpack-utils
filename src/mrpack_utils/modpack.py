@@ -1,6 +1,5 @@
 import binascii
 from collections.abc import Mapping, Set
-from dataclasses import dataclass
 
 from frozendict import frozendict
 from requests.utils import requote_uri
@@ -12,17 +11,6 @@ from mrpack_utils.types import ID, Env, GameVersion
 
 class ModpackError(Exception):
     pass
-
-
-@dataclass(frozen=True, kw_only=True)
-class _ModStub:
-    name: str
-    slug: str
-    env: Env
-    mod_license: str
-    source_url: str
-    issues_url: str
-    versions: Set[ID]
 
 
 class Mod:
@@ -164,47 +152,29 @@ class Modpack:
 
     @staticmethod
     def load(mrpack: Mrpack, db: ModDB) -> "Modpack":
-        mod_stubs = {}
-        for project in db.projects.values():
-            try:
-                mod_stubs[project.project_id] = _ModStub(
-                    name=project.title,
-                    slug=project.slug,
-                    env=project.env,
-                    mod_license=project.project_license,
-                    source_url=project.source_url,
-                    issues_url=project.issues_url,
-                    versions=frozenset(
-                        {
-                            version
-                            for version in db.versions
-                            if db.versions[version].project_id == project.project_id
-                        },
-                    ),
-                )
-            except Exception as e:  # pragma: no cover
-                raise ModpackError(f"Failed to load mod {project.title}: {e}") from e
-
         mods = {}
         missing_mods = set()
         for mod_hash in mrpack.index.files:
-            if mod_hash in db.files:
-                file = db.files[mod_hash]
+            if mod_hash in db.all_files:
+                file = db.all_files[mod_hash]
                 mod_id = file.project_id
-                mod_stub = mod_stubs[mod_id]
+                project = db.all_projects[mod_id]
                 game_versions: set[str] = set()
-                for version in mod_stub.versions:
-                    if db.versions[version].loaders & mrpack.index.loaders:
-                        game_versions.update(db.versions[version].game_versions)
+                for version in db.project_versions(file.project_id):
+                    if (
+                        version in db.all_versions
+                        and db.all_versions[version].loaders & mrpack.index.loaders
+                    ):
+                        game_versions.update(db.all_versions[version].game_versions)
                 mods[mod_id] = Mod(
-                    name=mod_stub.name,
-                    slug=mod_stub.slug,
+                    name=project.title,
+                    slug=project.slug,
                     version=file.version_number,
-                    original_env=mod_stub.env,
-                    overridden_env=mrpack.index.files[mod_hash].env or mod_stub.env,
-                    mod_license=mod_stub.mod_license,
-                    source_url=mod_stub.source_url,
-                    issues_url=mod_stub.issues_url,
+                    original_env=project.env,
+                    overridden_env=mrpack.index.files[mod_hash].env or project.env,
+                    mod_license=project.project_license,
+                    source_url=project.source_url,
+                    issues_url=project.issues_url,
                     game_versions=GameVersion.from_iterable(game_versions),
                 )
             else:

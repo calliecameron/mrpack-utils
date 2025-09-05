@@ -221,7 +221,7 @@ class TestModDB:
             )
             db = ModDB.load([mrpack1, mrpack2], True)
 
-            assert db.files == frozendict(
+            assert db.all_files == frozendict(
                 {
                     Sha512(
                         "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -281,7 +281,7 @@ class TestModDB:
                 is None
             )
 
-            assert db.projects == frozendict(
+            assert db.all_projects == frozendict(
                 {
                     ID("a0000000"): api.Project(
                         project_id=ID("a0000000"),
@@ -323,7 +323,7 @@ class TestModDB:
             )
             assert db.project(ID("c0000000")) is None
 
-            assert db.versions == frozendict(
+            assert db.all_versions == frozendict(
                 {
                     ID("A0000000"): api.Version(
                         version_id=ID("A0000000"),
@@ -358,6 +358,30 @@ class TestModDB:
                 game_versions={"1.19.2"},
             )
             assert db.version(ID("C0000000")) is None
+
+            assert db.all_project_versions == frozendict(
+                {
+                    ID("a0000000"): frozenset(
+                        {
+                            ID("A0000000"),
+                            ID("A1000000"),
+                        },
+                    ),
+                    ID("b0000000"): frozenset(
+                        {
+                            ID("B0000000"),
+                            ID("B1000000"),
+                        },
+                    ),
+                },
+            )
+            assert db.project_versions(ID("a0000000")) == frozenset(
+                {
+                    ID("A0000000"),
+                    ID("A1000000"),
+                },
+            )
+            assert db.project_versions(ID("c0000000")) == frozenset()
 
         with requests_mock.Mocker() as m:
             m.post(
@@ -421,7 +445,7 @@ class TestModDB:
             )
             db = ModDB.load([mrpack1, mrpack2], False)
 
-            assert db.files == frozendict(
+            assert db.all_files == frozendict(
                 {
                     Sha512(
                         "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -481,7 +505,7 @@ class TestModDB:
                 is None
             )
 
-            assert db.projects == frozendict(
+            assert db.all_projects == frozendict(
                 {
                     ID("a0000000"): api.Project(
                         project_id=ID("a0000000"),
@@ -523,5 +547,8 @@ class TestModDB:
             )
             assert db.project(ID("c0000000")) is None
 
-            assert db.versions == frozendict()
+            assert db.all_versions == frozendict()
             assert db.version(ID("A0000000")) is None
+
+            assert db.all_project_versions == frozendict()
+            assert db.project_versions(ID("A0000000")) == frozenset()

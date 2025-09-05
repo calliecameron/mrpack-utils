@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Collection, Mapping
 
 from frozendict import frozendict
@@ -20,26 +21,40 @@ class ModDB:
         self._projects = frozendict(projects)
         self._versions = frozendict(versions)
 
+        project_versions = defaultdict(set)
+        for version in self._versions.values():
+            project_versions[version.project_id].add(version.version_id)
+        self._project_versions = frozendict(
+            {k: frozenset(v) for (k, v) in project_versions.items()},
+        )
+
     @property
-    def files(self) -> frozendict[Sha512, File]:
+    def all_files(self) -> frozendict[Sha512, File]:
         return self._files
 
     def file(self, sha512: Sha512) -> File | None:
         return self._files.get(sha512)
 
     @property
-    def projects(self) -> frozendict[ID, Project]:
+    def all_projects(self) -> frozendict[ID, Project]:
         return self._projects
 
     def project(self, project_id: ID) -> Project | None:
         return self._projects.get(project_id)
 
     @property
-    def versions(self) -> frozendict[ID, Version]:
+    def all_versions(self) -> frozendict[ID, Version]:
         return self._versions
 
     def version(self, version_id: ID) -> Version | None:
         return self._versions.get(version_id)
+
+    @property
+    def all_project_versions(self) -> frozendict[ID, frozenset[ID]]:
+        return self._project_versions
+
+    def project_versions(self, project_id: ID) -> frozenset[ID]:
+        return self._project_versions.get(project_id, frozenset())
 
     @staticmethod
     def load(mrpacks: Collection[Mrpack], fetch_versions: bool) -> "ModDB":
