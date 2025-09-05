@@ -1,9 +1,39 @@
+from pathlib import PurePath
+
 import jsonschema
 import pytest
 
-from mrpack_utils.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
+from mrpack_utils.types import (
+    Env,
+    GameVersion,
+    ProjectID,
+    Requirement,
+    Sha1,
+    Sha512,
+    VersionID,
+    validated_path,
+)
 
 # ruff: noqa: PT011,S101
+
+
+class TestValidatedPath:
+    def test_validated_path(self) -> None:
+        assert validated_path("a") == PurePath("a")
+        assert validated_path("a/b") == PurePath("a", "b")
+        assert validated_path("a/./b") == PurePath("a", "b")
+        with pytest.raises(ValueError):
+            validated_path("")
+        with pytest.raises(ValueError):
+            validated_path("/a")
+        with pytest.raises(ValueError):
+            validated_path("C:/a")
+        with pytest.raises(ValueError):
+            validated_path("C:\\a")
+        with pytest.raises(ValueError):
+            validated_path("//a")
+        with pytest.raises(ValueError):
+            validated_path("a/../b")
 
 
 class TestGameVersion:

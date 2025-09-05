@@ -2,8 +2,9 @@ import requests_mock
 from frozendict import frozendict
 
 from mrpack_utils import api
+from mrpack_utils.index import File, Hashes, Index
 from mrpack_utils.moddb import ModDB
-from mrpack_utils.mrpack import File, Hashes, Index, Mrpack
+from mrpack_utils.mrpack import Mrpack
 from mrpack_utils.types import Env, ProjectID, Requirement, Sha1, Sha512, VersionID
 
 # ruff: noqa: S101

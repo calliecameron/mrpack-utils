@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum, auto
+from pathlib import PurePath, PurePosixPath, PureWindowsPath
 from typing import Any, Protocol, Self, override
 
 import jsonschema
@@ -16,6 +17,22 @@ def make_json_schema(fragment: Mapping[str, Any]) -> frozendict[str, Any]:
     d = dict(fragment)
     d["$schema"] = "https://json-schema.org/draft/2020-12/schema"
     return frozendict(d)
+
+
+def validated_path(path: str) -> PurePath:
+    pp = PurePosixPath(path)
+    wp = PureWindowsPath(path)
+    p = PurePath(path)
+    if (
+        pp.is_absolute()
+        or not pp.parts
+        or wp.is_absolute()
+        or not wp.parts
+        or "." in p.parts
+        or ".." in p.parts
+    ):
+        raise ValueError(f"Invalid path '{path}'; must be relative and not contain '.' or '..'")
+    return p
 
 
 @functools.total_ordering
