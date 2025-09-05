@@ -77,7 +77,7 @@ modpack: Test Modpack,,1.1,,,,,,,,,,
 minecraft,,1.19.4,,,,,,,,,,
 fabric-loader,,0.16,,,,,,,,,,
 foo,,1,,,,,,,,,,
-A,https://modrinth.com/mod/a,1.2.3,required,optional,1.20,no,yes,MIT,optional,required,S,I
+A,https://modrinth.com/mod/a,1.2.3,required,optional,1.20,no,yes,MIT,optional,required,S%201,I%201
 B,https://modrinth.com/mod/b,4.5.6,unknown,unknown,1.19.4,yes,no,,unknown,unknown,,
 client-overrides/mods/baz-1.0.0.jar,unknown - probably CurseForge,a2c6f513,unknown,unknown,unknown,check manually,check manually,,,,,
 client-overrides/mods/foo-1.2.3.jar,unknown - probably CurseForge,d6902afc,unknown,unknown,unknown,check manually,check manually,,,,,
@@ -97,7 +97,7 @@ server-overrides/config/bar.txt,non-mod file,04a2b3e9,,,,,,,,,,
 | minecraft                           |                               | 1.19.4              |             |             |                       |                |                |           |                   |                   |          |          |
 | fabric-loader                       |                               | 0.16                |             |             |                       |                |                |           |                   |                   |          |          |
 | foo                                 |                               | 1                   |             |             |                       |                |                |           |                   |                   |          |          |
-| A                                   | https://modrinth.com/mod/a    | 1.2.3               | required    | optional    | 1.20                  | no             | yes            | MIT       | optional          | required          | S        | I        |
+| A                                   | https://modrinth.com/mod/a    | 1.2.3               | required    | optional    | 1.20                  | no             | yes            | MIT       | optional          | required          | S%201    | I%201    |
 | B                                   | https://modrinth.com/mod/b    | 4.5.6               | unknown     | unknown     | 1.19.4                | yes            | no             |           | unknown           | unknown           |          |          |
 | client-overrides/mods/baz-1.0.0.jar | unknown - probably CurseForge | a2c6f513            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |          |          |
 | client-overrides/mods/foo-1.2.3.jar | unknown - probably CurseForge | d6902afc            | unknown     | unknown     | unknown               | check manually | check manually |           |                   |                   |          |          |

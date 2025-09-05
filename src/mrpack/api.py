@@ -1,10 +1,12 @@
 import sys
 from collections.abc import Collection, Set
 from dataclasses import dataclass
+from typing import override
 
 import jsonschema
 import requests
 from frozendict import frozendict
+from requests.utils import requote_uri
 
 from mrpack.types import Env, ProjectID, Requirement, Sha512, VersionID, make_json_schema
 
@@ -99,15 +101,82 @@ def get_file_details(hashes: Set[Sha512]) -> frozendict[Sha512, File]:
     return frozendict(out)
 
 
-@dataclass(frozen=True, kw_only=True)
 class Project:
-    project_id: ProjectID
-    slug: str
-    title: str
-    env: Env
-    project_license: str
-    source_url: str
-    issues_url: str
+    def __init__(
+        self,
+        *,
+        project_id: ProjectID,
+        slug: str,
+        title: str,
+        env: Env,
+        project_license: str,
+        source_url: str,
+        issues_url: str,
+    ) -> None:
+        super().__init__()
+        self._project_id = project_id
+        self._slug = slug
+        self._title = title
+        self._env = env
+        self._project_license = project_license
+        self._source_url = requote_uri(source_url)
+        self._issues_url = requote_uri(issues_url)
+
+    @property
+    def project_id(self) -> ProjectID:
+        return self._project_id
+
+    @property
+    def slug(self) -> str:
+        return self._slug
+
+    @property
+    def title(self) -> str:
+        return self._title
+
+    @property
+    def env(self) -> Env:
+        return self._env
+
+    @property
+    def project_license(self) -> str:
+        return self._project_license
+
+    @property
+    def source_url(self) -> str:
+        return self._source_url
+
+    @property
+    def issues_url(self) -> str:
+        return self._issues_url
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Project):
+            raise NotImplementedError
+        return (
+            self._project_id == other._project_id
+            and self._slug == other._slug
+            and self._title == other._title
+            and self._env == other._env
+            and self._project_license == other._project_license
+            and self._source_url == other._source_url
+            and self._issues_url == other._issues_url
+        )
+
+    @override
+    def __hash__(self) -> int:
+        return hash(
+            (
+                self._project_id,
+                self._slug,
+                self._title,
+                self._env,
+                self._project_license,
+                self._source_url,
+                self._issues_url,
+            ),
+        )
 
 
 _GET_PROJECTS_SCHEMA = make_json_schema(

@@ -1,5 +1,8 @@
+from pathlib import PurePath
+
 import requests_mock
 
+from mrpack.api import Project
 from mrpack.commands.diff import (
     _diff,
     _modpack_data,
@@ -8,9 +11,11 @@ from mrpack.commands.diff import (
     _unknown_mods,
     run,
 )
+from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.modpack import Mod, Modpack
+from mrpack.mrpack import Override
 from mrpack.output import MissingMods, Table, UnknownDependencies
-from mrpack.types import Env, GameVersion, ProjectID, Requirement
+from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512
 from tests import testdata
 
 # ruff: noqa: S101
@@ -45,34 +50,36 @@ class TestDiff:
 
     def test_modpack_data(self) -> None:
         modpack1 = Modpack(
-            name="Test 1",
-            version="1",
-            game_version=GameVersion("1.19.2"),
-            dependencies={
-                "A": "1",
-                "B": "1",
-            },
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test 1",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.2"),
+                    others={"A": "1", "B": "1"},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={},
         )
         modpack2 = Modpack(
-            name="Test 2",
-            version="2",
-            game_version=GameVersion("1.19.4"),
-            dependencies={
-                "A": "2",
-                "C": "1",
-            },
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test 2",
+                version="2",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={"A": "2", "C": "1"},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={},
         )
 
         assert _modpack_data(modpack1, modpack1) == []
@@ -86,74 +93,146 @@ class TestDiff:
         ]
 
     def test_mods(self) -> None:
-        mod1_1 = Mod(
-            name="A",
-            slug="A",
-            version="1",
-            original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            mod_license="",
-            source_url="",
-            issues_url="",
-            game_versions={GameVersion("1.19.2")},
+        mod1_v1 = Mod(
+            index_entry=File(
+                path="a",
+                hashes=Hashes(
+                    sha1=Sha1("a000000000000000000000000000000000000000"),
+                    sha512=Sha512(
+                        "a000000000000000000000000000000000000000000000000000000000000000"
+                        "0000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    others={},
+                ),
+                env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                downloads=set(),
+                size=10,
+            ),
+            project=Project(
+                project_id=ProjectID("a0000000"),
+                slug="a",
+                title="A",
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                project_license="",
+                source_url="",
+                issues_url="",
+            ),
+            version_number="1",
+            game_versions=frozenset([GameVersion("1.19.2")]),
         )
-        mod1_2 = Mod(
-            name="A",
-            slug="A",
-            version="2",
-            original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            mod_license="",
-            source_url="",
-            issues_url="",
-            game_versions={GameVersion("1.19.2")},
+        mod1_v2 = Mod(
+            index_entry=File(
+                path="a",
+                hashes=Hashes(
+                    sha1=Sha1("a100000000000000000000000000000000000000"),
+                    sha512=Sha512(
+                        "a100000000000000000000000000000000000000000000000000000000000000"
+                        "0000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    others={},
+                ),
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                downloads=set(),
+                size=10,
+            ),
+            project=Project(
+                project_id=ProjectID("a0000000"),
+                slug="a",
+                title="A",
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                project_license="",
+                source_url="",
+                issues_url="",
+            ),
+            version_number="2",
+            game_versions=frozenset([GameVersion("1.19.2")]),
         )
         mod2 = Mod(
-            name="B",
-            slug="B",
-            version="1",
-            original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            mod_license="",
-            source_url="",
-            issues_url="",
-            game_versions={GameVersion("1.19.2")},
+            index_entry=File(
+                path="b",
+                hashes=Hashes(
+                    sha1=Sha1("b000000000000000000000000000000000000000"),
+                    sha512=Sha512(
+                        "b000000000000000000000000000000000000000000000000000000000000000"
+                        "0000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    others={},
+                ),
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                downloads=set(),
+                size=10,
+            ),
+            project=Project(
+                project_id=ProjectID("b0000000"),
+                slug="b",
+                title="B",
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                project_license="",
+                source_url="",
+                issues_url="",
+            ),
+            version_number="1",
+            game_versions=frozenset([GameVersion("1.19.2")]),
         )
         mod3 = Mod(
-            name="C",
-            slug="C",
-            version="1",
-            original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            mod_license="",
-            source_url="",
-            issues_url="",
-            game_versions={GameVersion("1.19.2")},
+            index_entry=File(
+                path="c",
+                hashes=Hashes(
+                    sha1=Sha1("c000000000000000000000000000000000000000"),
+                    sha512=Sha512(
+                        "c000000000000000000000000000000000000000000000000000000000000000"
+                        "0000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    others={},
+                ),
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                downloads=set(),
+                size=10,
+            ),
+            project=Project(
+                project_id=ProjectID("c0000000"),
+                slug="c",
+                title="C",
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                project_license="",
+                source_url="",
+                issues_url="",
+            ),
+            version_number="1",
+            game_versions=frozenset([GameVersion("1.19.2")]),
         )
 
         modpack1 = Modpack(
-            name="Test",
-            version="1",
-            game_version=GameVersion("1.19.2"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
-            mods={ProjectID("A0000000"): mod1_1, ProjectID("B0000000"): mod2},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={},
+            index=Index(
+                name="Test",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.2"),
+                    others={},
+                ),
+            ),
+            mods={ProjectID("a0000000"): mod1_v1, ProjectID("b0000000"): mod2},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={},
         )
         modpack2 = Modpack(
-            name="Test",
-            version="2",
-            game_version=GameVersion("1.19.2"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
-            mods={ProjectID("A0000000"): mod1_2, ProjectID("C0000000"): mod3},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={},
+            index=Index(
+                name="Test",
+                version="2",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.2"),
+                    others={},
+                ),
+            ),
+            mods={ProjectID("a0000000"): mod1_v2, ProjectID("c0000000"): mod3},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={},
         )
 
         assert _mods(modpack1, modpack1) == []
@@ -165,80 +244,136 @@ class TestDiff:
 
     def test_unknown_mods(self) -> None:
         modpack1 = Modpack(
-            name="Test 1",
-            version="1",
-            game_version=GameVersion("1.19.2"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test 1",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.2"),
+                    others={},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={
-                "A": "1",
-                "B": "1",
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={
+                PurePath("overrides", "mods", "A"): Override(
+                    path="overrides/mods/A",
+                    data=b"foo\n",
+                ),
+                PurePath("overrides", "mods", "B"): Override(
+                    path="overrides/mods/B",
+                    data=b"bar\n",
+                ),
+                PurePath("overrides", "config", "Z"): Override(
+                    path="overrides/config/Z",
+                    data=b"quux\n",
+                ),
             },
-            other_files={},
         )
         modpack2 = Modpack(
-            name="Test 2",
-            version="2",
-            game_version=GameVersion("1.19.4"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test 2",
+                version="2",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={
-                "A": "2",
-                "C": "1",
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={
+                PurePath("overrides", "mods", "A"): Override(
+                    path="overrides/mods/A",
+                    data=b"foo1\n",
+                ),
+                PurePath("overrides", "mods", "C"): Override(
+                    path="overrides/mods/C",
+                    data=b"baz\n",
+                ),
+                PurePath("overrides", "config", "Z"): Override(
+                    path="overrides/config/Z",
+                    data=b"quux\n",
+                ),
             },
-            other_files={},
         )
 
         assert _unknown_mods(modpack1, modpack1) == []
         assert _unknown_mods(modpack1, modpack2) == [
-            ("A", "1", "2"),
-            ("C", "", "1"),
-            ("B", "1", ""),
+            ("overrides/mods/A", "7e3265a8", "d616f014"),
+            ("overrides/mods/C", "", "cc7b39e1"),
+            ("overrides/mods/B", "04a2b3e9", ""),
         ]
 
     def test_other_files(self) -> None:
         modpack1 = Modpack(
-            name="Test 1",
-            version="1",
-            game_version=GameVersion("1.19.2"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test 1",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.2"),
+                    others={},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={
-                "A": "1",
-                "B": "1",
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={
+                PurePath("overrides", "config", "A"): Override(
+                    path="overrides/config/A",
+                    data=b"foo\n",
+                ),
+                PurePath("overrides", "config", "B"): Override(
+                    path="overrides/config/B",
+                    data=b"bar\n",
+                ),
+                PurePath("overrides", "mods", "Z"): Override(
+                    path="overrides/mods/Z",
+                    data=b"quux\n",
+                ),
             },
         )
         modpack2 = Modpack(
-            name="Test 2",
-            version="2",
-            game_version=GameVersion("1.19.4"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test 2",
+                version="2",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={
-                "A": "2",
-                "C": "1",
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={
+                PurePath("overrides", "config", "A"): Override(
+                    path="overrides/config/A",
+                    data=b"foo1\n",
+                ),
+                PurePath("overrides", "config", "C"): Override(
+                    path="overrides/config/C",
+                    data=b"baz\n",
+                ),
+                PurePath("overrides", "mods", "Z"): Override(
+                    path="overrides/mods/Z",
+                    data=b"quux\n",
+                ),
             },
         )
 
         assert _other_files(modpack1, modpack1) == []
         assert _other_files(modpack1, modpack2) == [
-            ("A", "1", "2"),
-            ("C", "", "1"),
-            ("B", "1", ""),
+            ("overrides/config/A", "7e3265a8", "d616f014"),
+            ("overrides/config/C", "", "cc7b39e1"),
+            ("overrides/config/B", "04a2b3e9", ""),
         ]
 
     def test_run(self) -> None:

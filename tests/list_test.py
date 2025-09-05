@@ -1,5 +1,8 @@
+from pathlib import PurePath
+
 import requests_mock
 
+from mrpack.api import Project
 from mrpack.commands.list import (
     _empty_row,
     _headers,
@@ -9,9 +12,11 @@ from mrpack.commands.list import (
     _unknown_mods,
     run,
 )
+from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.modpack import Mod, Modpack
+from mrpack.mrpack import Override
 from mrpack.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
-from mrpack.types import Env, GameVersion, ProjectID, Requirement
+from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512
 from tests import testdata
 
 # ruff: noqa: S101
@@ -74,16 +79,20 @@ class TestList:
 
     def test_modpack_data(self) -> None:
         modpack = Modpack(
-            name="Test Modpack",
-            version="1",
-            game_version=GameVersion("1.19.4"),
-            dependencies={"Foo": "1", "fabric-loader": "0.16"},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test Modpack",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={"Foo": "1", "fabric-loader": "0.16"},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={},
         )
         assert _modpack_data(modpack, _headers({GameVersion("1.19.2")}, False)) == [
             ["modpack: Test Modpack", "", "1", "", "", "", ""],
@@ -94,38 +103,74 @@ class TestList:
 
     def test_mods(self) -> None:
         foo = Mod(
-            name="Foo",
-            slug="foo",
-            version="1.2.3",
-            original_env=Env(client=Requirement.OPTIONAL, server=Requirement.OPTIONAL),
-            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-            mod_license="MIT",
-            source_url="example.com",
-            issues_url="example2.com",
+            index_entry=File(
+                path="a",
+                hashes=Hashes(
+                    sha1=Sha1("a000000000000000000000000000000000000000"),
+                    sha512=Sha512(
+                        "a000000000000000000000000000000000000000000000000000000000000000"
+                        "0000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    others={},
+                ),
+                env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                downloads=set(),
+                size=10,
+            ),
+            project=Project(
+                project_id=ProjectID("a0000000"),
+                slug="foo",
+                title="Foo",
+                env=Env(client=Requirement.OPTIONAL, server=Requirement.OPTIONAL),
+                project_license="MIT",
+                source_url="example.com",
+                issues_url="example2.com",
+            ),
+            version_number="1.2.3",
             game_versions=frozenset([GameVersion("1.20"), GameVersion("1.19.4")]),
         )
         bar = Mod(
-            name="Bar",
-            slug="bar",
-            version="4.5.6",
-            original_env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
-            overridden_env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
-            mod_license="GPL",
-            source_url="",
-            issues_url="",
+            index_entry=File(
+                path="b",
+                hashes=Hashes(
+                    sha1=Sha1("b000000000000000000000000000000000000000"),
+                    sha512=Sha512(
+                        "b000000000000000000000000000000000000000000000000000000000000000"
+                        "0000000000000000000000000000000000000000000000000000000000000000",
+                    ),
+                    others={},
+                ),
+                env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+                downloads=set(),
+                size=10,
+            ),
+            project=Project(
+                project_id=ProjectID("b0000000"),
+                slug="bar",
+                title="Bar",
+                env=Env(client=Requirement.REQUIRED, server=Requirement.REQUIRED),
+                project_license="GPL",
+                source_url="",
+                issues_url="",
+            ),
+            version_number="4.5.6",
             game_versions=frozenset([GameVersion("1.19.4"), GameVersion("1.19.2")]),
         )
         modpack = Modpack(
-            name="Test Modpack",
-            version="1",
-            game_version=GameVersion("1.19.4"),
-            dependencies={"foo": "1", "fabric-loader": "0.16"},
-            loaders=set(),
-            unknown_dependencies=set(),
-            mods={ProjectID("abcd0000"): foo, ProjectID("fedc0000"): bar},
-            missing_mods=frozenset(),
-            unknown_mods={},
-            other_files={},
+            index=Index(
+                name="Test Modpack",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={"foo": "1", "fabric-loader": "0.16"},
+                ),
+            ),
+            mods={ProjectID("a0000000"): foo, ProjectID("b0000000"): bar},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={},
         )
 
         mods, incompatible = _mods(
@@ -204,32 +249,49 @@ class TestList:
 
     def test_unknown_mods(self) -> None:
         modpack = Modpack(
-            name="Test Modpack",
-            version="1",
-            game_version=GameVersion("1.19.4"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test Modpack",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={"Foo": "a", "bar": "b"},
-            other_files={},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={
+                PurePath("overrides", "mods", "Foo"): Override(
+                    path="overrides/mods/Foo",
+                    data=b"foo\n",
+                ),
+                PurePath("overrides", "mods", "bar"): Override(
+                    path="overrides/mods/bar",
+                    data=b"bar\n",
+                ),
+                PurePath("overrides", "config", "baz"): Override(
+                    path="overrides/config/baz",
+                    data=b"baz\n",
+                ),
+            },
         )
 
         assert _unknown_mods(modpack, {GameVersion("1.19.2")}, False) == [
             [
-                "bar",
+                "overrides/mods/bar",
                 "unknown - probably CurseForge",
-                "b",
+                "04a2b3e9",
                 "unknown",
                 "unknown",
                 "unknown",
                 "check manually",
             ],
             [
-                "Foo",
+                "overrides/mods/Foo",
                 "unknown - probably CurseForge",
-                "a",
+                "7e3265a8",
                 "unknown",
                 "unknown",
                 "unknown",
@@ -239,9 +301,9 @@ class TestList:
 
         assert _unknown_mods(modpack, {GameVersion("1.19.2")}, True) == [
             [
-                "bar",
+                "overrides/mods/bar",
                 "unknown - probably CurseForge",
-                "b",
+                "04a2b3e9",
                 "unknown",
                 "unknown",
                 "unknown",
@@ -253,9 +315,9 @@ class TestList:
                 "",
             ],
             [
-                "Foo",
+                "overrides/mods/Foo",
                 "unknown - probably CurseForge",
-                "a",
+                "7e3265a8",
                 "unknown",
                 "unknown",
                 "unknown",
@@ -270,20 +332,38 @@ class TestList:
 
     def test_other_files(self) -> None:
         modpack = Modpack(
-            name="Test Modpack",
-            version="1",
-            game_version=GameVersion("1.19.4"),
-            dependencies={},
-            loaders=set(),
-            unknown_dependencies=set(),
+            index=Index(
+                name="Test Modpack",
+                version="1",
+                summary="",
+                files=set(),
+                dependencies=Dependencies(
+                    game_version=GameVersion("1.19.4"),
+                    others={},
+                ),
+            ),
             mods={},
-            missing_mods=set(),
-            unknown_mods={},
-            other_files={"Foo": "a", "bar": "b"},
+            project_missing_mods=set(),
+            file_missing_mods=set(),
+            overrides={
+                PurePath("overrides", "config", "Foo"): Override(
+                    path="overrides/config/Foo",
+                    data=b"foo\n",
+                ),
+                PurePath("overrides", "config", "bar"): Override(
+                    path="overrides/config/bar",
+                    data=b"bar\n",
+                ),
+                PurePath("overrides", "mods", "baz"): Override(
+                    path="overrides/mods/baz",
+                    data=b"baz\n",
+                ),
+            },
         )
+
         assert _other_files(modpack, _headers({GameVersion("1.19.2")}, False)) == [
-            ["bar", "non-mod file", "b", "", "", "", ""],
-            ["Foo", "non-mod file", "a", "", "", "", ""],
+            ["overrides/config/bar", "non-mod file", "04a2b3e9", "", "", "", ""],
+            ["overrides/config/Foo", "non-mod file", "7e3265a8", "", "", "", ""],
         ]
 
     def test_run_normal(self) -> None:
@@ -545,8 +625,8 @@ class TestList:
                             "MIT",
                             "optional",
                             "required",
-                            "S",
-                            "I",
+                            "S%201",
+                            "I%201",
                         ],
                         [
                             "B",

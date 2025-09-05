@@ -1,11 +1,14 @@
-import binascii
 from collections.abc import Mapping, Set
+from dataclasses import dataclass
+from pathlib import PurePath
 
 from frozendict import frozendict
 from requests.utils import requote_uri
 
+from mrpack.api import Project
+from mrpack.index import File, Index
 from mrpack.moddb import ModDB
-from mrpack.mrpack import Mrpack
+from mrpack.mrpack import Mrpack, Override
 from mrpack.types import Env, GameVersion, ProjectID
 
 
@@ -13,70 +16,60 @@ class ModpackError(Exception):
     pass
 
 
+@dataclass(frozen=True, kw_only=True)
+class FileMissingMod:
+    index_entry: File
+
+
+@dataclass(frozen=True, kw_only=True)
+class ProjectMissingMod:
+    index_entry: File
+    version_number: str
+
+
 class Mod:
     def __init__(
         self,
         *,
-        name: str,
-        slug: str,
-        version: str,
-        original_env: Env,
-        overridden_env: Env,
-        mod_license: str,
-        source_url: str,
-        issues_url: str,
+        index_entry: File,
+        project: Project,
+        version_number: str,
         game_versions: Set[GameVersion],
     ) -> None:
         super().__init__()
-        self._name = name
-        self._link = requote_uri("https://modrinth.com/mod/" + slug)
-        self._version = version
-        self._original_env = original_env
-        self._overridden_env = overridden_env
-        self._mod_license = mod_license
-        self._source_url = requote_uri(source_url)
-        self._issues_url = requote_uri(issues_url)
+        self._index_entry = index_entry
+        self._project = project
+        self._version_number = version_number
+        self._link = requote_uri("https://modrinth.com/mod/" + self._project.slug)
         self._game_versions = frozenset(game_versions)
-        self._latest_game_version = max(self._game_versions)
+        self._latest_game_version = max(self._game_versions, default=None)
 
     @property
-    def name(self) -> str:
-        return self._name
+    def index_entry(self) -> File:
+        return self._index_entry
+
+    @property
+    def project(self) -> Project:
+        return self._project
+
+    @property
+    def version_number(self) -> str:
+        return self._version_number
 
     @property
     def link(self) -> str:
         return self._link
 
     @property
-    def version(self) -> str:
-        return self._version
-
-    @property
-    def original_env(self) -> Env:
-        return self._original_env
-
-    @property
-    def overridden_env(self) -> Env:
-        return self._overridden_env
-
-    @property
-    def mod_license(self) -> str:
-        return self._mod_license
-
-    @property
-    def source_url(self) -> str:
-        return self._source_url
-
-    @property
-    def issues_url(self) -> str:
-        return self._issues_url
+    def env(self) -> Env:
+        return self._index_entry.env or self._project.env
 
     @property
     def game_versions(self) -> frozenset[GameVersion]:
         return self._game_versions
 
     @property
-    def latest_game_version(self) -> GameVersion:
+    def latest_game_version(self) -> GameVersion | None:
         return self._latest_game_version
 
     def compatible_with(self, version: GameVersion) -> bool:
@@ -87,116 +80,82 @@ class Modpack:
     def __init__(
         self,
         *,
-        name: str,
-        version: str,
-        game_version: GameVersion,
-        dependencies: Mapping[str, str],
-        loaders: Set[str],
-        unknown_dependencies: Set[str],
+        index: Index,
         mods: Mapping[ProjectID, Mod],
-        missing_mods: Set[str],
-        unknown_mods: Mapping[str, str],
-        other_files: Mapping[str, str],
+        project_missing_mods: Set[ProjectMissingMod],
+        file_missing_mods: Set[FileMissingMod],
+        overrides: Mapping[PurePath, Override],
     ) -> None:
         super().__init__()
-        self._name = name
-        self._version = version
-        self._game_version = game_version
-        self._dependencies = frozendict(dependencies)
-        self._loaders = frozenset(loaders)
-        self._unknown_dependencies = frozenset(unknown_dependencies)
+        self._index = index
         self._mods = frozendict(mods)
-        self._missing_mods = frozenset(missing_mods)
-        self._unknown_mods = frozendict(unknown_mods)
-        self._other_files = frozendict(other_files)
+        self._project_missing_mods = frozenset(project_missing_mods)
+        self._file_missing_mods = frozenset(file_missing_mods)
+        self._overrides = frozendict(overrides)
 
     @property
-    def name(self) -> str:
-        return self._name
-
-    @property
-    def version(self) -> str:
-        return self._version
-
-    @property
-    def game_version(self) -> GameVersion:
-        return self._game_version
-
-    @property
-    def dependencies(self) -> frozendict[str, str]:
-        return self._dependencies
-
-    @property
-    def loaders(self) -> frozenset[str]:
-        return self._loaders
-
-    @property
-    def unknown_dependencies(self) -> frozenset[str]:
-        return self._unknown_dependencies
+    def index(self) -> Index:
+        return self._index
 
     @property
     def mods(self) -> frozendict[ProjectID, Mod]:
         return self._mods
 
     @property
-    def missing_mods(self) -> frozenset[str]:
-        return self._missing_mods
+    def project_missing_mods(self) -> frozenset[ProjectMissingMod]:
+        return self._project_missing_mods
 
     @property
-    def unknown_mods(self) -> frozendict[str, str]:
-        return self._unknown_mods
+    def file_missing_mods(self) -> frozenset[FileMissingMod]:
+        return self._file_missing_mods
 
     @property
-    def other_files(self) -> frozendict[str, str]:
-        return self._other_files
+    def overrides(self) -> frozendict[PurePath, Override]:
+        return self._overrides
 
     @staticmethod
-    def load(mrp: Mrpack, db: ModDB) -> "Modpack":
+    def load(m: Mrpack, db: ModDB) -> "Modpack":
         mods = {}
-        missing_mods = set()
-        for mod_hash in mrp.index.files:
-            if mod_hash in db.all_files:
-                file = db.all_files[mod_hash]
-                mod_id = file.project_id
-                project = db.all_projects[mod_id]
-                game_versions: set[str] = set()
-                for version in db.project_versions(file.project_id):
-                    if (
-                        version in db.all_versions
-                        and db.all_versions[version].loaders & mrp.index.dependencies.loaders
-                    ):
-                        game_versions.update(db.all_versions[version].game_versions)
-                mods[mod_id] = Mod(
-                    name=project.title,
-                    slug=project.slug,
-                    version=file.version_number,
-                    original_env=project.env,
-                    overridden_env=mrp.index.files[mod_hash].env or project.env,
-                    mod_license=project.project_license,
-                    source_url=project.source_url,
-                    issues_url=project.issues_url,
-                    game_versions=GameVersion.load_multiple(game_versions),
+        project_missing_mods = set()
+        file_missing_mods = set()
+
+        for h, index_entry in m.index.files.items():
+            file = db.file(h)
+            if file is None:
+                file_missing_mods.add(FileMissingMod(index_entry=index_entry))
+                continue
+
+            project_id = file.project_id
+            project = db.project(project_id)
+            if project is None:
+                project_missing_mods.add(
+                    ProjectMissingMod(
+                        index_entry=index_entry,
+                        version_number=file.version_number,
+                    ),
                 )
-            else:
-                missing_mods.add(str(mrp.index.files[mod_hash].path.parts[-1]))
+                continue
+
+            if project_id in mods:
+                raise ValueError(f"Duplicate project ID '{project_id}")
+
+            game_versions: set[str] = set()
+            for version_id in db.project_versions(project_id):
+                version = db.version(version_id)
+                if version and version.loaders & m.index.dependencies.loaders:
+                    game_versions.update(version.game_versions)
+
+            mods[project_id] = Mod(
+                index_entry=index_entry,
+                project=project,
+                version_number=file.version_number,
+                game_versions=GameVersion.load_multiple(game_versions),
+            )
 
         return Modpack(
-            name=mrp.index.name,
-            version=mrp.index.version,
-            game_version=mrp.index.dependencies.game_version,
-            dependencies=mrp.index.dependencies.others,
-            loaders=mrp.index.dependencies.loaders,
-            unknown_dependencies=mrp.index.dependencies.unknown_dependencies,
+            index=m.index,
             mods=mods,
-            missing_mods=missing_mods,
-            unknown_mods={
-                str(p): f"{binascii.crc32(o.data):08x}"
-                for (p, o) in mrp.overrides.items()
-                if p.parts[1] == "mods"
-            },
-            other_files={
-                str(p): f"{binascii.crc32(o.data):08x}"
-                for (p, o) in mrp.overrides.items()
-                if p.parts[1] != "mods"
-            },
+            project_missing_mods=project_missing_mods,
+            file_missing_mods=file_missing_mods,
+            overrides=m.overrides,
         )

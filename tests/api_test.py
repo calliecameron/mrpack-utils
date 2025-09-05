@@ -272,6 +272,31 @@ class TestGetFileDetails:
                 )
 
 
+class TestProject:
+    def test_project(self) -> None:
+        e = Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.REQUIRED,
+        )
+        p = Project(
+            project_id=ProjectID("a0000000"),
+            slug="a",
+            title="A",
+            env=e,
+            project_license="MIT",
+            source_url="S 1",
+            issues_url="I 1",
+        )
+
+        assert p.project_id == ProjectID("a0000000")
+        assert p.slug == "a"
+        assert p.title == "A"
+        assert p.env == e
+        assert p.project_license == "MIT"
+        assert p.source_url == "S%201"
+        assert p.issues_url == "I%201"
+
+
 class TestGetProjects:
     def test_valid(self) -> None:
         with requests_mock.Mocker() as m:
@@ -297,8 +322,8 @@ class TestGetProjects:
                             server=Requirement.REQUIRED,
                         ),
                         project_license="MIT",
-                        source_url="S",
-                        issues_url="I",
+                        source_url="S%201",
+                        issues_url="I%201",
                     ),
                     ProjectID("b0000000"): Project(
                         project_id=ProjectID("b0000000"),

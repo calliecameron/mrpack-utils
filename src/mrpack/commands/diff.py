@@ -1,4 +1,6 @@
+import binascii
 from collections.abc import Mapping
+from pathlib import PurePath
 
 from mrpack.moddb import ModDB
 from mrpack.modpack import Modpack
@@ -22,29 +24,57 @@ def _diff(old: Mapping[str, str], new: Mapping[str, str]) -> list[tuple[str, str
 
 def _modpack_data(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
     out = []
-    if old.name != new.name:
-        out.append(("modpack name", old.name, new.name))
-    if old.version != new.version:
-        out.append(("modpack version", old.version, new.version))
-    if old.game_version != new.game_version:
-        out.append(("minecraft", str(old.game_version), str(new.game_version)))
+    if old.index.name != new.index.name:
+        out.append(("modpack name", old.index.name, new.index.name))
+    if old.index.version != new.index.version:
+        out.append(("modpack version", old.index.version, new.index.version))
+    if old.index.dependencies.game_version != new.index.dependencies.game_version:
+        out.append(
+            (
+                "minecraft",
+                str(old.index.dependencies.game_version),
+                str(new.index.dependencies.game_version),
+            ),
+        )
 
-    return out + _diff(old.dependencies, new.dependencies)
+    return out + _diff(old.index.dependencies.others, new.index.dependencies.others)
 
 
 def _mods(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
     return _diff(
-        {mod.name: mod.version for mod in old.mods.values()},
-        {mod.name: mod.version for mod in new.mods.values()},
+        {mod.project.title: mod.version_number for mod in old.mods.values()},
+        {mod.project.title: mod.version_number for mod in new.mods.values()},
     )
 
 
 def _unknown_mods(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
-    return _diff(old.unknown_mods, new.unknown_mods)
+    return _diff(
+        {
+            str(o.path): f"{binascii.crc32(o.data):08x}"
+            for o in old.overrides.values()
+            if o.path.parts[1] == "mods"
+        },
+        {
+            str(o.path): f"{binascii.crc32(o.data):08x}"
+            for o in new.overrides.values()
+            if o.path.parts[1] == "mods"
+        },
+    )
 
 
 def _other_files(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
-    return _diff(old.other_files, new.other_files)
+    return _diff(
+        {
+            str(o.path): f"{binascii.crc32(o.data):08x}"
+            for o in old.overrides.values()
+            if o.path.parts[1] != "mods"
+        },
+        {
+            str(o.path): f"{binascii.crc32(o.data):08x}"
+            for o in new.overrides.values()
+            if o.path.parts[1] != "mods"
+        },
+    )
 
 
 def run(old_file: str, new_file: str) -> tuple[Element, ...]:
@@ -64,6 +94,14 @@ def run(old_file: str, new_file: str) -> tuple[Element, ...]:
                 *_other_files(old, new),
             ],
         ),
-        UnknownDependencies(old.unknown_dependencies | new.unknown_dependencies),
-        MissingMods(old.missing_mods | new.missing_mods),
+        UnknownDependencies(
+            old.index.dependencies.unknown_dependencies
+            | new.index.dependencies.unknown_dependencies,
+        ),
+        MissingMods(
+            {str(PurePath(*m.index_entry.path.parts[1:])) for m in old.project_missing_mods}
+            | {str(PurePath(*m.index_entry.path.parts[1:])) for m in old.file_missing_mods}
+            | {str(PurePath(*m.index_entry.path.parts[1:])) for m in new.project_missing_mods}
+            | {str(PurePath(*m.index_entry.path.parts[1:])) for m in new.file_missing_mods},
+        ),
     )

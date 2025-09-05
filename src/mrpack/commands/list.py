@@ -1,4 +1,6 @@
+import binascii
 from collections.abc import Sequence, Set
+from pathlib import PurePath
 
 from frozendict import frozendict
 
@@ -44,11 +46,14 @@ def _modpack_data(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
         return row
 
     return [
-        _row("modpack: " + modpack.name, modpack.version),
-        _row("minecraft", str(modpack.game_version)),
+        _row("modpack: " + modpack.index.name, modpack.index.version),
+        _row("minecraft", str(modpack.index.dependencies.game_version)),
     ] + [
         _row(name, version)
-        for (name, version) in sorted(modpack.dependencies.items(), key=lambda i: i[0].lower())
+        for (name, version) in sorted(
+            modpack.index.dependencies.others.items(),
+            key=lambda i: i[0].lower(),
+        )
     ]
 
 
@@ -60,14 +65,14 @@ def _mods(
     incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
     out = []
 
-    for mod in sorted(modpack.mods.values(), key=lambda m: m.name.lower()):
+    for mod in sorted(modpack.mods.values(), key=lambda m: m.project.title.lower()):
         row = [
-            mod.name,
+            mod.project.title,
             mod.link,
-            mod.version,
-            mod.overridden_env.client.name.lower(),
-            mod.overridden_env.server.name.lower(),
-            str(mod.latest_game_version),
+            mod.version_number,
+            mod.env.client.name.lower(),
+            mod.env.server.name.lower(),
+            str(mod.latest_game_version or ""),
         ]
         for version in sorted(game_versions):
             if mod.compatible_with(version):
@@ -77,11 +82,11 @@ def _mods(
                 incompatible[version].add(mod)
         if dev:
             row += [
-                mod.mod_license,
-                mod.original_env.client.name.lower(),
-                mod.original_env.server.name.lower(),
-                mod.source_url,
-                mod.issues_url,
+                mod.project.project_license,
+                mod.project.env.client.name.lower(),
+                mod.project.env.server.name.lower(),
+                mod.project.source_url,
+                mod.project.issues_url,
             ]
         out.append(row)
 
@@ -97,30 +102,32 @@ def _unknown_mods(
 ) -> list[list[str]]:
     out = []
     versions = ["check manually"] * len(game_versions)
-    for name, version in sorted(modpack.unknown_mods.items(), key=lambda i: i[0].lower()):
-        row = [
-            name,
-            "unknown - probably CurseForge",
-            version,
-            "unknown",
-            "unknown",
-            "unknown",
-            *versions,
-        ]
-        if dev:
-            row += [""] * 5
-        out.append(row)
+    for path, override in sorted(modpack.overrides.items(), key=lambda i: str(i[0]).lower()):
+        if path.parts[1] == "mods":
+            row = [
+                str(path),
+                "unknown - probably CurseForge",
+                f"{binascii.crc32(override.data):08x}",
+                "unknown",
+                "unknown",
+                "unknown",
+                *versions,
+            ]
+            if dev:
+                row += [""] * 5
+            out.append(row)
     return out
 
 
 def _other_files(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
     out = []
-    for name, version in sorted(modpack.other_files.items(), key=lambda i: i[0].lower()):
-        row = _empty_row(headers)
-        row[headers.index(_NAME)] = name
-        row[headers.index(_INSTALLED_VERSION)] = version
-        row[headers.index(_LINK)] = "non-mod file"
-        out.append(row)
+    for path, override in sorted(modpack.overrides.items(), key=lambda i: str(i[0]).lower()):
+        if path.parts[1] != "mods":
+            row = _empty_row(headers)
+            row[headers.index(_NAME)] = str(path)
+            row[headers.index(_INSTALLED_VERSION)] = f"{binascii.crc32(override.data):08x}"
+            row[headers.index(_LINK)] = "non-mod file"
+            out.append(row)
     return out
 
 
@@ -133,7 +140,7 @@ def run(
     db = ModDB.load([mrp], True)
     modpack = Modpack.load(mrp, db)
     game_versions = set(game_versions)
-    game_versions.add(modpack.game_version)
+    game_versions.add(modpack.index.dependencies.game_version)
 
     headers = _headers(game_versions, dev)
     modpack_data = _modpack_data(modpack, headers)
@@ -152,15 +159,18 @@ def run(
                     *other_files,
                 ],
             ),
-            UnknownDependencies(modpack.unknown_dependencies),
-            MissingMods(modpack.missing_mods),
+            UnknownDependencies(modpack.index.dependencies.unknown_dependencies),
+            MissingMods(
+                {str(PurePath(*m.index_entry.path.parts[1:])) for m in modpack.project_missing_mods}
+                | {str(PurePath(*m.index_entry.path.parts[1:])) for m in modpack.file_missing_mods},
+            ),
         ]
         + [
             IncompatibleMods(
                 num_mods=len(modpack.mods),
                 game_version=str(version),
-                mods={mod.name for mod in incompatible[version]},
-                curseforge_warning=len(modpack.unknown_mods) > 0,
+                mods={mod.project.title for mod in incompatible[version]},
+                curseforge_warning=len([p for p in modpack.overrides if p.parts[1] == "mods"]) > 0,
             )
             for version in sorted(game_versions)
         ],

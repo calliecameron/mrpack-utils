@@ -87,8 +87,8 @@ PROJECT_A = {
     "client_side": "optional",
     "server_side": "required",
     "license": {"id": "MIT"},
-    "source_url": "S",
-    "issues_url": "I",
+    "source_url": "S 1",
+    "issues_url": "I 1",
 }
 PROJECT_B = {
     "id": "b0000000",

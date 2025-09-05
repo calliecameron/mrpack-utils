@@ -228,8 +228,8 @@ class TestModDB:
                         server=Requirement.REQUIRED,
                     ),
                     project_license="MIT",
-                    source_url="S",
-                    issues_url="I",
+                    source_url="S%201",
+                    issues_url="I%201",
                 ),
                 ProjectID("b0000000"): api.Project(
                     project_id=ProjectID("b0000000"),
@@ -251,8 +251,8 @@ class TestModDB:
                 server=Requirement.REQUIRED,
             ),
             project_license="MIT",
-            source_url="S",
-            issues_url="I",
+            source_url="S%201",
+            issues_url="I%201",
         )
         assert db.project(ProjectID("c0000000")) is None
 
@@ -403,8 +403,8 @@ class TestModDB:
                         server=Requirement.REQUIRED,
                     ),
                     project_license="MIT",
-                    source_url="S",
-                    issues_url="I",
+                    source_url="S%201",
+                    issues_url="I%201",
                 ),
                 ProjectID("b0000000"): api.Project(
                     project_id=ProjectID("b0000000"),
@@ -426,8 +426,8 @@ class TestModDB:
                 server=Requirement.REQUIRED,
             ),
             project_license="MIT",
-            source_url="S",
-            issues_url="I",
+            source_url="S%201",
+            issues_url="I%201",
         )
         assert db.project(ProjectID("c0000000")) is None
 
