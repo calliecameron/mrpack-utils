@@ -5,6 +5,7 @@ from frozendict import frozendict
 
 from mrpack_utils.api import File, Project, Version, get_file_details, get_projects, get_versions
 from mrpack_utils.types import Env, ProjectID, Requirement, Sha512, VersionID
+from tests import testdata
 
 # ruff: noqa: PT011,S101
 
@@ -17,39 +18,7 @@ class TestGetFileDetails:
         with requests_mock.Mocker() as m:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
-                json={
-                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "a0000000",
-                        "version_number": "1.2.3",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                    "foo": "bar",
-                                },
-                                "foo": "bar",
-                            },
-                            {
-                                "hashes": {
-                                    "sha512": "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                        "foo": "bar",
-                    },
-                    "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
-                        "project_id": "b0000000",
-                        "version_number": "4.5.6",
-                        "files": [
-                            {
-                                "hashes": {
-                                    "sha512": "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
-                                },
-                            },
-                        ],
-                        "bar": "baz",
-                    },
-                },
+                json=testdata.FILE_A0 | testdata.FILE_B0,
             )
 
             assert get_file_details(
@@ -76,10 +45,10 @@ class TestGetFileDetails:
                         version_number="1.2.3",
                     ),
                     Sha512(
-                        "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                     ): File(
                         sha512=Sha512(
-                            "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                            "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                         ),
                         project_id=ProjectID("a0000000"),
                         version_number="1.2.3",
@@ -96,6 +65,7 @@ class TestGetFileDetails:
                 },
             )
 
+        # Returning nothing is valid
         with requests_mock.Mocker() as m:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
@@ -113,6 +83,7 @@ class TestGetFileDetails:
                 == frozendict()
             )
 
+        # Returning an empty file list is valid
         with requests_mock.Mocker() as m:
             m.post(
                 "https://api.modrinth.com/v2/version_files",
@@ -311,25 +282,8 @@ class TestGetProjects:
                 'https://api.modrinth.com/v2/projects?ids=["a0000000", "b0000000"]',
                 complete_qs=True,
                 json=[
-                    {
-                        "id": "a0000000",
-                        "title": "A",
-                        "slug": "a",
-                    },
-                    {
-                        "id": "b0000000",
-                        "title": "B",
-                        "slug": "b",
-                        "client_side": "required",
-                        "server_side": "optional",
-                        "license": {
-                            "id": "MIT",
-                            "foo": "bar",
-                        },
-                        "source_url": "S",
-                        "issues_url": "I",
-                        "foo": "bar",
-                    },
+                    testdata.PROJECT_A,
+                    testdata.PROJECT_B,
                 ],
             )
             assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == frozendict(
@@ -338,26 +292,27 @@ class TestGetProjects:
                         project_id=ProjectID("a0000000"),
                         slug="a",
                         title="A",
-                        env=Env.unknown(),
-                        project_license="",
-                        source_url="",
-                        issues_url="",
-                    ),
-                    ProjectID("b0000000"): Project(
-                        project_id=ProjectID("b0000000"),
-                        slug="b",
-                        title="B",
                         env=Env(
-                            client=Requirement.REQUIRED,
-                            server=Requirement.OPTIONAL,
+                            client=Requirement.OPTIONAL,
+                            server=Requirement.REQUIRED,
                         ),
                         project_license="MIT",
                         source_url="S",
                         issues_url="I",
                     ),
+                    ProjectID("b0000000"): Project(
+                        project_id=ProjectID("b0000000"),
+                        slug="b",
+                        title="B",
+                        env=Env.unknown(),
+                        project_license="",
+                        source_url="",
+                        issues_url="",
+                    ),
                 },
             )
 
+        # Returning nothing is valid
         with requests_mock.Mocker() as m:
             m.get(
                 'https://api.modrinth.com/v2/projects?ids=["a0000000", "b0000000"]',
@@ -366,6 +321,7 @@ class TestGetProjects:
             )
             assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == frozendict()
 
+        # Returning 'None' for source and issue URLs is valid
         with requests_mock.Mocker() as m:
             m.get(
                 'https://api.modrinth.com/v2/projects?ids=["a0000000"]',
@@ -510,35 +466,16 @@ class TestGetVersions:
                 'https://api.modrinth.com/v2/project/a0000000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
                 complete_qs=True,
                 json=[
-                    {
-                        "id": "A0000000",
-                        "project_id": "a0000000",
-                        "loaders": ["fabric"],
-                        "game_versions": ["1.19.2"],
-                        "foo": "bar",
-                    },
-                    {
-                        "id": "A1000000",
-                        "project_id": "a0000000",
-                        "loaders": ["fabric", "minecraft"],
-                        "game_versions": ["1.20"],
-                    },
+                    testdata.VERSION_A0,
+                    testdata.VERSION_A1,
                 ],
             )
             m.get(
                 'https://api.modrinth.com/v2/project/b0000000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
                 complete_qs=True,
                 json=[
-                    {
-                        "id": "B0000000",
-                        "project_id": "b0000000",
-                        "loaders": ["minecraft"],
-                        "game_versions": ["1.19.4"],
-                    },
-                    {
-                        "id": "B1000000",
-                        "project_id": "b0000000",
-                    },
+                    testdata.VERSION_B0,
+                    testdata.VERSION_B1,
                 ],
             )
 
@@ -590,12 +527,13 @@ class TestGetVersions:
                     VersionID("B1000000"): Version(
                         version_id=VersionID("B1000000"),
                         project_id=ProjectID("b0000000"),
-                        loaders=set(),
-                        game_versions=set(),
+                        loaders=set({"forge"}),
+                        game_versions=set({"1.20"}),
                     ),
                 },
             )
 
+        # Returning nothing is valid
         with requests_mock.Mocker() as m:
             m.get(
                 'https://api.modrinth.com/v2/project/a0000000/version?loaders=["minecraft"]',

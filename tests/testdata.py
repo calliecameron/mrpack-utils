@@ -1,6 +1,6 @@
 import requests_mock
 
-_FILE_A0 = {
+FILE_A0 = {
     "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
         "project_id": "a0000000",
         "version_number": "1.2.3",
@@ -8,7 +8,9 @@ _FILE_A0 = {
             {
                 "hashes": {
                     "sha512": "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
+                    "foo": "bar",
                 },
+                "foo": "bar",
             },
             {
                 "hashes": {
@@ -16,9 +18,10 @@ _FILE_A0 = {
                 },
             },
         ],
+        "foo": "bar",
     },
 }
-_FILE_A1 = {
+FILE_A1 = {
     "a1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
         "project_id": "a0000000",
         "version_number": "1.2.4",
@@ -36,7 +39,7 @@ _FILE_A1 = {
         ],
     },
 }
-_FILE_B0 = {
+FILE_B0 = {
     "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
         "project_id": "b0000000",
         "version_number": "4.5.6",
@@ -47,9 +50,23 @@ _FILE_B0 = {
                 },
             },
         ],
+        "bar": "baz",
     },
 }
-_FILE_D0 = {
+FILE_B1 = {
+    "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
+        "project_id": "b0000000",
+        "version_number": "4.5.7",
+        "files": [
+            {
+                "hashes": {
+                    "sha512": "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",  # noqa: E501
+                },
+            },
+        ],
+    },
+}
+FILE_D0 = {
     "d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000": {  # noqa: E501
         "project_id": "d0000000",
         "version_number": "1.0.0",
@@ -63,7 +80,7 @@ _FILE_D0 = {
     },
 }
 
-_PROJECT_A = {
+PROJECT_A = {
     "id": "a0000000",
     "title": "A",
     "slug": "a",
@@ -73,36 +90,43 @@ _PROJECT_A = {
     "source_url": "S",
     "issues_url": "I",
 }
-_PROJECT_B = {
+PROJECT_B = {
     "id": "b0000000",
     "title": "B",
     "slug": "b",
 }
-_PROJECT_D = {
+PROJECT_D = {
     "id": "d0000000",
     "title": "D",
     "slug": "d",
 }
 
-_VERSION_A0 = {
+VERSION_A0 = {
     "id": "A0000000",
     "project_id": "a0000000",
     "loaders": ["fabric"],
     "game_versions": ["1.19.2"],
+    "foo": "bar",
 }
-_VERSION_A1 = {
+VERSION_A1 = {
     "id": "A1000000",
     "project_id": "a0000000",
     "loaders": ["fabric", "minecraft"],
     "game_versions": ["1.20"],
 }
-_VERSION_B0 = {
+VERSION_B0 = {
     "id": "B0000000",
     "project_id": "b0000000",
     "loaders": ["minecraft"],
     "game_versions": ["1.19.4"],
 }
-_VERSION_D0 = {
+VERSION_B1 = {
+    "id": "B1000000",
+    "project_id": "b0000000",
+    "loaders": ["forge"],
+    "game_versions": ["1.20"],
+}
+VERSION_D0 = {
     "id": "D0000000",
     "project_id": "d0000000",
     "loaders": ["fabric"],
@@ -113,29 +137,29 @@ _VERSION_D0 = {
 def test1_list_calls(m: requests_mock.Mocker) -> None:
     m.post(
         "https://api.modrinth.com/v2/version_files",
-        json=_FILE_A0 | _FILE_B0,
+        json=FILE_A0 | FILE_B0,
     )
     m.get(
         'https://api.modrinth.com/v2/projects?ids=["a0000000", "b0000000"]',
         complete_qs=True,
         json=[
-            _PROJECT_A,
-            _PROJECT_B,
+            PROJECT_A,
+            PROJECT_B,
         ],
     )
     m.get(
         'https://api.modrinth.com/v2/project/a0000000/version?loaders=["fabric", "minecraft"]',
         complete_qs=True,
         json=[
-            _VERSION_A0,
-            _VERSION_A1,
+            VERSION_A0,
+            VERSION_A1,
         ],
     )
     m.get(
         'https://api.modrinth.com/v2/project/b0000000/version?loaders=["fabric", "minecraft"]',
         complete_qs=True,
         json=[
-            _VERSION_B0,
+            VERSION_B0,
         ],
     )
 
@@ -143,36 +167,36 @@ def test1_list_calls(m: requests_mock.Mocker) -> None:
 def test1_test2_diff_calls(m: requests_mock.Mocker) -> None:
     m.post(
         "https://api.modrinth.com/v2/version_files",
-        json=_FILE_A0 | _FILE_A1 | _FILE_B0 | _FILE_D0,
+        json=FILE_A0 | FILE_A1 | FILE_B0 | FILE_D0,
     )
     m.get(
         'https://api.modrinth.com/v2/projects?ids=["a0000000", "b0000000", "d0000000"]',
         complete_qs=True,
         json=[
-            _PROJECT_A,
-            _PROJECT_B,
-            _PROJECT_D,
+            PROJECT_A,
+            PROJECT_B,
+            PROJECT_D,
         ],
     )
     m.get(
         'https://api.modrinth.com/v2/project/a0000000/version?loaders=["fabric", "minecraft"]',
         complete_qs=True,
         json=[
-            _VERSION_A0,
-            _VERSION_A1,
+            VERSION_A0,
+            VERSION_A1,
         ],
     )
     m.get(
         'https://api.modrinth.com/v2/project/b0000000/version?loaders=["fabric", "minecraft"]',
         complete_qs=True,
         json=[
-            _VERSION_B0,
+            VERSION_B0,
         ],
     )
     m.get(
         'https://api.modrinth.com/v2/project/d0000000/version?loaders=["fabric", "minecraft"]',
         complete_qs=True,
         json=[
-            _VERSION_D0,
+            VERSION_D0,
         ],
     )
