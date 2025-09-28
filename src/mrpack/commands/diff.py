@@ -80,7 +80,7 @@ def _other_files(old: Modpack, new: Modpack) -> list[tuple[str, str, str]]:
 def run(old_file: str, new_file: str) -> tuple[Element, ...]:
     old_mrpack = Mrpack.from_file(old_file)
     new_mrpack = Mrpack.from_file(new_file)
-    db = ModDB.load([old_mrpack, new_mrpack], False)
+    db = ModDB.load([old_mrpack, new_mrpack], fetch_versions=False)
     old = Modpack.load(old_mrpack, db)
     new = Modpack.load(new_mrpack, db)
 
@@ -99,9 +99,21 @@ def run(old_file: str, new_file: str) -> tuple[Element, ...]:
             | new.index.dependencies.unknown_dependencies,
         ),
         MissingMods(
-            {str(PurePath(*m.index_entry.path.parts[1:])) for m in old.project_missing_mods}
-            | {str(PurePath(*m.index_entry.path.parts[1:])) for m in old.file_missing_mods}
-            | {str(PurePath(*m.index_entry.path.parts[1:])) for m in new.project_missing_mods}
-            | {str(PurePath(*m.index_entry.path.parts[1:])) for m in new.file_missing_mods},
+            {
+                str(PurePath(*m.index_entry.path.parts[1:]))
+                for m in old.project_missing_mods
+            }
+            | {
+                str(PurePath(*m.index_entry.path.parts[1:]))
+                for m in old.file_missing_mods
+            }
+            | {
+                str(PurePath(*m.index_entry.path.parts[1:]))
+                for m in new.project_missing_mods
+            }
+            | {
+                str(PurePath(*m.index_entry.path.parts[1:]))
+                for m in new.file_missing_mods
+            },
         ),
     )

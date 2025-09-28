@@ -1,0 +1,30 @@
+#!/bin/bash
+
+set -eu
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ ! -e pyproject.toml ]; then
+    echo 'Must be run in the root of the project' 2>&1
+    exit 1
+fi
+
+uv python pin --no-project "$(uv run python "${THIS_DIR}/uv_latest_python.py")"
+
+sed -i "s/requires-python = \"==.*\"/requires-python = \"==$(cat .python-version)\"/g" pyproject.toml
+
+TMPFILE="$(mktemp)"
+uv pip list --outdated --format=json >"${TMPFILE}"
+
+uv run python "${THIS_DIR}/uv_outdated_deps.py" "${TMPFILE}" 'pyproject.toml' | while read -r dep group; do
+    if [ -n "${group:-}" ]; then
+        uv add --no-sync --group "${group}" "${dep}"
+    else
+        uv add --no-sync "${dep}"
+    fi
+done
+
+rm "${TMPFILE}"
+rm -f uv.lock
+rm -rf .venv
+uv sync

@@ -5,7 +5,14 @@ from typing import Any, override
 import jsonschema
 from frozendict import frozendict
 
-from mrpack.types import Env, GameVersion, Sha1, Sha512, make_json_schema, validated_path
+from mrpack.types import (
+    Env,
+    GameVersion,
+    Sha1,
+    Sha512,
+    make_json_schema,
+    validated_path,
+)
 
 
 class Hashes:
@@ -35,7 +42,13 @@ class Hashes:
 
     _SCHEMA = make_json_schema(SCHEMA_FRAGMENT)
 
-    def __init__(self, *, sha1: Sha1, sha512: Sha512, others: Mapping[str, str]) -> None:
+    def __init__(
+        self,
+        *,
+        sha1: Sha1,
+        sha512: Sha512,
+        others: Mapping[str, str],
+    ) -> None:
         super().__init__()
         self._sha1 = sha1
         self._sha512 = sha512
@@ -224,10 +237,16 @@ class Dependencies:  # noqa: PLW1641
             )
         self._others = frozendict(others)
 
-        self._unknown_dependencies = frozenset(self._others - Dependencies._LOADERS.keys())
+        self._unknown_dependencies = frozenset(
+            self._others - Dependencies._LOADERS.keys(),
+        )
         self._loaders = frozenset(
             {"minecraft"}
-            | {Dependencies._LOADERS[d] for d in self._others if d in Dependencies._LOADERS},
+            | {
+                Dependencies._LOADERS[d]
+                for d in self._others
+                if d in Dependencies._LOADERS
+            },
         )
 
     @property
@@ -250,7 +269,9 @@ class Dependencies:  # noqa: PLW1641
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Dependencies):
             raise NotImplementedError
-        return self._game_version == other._game_version and self._others == other._others
+        return (
+            self._game_version == other._game_version and self._others == other._others
+        )
 
     @staticmethod
     def from_json(data: Mapping[str, str]) -> "Dependencies":

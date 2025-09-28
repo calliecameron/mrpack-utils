@@ -69,7 +69,16 @@ For version 1.20:
         with requests_mock.Mocker() as m:
             testdata.test1_list_calls(m)
 
-            main(["--csv", "list", "--dev", "--check-version", "1.20", "testdata/test1.mrpack"])
+            main(
+                [
+                    "--csv",
+                    "list",
+                    "--dev",
+                    "--check-version",
+                    "1.20",
+                    "testdata/test1.mrpack",
+                ],
+            )
             assert (
                 capsys.readouterr().out
                 == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20,License,Modrinth client,Modrinth server,Source,Issues

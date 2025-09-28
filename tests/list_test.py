@@ -24,7 +24,7 @@ from tests import testdata
 
 class TestList:
     def test_headers(self) -> None:
-        assert _headers(set(), False) == [
+        assert _headers(set(), dev=False) == [
             "Name",
             "Link",
             "Installed version",
@@ -33,7 +33,7 @@ class TestList:
             "Latest game version",
         ]
 
-        assert _headers({GameVersion("1.20"), GameVersion("1.19")}, False) == [
+        assert _headers({GameVersion("1.20"), GameVersion("1.19")}, dev=False) == [
             "Name",
             "Link",
             "Installed version",
@@ -44,7 +44,7 @@ class TestList:
             "1.20",
         ]
 
-        assert _headers(set(), True) == [
+        assert _headers(set(), dev=True) == [
             "Name",
             "Link",
             "Installed version",
@@ -58,7 +58,7 @@ class TestList:
             "Issues",
         ]
 
-        assert _headers({GameVersion("1.20"), GameVersion("1.19")}, True) == [
+        assert _headers({GameVersion("1.20"), GameVersion("1.19")}, dev=True) == [
             "Name",
             "Link",
             "Installed version",
@@ -94,7 +94,7 @@ class TestList:
             file_missing_mods=set(),
             overrides={},
         )
-        assert _modpack_data(modpack, _headers({GameVersion("1.19.2")}, False)) == [
+        assert _modpack_data(modpack, _headers({GameVersion("1.19.2")}, dev=False)) == [
             ["modpack: Test Modpack", "", "1", "", "", "", ""],
             ["minecraft", "", "1.19.4", "", "", "", ""],
             ["fabric-loader", "", "0.16", "", "", "", ""],
@@ -176,7 +176,7 @@ class TestList:
         mods, incompatible = _mods(
             modpack,
             frozenset([GameVersion("1.19.4"), GameVersion("1.20")]),
-            False,
+            dev=False,
         )
         assert mods == [
             [
@@ -208,7 +208,7 @@ class TestList:
         mods, incompatible = _mods(
             modpack,
             frozenset([GameVersion("1.19.4"), GameVersion("1.20")]),
-            True,
+            dev=True,
         )
         assert mods == [
             [
@@ -278,7 +278,7 @@ class TestList:
             },
         )
 
-        assert _unknown_mods(modpack, {GameVersion("1.19.2")}, False) == [
+        assert _unknown_mods(modpack, {GameVersion("1.19.2")}, dev=False) == [
             [
                 "overrides/mods/bar",
                 "unknown - probably CurseForge",
@@ -299,7 +299,7 @@ class TestList:
             ],
         ]
 
-        assert _unknown_mods(modpack, {GameVersion("1.19.2")}, True) == [
+        assert _unknown_mods(modpack, {GameVersion("1.19.2")}, dev=True) == [
             [
                 "overrides/mods/bar",
                 "unknown - probably CurseForge",
@@ -361,7 +361,7 @@ class TestList:
             },
         )
 
-        assert _other_files(modpack, _headers({GameVersion("1.19.2")}, False)) == [
+        assert _other_files(modpack, _headers({GameVersion("1.19.2")}, dev=False)) == [
             ["overrides/config/bar", "non-mod file", "04a2b3e9", "", "", "", ""],
             ["overrides/config/Foo", "non-mod file", "7e3265a8", "", "", "", ""],
         ]
@@ -372,7 +372,7 @@ class TestList:
             assert run(
                 "testdata/test1.mrpack",
                 frozenset([GameVersion("1.20")]),
-                False,
+                dev=False,
             ) == (
                 Table(
                     [
@@ -534,7 +534,7 @@ class TestList:
             assert run(
                 "testdata/test1.mrpack",
                 frozenset([GameVersion("1.20")]),
-                True,
+                dev=True,
             ) == (
                 Table(
                     [

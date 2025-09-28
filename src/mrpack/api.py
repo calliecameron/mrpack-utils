@@ -8,7 +8,14 @@ import requests
 from frozendict import frozendict
 from requests.utils import requote_uri
 
-from mrpack.types import Env, ProjectID, Requirement, Sha512, VersionID, make_json_schema
+from mrpack.types import (
+    Env,
+    ProjectID,
+    Requirement,
+    Sha512,
+    VersionID,
+    make_json_schema,
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -238,7 +245,9 @@ def get_projects(ids: Set[ProjectID]) -> frozendict[ProjectID, Project]:
     response = requests.get(
         "https://api.modrinth.com/v2/projects",
         {
-            "ids": "[" + ", ".join(sorted(f'"{project_id}"' for project_id in ids)) + "]",
+            "ids": "["
+            + ", ".join(sorted(f'"{project_id}"' for project_id in ids))
+            + "]",
         },
         timeout=10,
     )
@@ -259,7 +268,9 @@ def get_projects(ids: Set[ProjectID]) -> frozendict[ProjectID, Project]:
                 client=Requirement.from_str(project.get("client_side", "")),
                 server=Requirement.from_str(project.get("server_side", "")),
             ),
-            project_license="" if "license" not in project else project["license"]["id"],
+            project_license=""
+            if "license" not in project
+            else project["license"]["id"],
             # Sometimes the API returns None for these - force them to be strings
             source_url=project.get("source_url", "") or "",
             issues_url=project.get("issues_url", "") or "",
@@ -326,7 +337,8 @@ def get_versions(
 
     for i, project in enumerate(sorted(projects, key=lambda p: p.title.lower())):
         sys.stderr.write(
-            f"Fetching versions for project {i + 1} of {len(projects)}: {project.title}...\n",
+            f"Fetching versions for project {i + 1} of {len(projects)}: "
+            f"{project.title}...\n",
         )
         response = requests.get(
             f"https://api.modrinth.com/v2/project/{project.project_id}/version",

@@ -7,7 +7,7 @@ from frozendict import frozendict
 from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.types import Env, GameVersion, Requirement, Sha1, Sha512
 
-# ruff: noqa: PT011, S101
+# ruff: noqa: S101
 
 
 class TestHashes:

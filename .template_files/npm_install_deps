@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -eu
+
+if [ ! -e package.json ]; then
+    echo 'Must be run in the root of the project' 2>&1
+    exit 1
+fi
+
+source "${NVM_DIR}/nvm.sh"
+nvm exec --silent npm install

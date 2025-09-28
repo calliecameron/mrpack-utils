@@ -137,7 +137,9 @@ class Modpack:
                 continue
 
             if project_id in mods:
-                raise ValueError(f"Duplicate project ID '{project_id}")  # pragma: no cover
+                raise ValueError(
+                    f"Duplicate project ID '{project_id}",
+                )  # pragma: no cover
 
             game_versions: set[str] = set()
             for version_id in db.project_versions(project_id):

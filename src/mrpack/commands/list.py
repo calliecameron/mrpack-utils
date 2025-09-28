@@ -7,7 +7,13 @@ from frozendict import frozendict
 from mrpack.moddb import ModDB
 from mrpack.modpack import Mod, Modpack
 from mrpack.mrpack import Mrpack
-from mrpack.output import Element, IncompatibleMods, MissingMods, Table, UnknownDependencies
+from mrpack.output import (
+    Element,
+    IncompatibleMods,
+    MissingMods,
+    Table,
+    UnknownDependencies,
+)
 from mrpack.types import GameVersion
 
 IncompatibleModMap = frozendict[GameVersion, frozenset[Mod]]
@@ -25,7 +31,7 @@ _SOURCE = "Source"
 _ISSUES = "Issues"
 
 
-def _headers(game_versions: Set[GameVersion], dev: bool) -> list[str]:
+def _headers(game_versions: Set[GameVersion], *, dev: bool) -> list[str]:
     out = [_NAME, _LINK, _INSTALLED_VERSION, _CLIENT, _SERVER, _LATEST_GAME_VERSION] + [
         str(version) for version in sorted(game_versions)
     ]
@@ -60,9 +66,12 @@ def _modpack_data(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
 def _mods(
     modpack: Modpack,
     game_versions: Set[GameVersion],
+    *,
     dev: bool,
 ) -> tuple[list[list[str]], IncompatibleModMap]:
-    incompatible: dict[GameVersion, set[Mod]] = {version: set() for version in game_versions}
+    incompatible: dict[GameVersion, set[Mod]] = {
+        version: set() for version in game_versions
+    }
     out = []
 
     for mod in sorted(modpack.mods.values(), key=lambda m: m.project.title.lower()):
@@ -98,11 +107,15 @@ def _mods(
 def _unknown_mods(
     modpack: Modpack,
     game_versions: Set[GameVersion],
+    *,
     dev: bool,
 ) -> list[list[str]]:
     out = []
     versions = ["check manually"] * len(game_versions)
-    for path, override in sorted(modpack.overrides.items(), key=lambda i: str(i[0]).lower()):
+    for path, override in sorted(
+        modpack.overrides.items(),
+        key=lambda i: str(i[0]).lower(),
+    ):
         if path.parts[1] == "mods":
             row = [
                 str(path),
@@ -121,11 +134,16 @@ def _unknown_mods(
 
 def _other_files(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
     out = []
-    for path, override in sorted(modpack.overrides.items(), key=lambda i: str(i[0]).lower()):
+    for path, override in sorted(
+        modpack.overrides.items(),
+        key=lambda i: str(i[0]).lower(),
+    ):
         if path.parts[1] != "mods":
             row = _empty_row(headers)
             row[headers.index(_NAME)] = str(path)
-            row[headers.index(_INSTALLED_VERSION)] = f"{binascii.crc32(override.data):08x}"
+            row[headers.index(_INSTALLED_VERSION)] = (
+                f"{binascii.crc32(override.data):08x}"
+            )
             row[headers.index(_LINK)] = "non-mod file"
             out.append(row)
     return out
@@ -134,18 +152,19 @@ def _other_files(modpack: Modpack, headers: Sequence[str]) -> list[list[str]]:
 def run(
     mrpack_file: str,
     game_versions: Set[GameVersion],
+    *,
     dev: bool,
 ) -> tuple[Element, ...]:
     mrp = Mrpack.from_file(mrpack_file)
-    db = ModDB.load([mrp], True)
+    db = ModDB.load([mrp], fetch_versions=True)
     modpack = Modpack.load(mrp, db)
     game_versions = set(game_versions)
     game_versions.add(modpack.index.dependencies.game_version)
 
-    headers = _headers(game_versions, dev)
+    headers = _headers(game_versions, dev=dev)
     modpack_data = _modpack_data(modpack, headers)
-    mods, incompatible = _mods(modpack, game_versions, dev)
-    unknown_mods = _unknown_mods(modpack, game_versions, dev)
+    mods, incompatible = _mods(modpack, game_versions, dev=dev)
+    unknown_mods = _unknown_mods(modpack, game_versions, dev=dev)
     other_files = _other_files(modpack, headers)
 
     return tuple(
@@ -161,8 +180,14 @@ def run(
             ),
             UnknownDependencies(modpack.index.dependencies.unknown_dependencies),
             MissingMods(
-                {str(PurePath(*m.index_entry.path.parts[1:])) for m in modpack.project_missing_mods}
-                | {str(PurePath(*m.index_entry.path.parts[1:])) for m in modpack.file_missing_mods},
+                {
+                    str(PurePath(*m.index_entry.path.parts[1:]))
+                    for m in modpack.project_missing_mods
+                }
+                | {
+                    str(PurePath(*m.index_entry.path.parts[1:]))
+                    for m in modpack.file_missing_mods
+                },
             ),
         ]
         + [
@@ -170,7 +195,10 @@ def run(
                 num_mods=len(modpack.mods),
                 game_version=str(version),
                 mods={mod.project.title for mod in incompatible[version]},
-                curseforge_warning=len([p for p in modpack.overrides if p.parts[1] == "mods"]) > 0,
+                curseforge_warning=len(
+                    [p for p in modpack.overrides if p.parts[1] == "mods"],
+                )
+                > 0,
             )
             for version in sorted(game_versions)
         ],

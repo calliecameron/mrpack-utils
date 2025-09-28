@@ -3,11 +3,18 @@ import pytest
 import requests_mock
 from frozendict import frozendict
 
-from mrpack.api import File, Project, Version, get_file_details, get_projects, get_versions
+from mrpack.api import (
+    File,
+    Project,
+    Version,
+    get_file_details,
+    get_projects,
+    get_versions,
+)
 from mrpack.types import Env, ProjectID, Requirement, Sha512, VersionID
 from tests import testdata
 
-# ruff: noqa: PT011,S101
+# ruff: noqa: S101
 
 
 class TestGetFileDetails:
@@ -334,7 +341,9 @@ class TestGetProjects:
                     testdata.PROJECT_B,
                 ],
             )
-            assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == frozendict(
+            assert get_projects(
+                {ProjectID("a0000000"), ProjectID("b0000000")},
+            ) == frozendict(
                 {
                     ProjectID("a0000000"): Project(
                         project_id=ProjectID("a0000000"),
@@ -367,7 +376,10 @@ class TestGetProjects:
                 complete_qs=True,
                 json=[],
             )
-            assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == frozendict()
+            assert (
+                get_projects({ProjectID("a0000000"), ProjectID("b0000000")})
+                == frozendict()
+            )
 
         # Returning 'None' for source and issue URLs is valid
         with requests_mock.Mocker() as m:

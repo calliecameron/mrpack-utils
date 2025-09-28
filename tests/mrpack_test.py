@@ -7,7 +7,7 @@ from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.mrpack import Mrpack, MrpackError, Override, OverrideType
 from mrpack.types import Env, GameVersion, Requirement, Sha1, Sha512
 
-# ruff: noqa: PT011, S101
+# ruff: noqa: S101
 
 
 class TestOverrideType:

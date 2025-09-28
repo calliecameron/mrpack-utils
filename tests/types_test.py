@@ -14,7 +14,7 @@ from mrpack.types import (
     validated_path,
 )
 
-# ruff: noqa: PT011,S101
+# ruff: noqa: S101
 
 
 class TestValidatedPath:

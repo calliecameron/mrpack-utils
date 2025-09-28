@@ -18,7 +18,10 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
     )
     subparsers = parser.add_subparsers(required=True)
 
-    parser_list = subparsers.add_parser("list", help="list mods, with compatibility checks")
+    parser_list = subparsers.add_parser(
+        "list",
+        help="list mods, with compatibility checks",
+    )
     parser_list.set_defaults(command="list")
     parser_list.add_argument("mrpack_file", help="a Modrinth-format (mrpack) modpack")
     parser_list.add_argument(
@@ -26,7 +29,9 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
         type=GameVersion,
         action="append",
         default=[],
-        help="game version to check compatibility with; may be specified multiple times",
+        help=(
+            "game version to check compatibility with; may be specified multiple times"
+        ),
     )
     parser_list.add_argument(
         "--dev",
@@ -45,7 +50,7 @@ def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover
         out = mrpack.commands.list.run(
             args.mrpack_file,
             frozenset(args.check_version),
-            args.dev,
+            dev=args.dev,
         )
     elif args.command == "diff":
         out = mrpack.commands.diff.run(

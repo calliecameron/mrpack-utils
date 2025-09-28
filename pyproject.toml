@@ -3,56 +3,101 @@ name = "mrpack"
 version = "0.0.0"
 description = "Utilities for working with Modrinth-format (mrpack) Minecraft modpacks"
 readme = "README.md"
-authors = [
-    { name = "Callie Cameron", email = "cjcameron7@gmail.com" }
-]
 requires-python = "==3.13.7"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Callie Cameron", email = "cjcameron7@gmail.com" }]
 dependencies = [
-    "attrs==25.3.0",
-    "frozendict==2.4.6",
-    "jsonschema>=4.25.1",
-    "requests==2.32.5",
-    "tabulate==0.9.0",
-]
-
-[dependency-groups]
-dev = [
-    "mypy==1.17.1",
-    "pytest==8.4.1",
-    "pytest-cov==6.2.1",
-    "ruff==0.12.11",
-    "requests-mock==1.12.1",
-    "types-requests==2.32.4.20250809",
-    "types-tabulate==0.9.0.20241207",
-    "types-jsonschema>=4.25.1.20250822",
+  "attrs==23.2.0",
+  "frozendict==2.4.6",
+  "jsonschema==4.25.1",
+  "requests==2.32.5",
+  "tabulate==0.9.0",
 ]
 
 [project.scripts]
 mrpack = "mrpack.main:main"
 
+[dependency-groups]
+dev = [
+  "cookiecutter==2.6.0",
+  "copier==9.10.2",
+  "copier-template-extensions==0.3.3",
+  "frozendict==2.4.6",
+  "gha-update==0.2.0",
+  "gitlint==0.19.1",
+  "identify==2.6.14",
+  "licensecheck==2025.1.0",
+  "mypy==1.18.2",
+  "pre-commit==4.3.0",
+  "pytest==8.4.2",
+  "pytest-cov==7.0.0",
+  "pytest-custom_exit_code==0.3.0",
+  "requests-mock==1.12.1",
+  "ruff==0.13.2",
+  "shellcheck-py==0.11.0.1",
+  "tombi==0.6.17",
+  "types-jsonschema==4.25.1.20250822",
+  "types-requests==2.32.4.20250913",
+  "types-tabulate==0.9.0.20241207",
+  "typos==1.36.3",
+  "yamllint==1.37.1",
+  "zizmor==1.14.1",
+]
+
 [build-system]
-requires = ["uv_build>=0.8.14,<0.9.0"]
+requires = ["uv_build >= 0.8.22, <0.9.0"]
 build-backend = "uv_build"
 
+[tool.coverage.run]
+
 [tool.mypy]
+explicit_package_bases = false
+mypy_path = "stubs"
+namespace_packages = false
+pretty = true
 python_version = "3.13"
+scripts_are_modules = true
+strict = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers --suppress-no-test-exit-code --cov=mrpack --cov-report=term-missing"
+markers = ["slow"]
 
 [tool.ruff]
-line-length = 100
-target-version = "py313"
+line-length = 88
+namespace-packages = [
+  ".template_files",
+]
 
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "C90",
-    "D",
-    "E741",
-    "EM",
-    "FBT",
-    "PLR0913",
-    "PLR0915",
-    "PYI025",
-    "T20",
-    "TRY003",
-    "TRY301",
+  "C90",
+  "D1",
+  "E741",
+  "EM",
+  "FIX",
+  "PLR09",
+  "PT011",
+  "PTH",
+  "PYI025",
+  "S603",
+  "S607",
+  "T20",
+  "TD",
+  "TRY003",
+  "TRY301",
+]
+
+[tool.tombi]
+
+[tool.typos]
+files.extend-exclude = [
+  "/.copier-answers.yml",
+]
+default.extend-ignore-re = [
+  "(?Rm)^.*(#|//)\\s*spellchecker: *disable-line$",
+  "(?s)(#|//)\\s*spellchecker:* off.*?\\n\\s*(#|//)\\s*spellchecker:* on",
+  "(#|//)\\s*spellchecker:* disable-next-line\\n.*",
 ]

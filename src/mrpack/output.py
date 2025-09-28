@@ -41,9 +41,12 @@ class UnknownDependencies(Element):
     def render(self) -> str:
         out = []
         if self.unknown_dependencies:
-            out.append("Modpack dependencies not corresponding to any known mod loader:")
+            out.append(
+                "Modpack dependencies not corresponding to any known mod loader:",
+            )
             out += [
-                "  " + item for item in sorted(self.unknown_dependencies, key=lambda i: i.lower())
+                "  " + item
+                for item in sorted(self.unknown_dependencies, key=lambda i: i.lower())
             ]
         return "\n".join(out)
 
@@ -78,12 +81,14 @@ class IncompatibleMods(Element):
         out.append(f"For version {self.game_version}:")
         if self.mods:
             out.append(
-                f"  {len(self.mods)} out of {self.num_mods}{modrinth} mods are incompatible with "
-                f"this version{warning}:",
+                f"  {len(self.mods)} out of {self.num_mods}{modrinth} mods are "
+                f"incompatible with this version{warning}:",
             )
             out += ["    " + mod for mod in sorted(self.mods, key=lambda m: m.lower())]
         else:
-            out.append(f"  All{modrinth} mods are compatible with this version{warning}")
+            out.append(
+                f"  All{modrinth} mods are compatible with this version{warning}",
+            )
         return "\n".join(out)
 
 

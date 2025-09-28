@@ -5,7 +5,15 @@ from mrpack import api
 from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.moddb import ModDB
 from mrpack.mrpack import Mrpack
-from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
+from mrpack.types import (
+    Env,
+    GameVersion,
+    ProjectID,
+    Requirement,
+    Sha1,
+    Sha512,
+    VersionID,
+)
 from tests import testdata
 
 # ruff: noqa: S101
@@ -155,7 +163,7 @@ class TestModDB:
                     testdata.VERSION_B1,
                 ],
             )
-            db = ModDB.load([mrpack1, mrpack2], True)
+            db = ModDB.load([mrpack1, mrpack2], fetch_versions=True)
 
         assert db.all_files == frozendict(
             {
@@ -330,7 +338,7 @@ class TestModDB:
                     testdata.PROJECT_B,
                 ],
             )
-            db = ModDB.load([mrpack1, mrpack2], False)
+            db = ModDB.load([mrpack1, mrpack2], fetch_versions=False)
 
         assert db.all_files == frozendict(
             {

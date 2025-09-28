@@ -120,7 +120,9 @@ class Mrpack:
             with zipfile.ZipFile(filename) as z:
                 bad_file = z.testzip()
                 if bad_file:
-                    raise ValueError(f"Found bad file in zip: {bad_file}")  # pragma: no cover
+                    raise ValueError(
+                        f"Found bad file in zip: {bad_file}",
+                    )  # pragma: no cover
 
                 with z.open(Mrpack._INDEX_FILENAME) as f:
                     j = json.load(f)

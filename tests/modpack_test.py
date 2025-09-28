@@ -7,7 +7,15 @@ from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.moddb import ModDB
 from mrpack.modpack import FileMissingMod, Mod, Modpack, ProjectMissingMod
 from mrpack.mrpack import Mrpack, Override
-from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512, VersionID
+from mrpack.types import (
+    Env,
+    GameVersion,
+    ProjectID,
+    Requirement,
+    Sha1,
+    Sha512,
+    VersionID,
+)
 
 # ruff: noqa: S101
 

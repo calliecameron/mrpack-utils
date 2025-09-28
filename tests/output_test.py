@@ -133,7 +133,7 @@ class TestIncompatibleMods:
         assert (
             i.render()
             == """For version 1.19.2:
-  All Modrinth mods are compatible with this version (CurseForge mods must be checked manually)"""
+  All Modrinth mods are compatible with this version (CurseForge mods must be checked manually)"""  # noqa: E501
         )
 
         i = IncompatibleMods(

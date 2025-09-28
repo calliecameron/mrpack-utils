@@ -148,7 +148,7 @@ def test1_list_calls(m: requests_mock.Mocker) -> None:
         ],
     )
     m.get(
-        'https://api.modrinth.com/v2/project/a0000000/version?loaders=["fabric", "minecraft"]',
+        'https://api.modrinth.com/v2/project/a0000000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
         complete_qs=True,
         json=[
             VERSION_A0,
@@ -156,7 +156,7 @@ def test1_list_calls(m: requests_mock.Mocker) -> None:
         ],
     )
     m.get(
-        'https://api.modrinth.com/v2/project/b0000000/version?loaders=["fabric", "minecraft"]',
+        'https://api.modrinth.com/v2/project/b0000000/version?loaders=["fabric", "minecraft"]',  # noqa: E501
         complete_qs=True,
         json=[
             VERSION_B0,

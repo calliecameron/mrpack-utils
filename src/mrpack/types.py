@@ -31,7 +31,9 @@ def validated_path(path: str) -> PurePath:
         or "." in p.parts
         or ".." in p.parts
     ):
-        raise ValueError(f"Invalid path '{path}'; must be relative and not contain '.' or '..'")
+        raise ValueError(
+            f"Invalid path '{path}'; must be relative and not contain '.' or '..'",
+        )
     return p
 
 
@@ -106,7 +108,9 @@ class Requirement(Enum):
             return Requirement.UNKNOWN
         valid = {v.lower() for v in Requirement.__members__}
         if s not in valid:
-            raise ValueError(f"Requirement value must be one of [{sorted(valid)}], got '{s}'")
+            raise ValueError(
+                f"Requirement value must be one of [{sorted(valid)}], got '{s}'",
+            )
         return Requirement[s.upper()]
 
 
@@ -162,8 +166,8 @@ class _Hash(ABC):
         h = h.lower()
         if len(h) != self._hash_len() or re.fullmatch(r"[0-9a-f]+", h) is None:
             raise ValueError(
-                f"'{h}' is not a valid {self.__class__.__name__} hash ({self._hash_len()} "
-                "hex digits)",
+                f"'{h}' is not a valid {self.__class__.__name__} hash "
+                f"({self._hash_len()} hex digits)",
             )
         self._hash = h
 

@@ -3,7 +3,14 @@ from collections.abc import Collection, Mapping
 
 from frozendict import frozendict
 
-from mrpack.api import File, Project, Version, get_file_details, get_projects, get_versions
+from mrpack.api import (
+    File,
+    Project,
+    Version,
+    get_file_details,
+    get_projects,
+    get_versions,
+)
 from mrpack.mrpack import Mrpack
 from mrpack.types import ProjectID, Sha512, VersionID
 
@@ -57,7 +64,7 @@ class ModDB:
         return self._project_versions.get(project_id, frozenset())
 
     @staticmethod
-    def load(mrpacks: Collection[Mrpack], fetch_versions: bool) -> "ModDB":
+    def load(mrpacks: Collection[Mrpack], *, fetch_versions: bool) -> "ModDB":
         hashes: set[Sha512] = set()
         loaders: set[str] = set()
         for mrp in mrpacks:

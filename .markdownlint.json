@@ -1,0 +1,9 @@
+{
+  "extends": "markdownlint/style/prettier",
+  "code-block-style": {
+    "style": "fenced"
+  },
+  "code-fence-style": {
+    "style": "backtick"
+  }
+}

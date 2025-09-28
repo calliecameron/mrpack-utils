@@ -1,5 +1,9 @@
 # mrpack-utils
 
+[![template](https://img.shields.io/badge/template-calliecameron%2Fcopier--template-brightgreen)](https://github.com/calliecameron/copier-template)
+[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
+[![CI](https://github.com/calliecameron/mrpack-utils/actions/workflows/ci.yml/badge.svg)](https://github.com/calliecameron/mrpack-utils/actions/workflows/ci.yml)
+
 Utilities for working with Modrinth-format (mrpack) Minecraft modpacks.
 
 All commands are read-only.
@@ -23,10 +27,10 @@ uv run mrpack list --check-version 1.20 --check-version 1.20.1 mods.mrpack
 
 Limitations:
 
-* Only supports Modrinth modpacks (mrpack), and only checks mods from Modrinth.
+- Only supports Modrinth modpacks (mrpack), and only checks mods from Modrinth.
   CurseForge mods in the 'overrides' section of the modpack will have to be
   checked manually.
-* Doesn't actually update the modpack to the newer game version, only reports
+- Doesn't actually update the modpack to the newer game version, only reports
   whether the update would be possible. Mod loaders can do the update.
 
 ## Diff modpack versions

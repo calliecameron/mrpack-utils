@@ -1,5 +1,10 @@
 *~
-/.coverage
-/.vscode/
-/testdata/*.mrpack
+/.deps-installed
+/.venv/
+/node_modules/
 __pycache__/
+/.ruff_cache/
+/.mypy_cache/
+/.pytest_cache/
+/.coverage
+/testdata/*.mrpack
