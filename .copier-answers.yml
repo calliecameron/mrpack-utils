@@ -9,5 +9,4 @@ project_name: Mrpack
 user_has_css: false
 user_has_html: false
 user_has_javascript: false
-user_is_python_package: true
 user_uses_bats: false
