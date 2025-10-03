@@ -6,11 +6,14 @@ default_install_hook_types:
   - pre-commit
   - pre-merge-commit
 repos:
-  - repo: https://github.com/astral-sh/uv-pre-commit
-    rev: 0.8.22
+  - repo: local
     hooks:
-      - id: uv-lock
+      - id: uv-sync
         name: "uv: sync"
+        language: system
+        entry: uv sync --all-extras --all-groups
+        files: "^(pyproject\\.toml|uv\\.lock)$"
+        pass_filenames: false
   - repo: local
     hooks:
       - id: uv-licenses
@@ -21,7 +24,7 @@ repos:
         pass_filenames: false
   - repo: local
     hooks:
-      - id: npm-lock
+      - id: npm-sync
         name: "npm: sync"
         language: system
         entry: bash -c 'source "${NVM_DIR}/nvm.sh" && nvm exec --silent npm install'
@@ -167,6 +170,13 @@ repos:
         entry: uv run typos --write-changes --force-exclude
         types_or:
           - text
+  - repo: local
+    hooks:
+      - id: bump-my-version
+        name: "general: version consistency"
+        language: system
+        entry: uv run bump-my-version replace --allow-dirty '--new-version={current_version}'
+        pass_filenames: false
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.28.0
     hooks:

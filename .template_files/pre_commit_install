@@ -7,4 +7,5 @@ if [ ! -e pyproject.toml ]; then
     exit 1
 fi
 
-uv sync --all-extras --all-groups
+uv run pre-commit install -f
+cp .template_files/pre_push .git/hooks/pre-push

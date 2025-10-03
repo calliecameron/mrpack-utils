@@ -1,0 +1,36 @@
+#!/bin/bash
+
+set -eu
+
+TAG_REGEX='^refs/tags/(.*)$'
+VERSION_REGEX='^v?([0-9]+\.[0-9]+\.[0-9]+)$'
+FAIL=''
+
+while read -r local_ref _ remote_ref _; do
+    if [ "${local_ref}" = '(delete)' ]; then
+        continue
+    fi
+
+    if [[ "${remote_ref}" =~ $TAG_REGEX ]]; then
+        TAG="${BASH_REMATCH[1]}"
+        if ! [[ "${TAG}" =~ $VERSION_REGEX ]]; then
+            echo "Tag '${TAG}' isn't a semver version" 1>&2
+            FAIL='t'
+            continue
+        fi
+
+        VERSION="${BASH_REMATCH[1]}"
+        PROJECT_VERSION="$(git show "${local_ref}:pyproject.toml" |
+            grep -E '^version *= *".*"$' |
+            sed 's/^version *= *"//g' |
+            sed 's/"$//g')"
+        if [ "${VERSION}" != "${PROJECT_VERSION}" ]; then
+            echo "Tag '${TAG}' doesn't match the version in pyproject.toml (${PROJECT_VERSION}) at that commit" 1>&2
+            FAIL='t'
+        fi
+    fi
+done
+
+if [ -n "${FAIL}" ]; then
+    exit 1
+fi

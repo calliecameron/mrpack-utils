@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -eu
+
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+if [ ! -e pyproject.toml ]; then
+    echo 'Must be run in the root of the project' 1>&2
+    exit 1
+fi
+
+uv python pin --no-project "$(uv run python "${THIS_DIR}/uv_latest_python.py")"
+
+sed -i "s/requires-python = \"==.*\"/requires-python = \"==$(cat .python-version)\"/g" pyproject.toml
+
+rm -rf .venv
+uv sync --all-extras --all-groups
