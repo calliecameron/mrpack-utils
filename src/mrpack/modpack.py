@@ -1,15 +1,19 @@
-from collections.abc import Mapping, Set
 from dataclasses import dataclass
-from pathlib import PurePath
+from typing import TYPE_CHECKING
 
 from frozendict import frozendict
 from requests.utils import requote_uri
 
-from mrpack.api import Project
-from mrpack.index import File, Index
-from mrpack.moddb import ModDB
-from mrpack.mrpack import Mrpack, Override
 from mrpack.types import Env, GameVersion, ProjectID
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Set
+    from pathlib import PurePath
+
+    from mrpack.api import Project
+    from mrpack.index import File, Index
+    from mrpack.moddb import ModDB
+    from mrpack.mrpack import Mrpack, Override
 
 
 class ModpackError(Exception):
@@ -114,7 +118,7 @@ class Modpack:
         return self._overrides
 
     @staticmethod
-    def load(m: Mrpack, db: ModDB) -> "Modpack":
+    def load(m: Mrpack, db: ModDB) -> Modpack:
         mods = {}
         project_missing_mods = set()
         file_missing_mods = set()

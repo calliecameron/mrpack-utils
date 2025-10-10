@@ -1,6 +1,4 @@
-from collections.abc import Mapping, Set
-from pathlib import PurePath
-from typing import Any, override
+from typing import TYPE_CHECKING, Any, override
 
 import jsonschema
 from frozendict import frozendict
@@ -13,6 +11,10 @@ from mrpack.types import (
     make_json_schema,
     validated_path,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Set
+    from pathlib import PurePath
 
 
 class Hashes:
@@ -85,7 +87,7 @@ class Hashes:
         return hash((self._sha1, self._sha512, self._others))
 
     @staticmethod
-    def from_json(data: Mapping[str, str]) -> "Hashes":
+    def from_json(data: Mapping[str, str]) -> Hashes:
         jsonschema.validate(data, Hashes._SCHEMA)
         others = {k: v for (k, v) in data.items() if k not in {"sha1", "sha512"}}
         return Hashes(
@@ -184,7 +186,7 @@ class File:
         return hash((self._path, self._hashes, self._env, self._downloads, self._size))
 
     @staticmethod
-    def from_json(data: Mapping[str, Any]) -> "File":
+    def from_json(data: Mapping[str, Any]) -> File:
         jsonschema.validate(data, File._SCHEMA)
         return File(
             path=data["path"],
@@ -274,7 +276,7 @@ class Dependencies:  # noqa: PLW1641
         )
 
     @staticmethod
-    def from_json(data: Mapping[str, str]) -> "Dependencies":
+    def from_json(data: Mapping[str, str]) -> Dependencies:
         jsonschema.validate(data, Dependencies._SCHEMA)
         others = {k: v for (k, v) in data.items() if k != "minecraft"}
         return Dependencies(
@@ -379,7 +381,7 @@ class Index:  # noqa: PLW1641
         )
 
     @staticmethod
-    def from_json(data: Mapping[str, Any]) -> "Index":
+    def from_json(data: Mapping[str, Any]) -> Index:
         jsonschema.validate(data, Index._SCHEMA)
         files = {File.from_json(file) for file in data["files"]}
         return Index(

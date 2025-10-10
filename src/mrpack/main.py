@@ -1,10 +1,13 @@
 import argparse
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import mrpack.commands.diff
 import mrpack.commands.list
 from mrpack.output import render, render_csv
 from mrpack.types import GameVersion
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 def main(argv: Sequence[str] | None = None) -> None:  # pragma: no cover

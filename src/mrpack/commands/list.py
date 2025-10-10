@@ -1,6 +1,6 @@
 import binascii
-from collections.abc import Sequence, Set
 from pathlib import PurePath
+from typing import TYPE_CHECKING
 
 from frozendict import frozendict
 
@@ -15,6 +15,9 @@ from mrpack.output import (
     UnknownDependencies,
 )
 from mrpack.types import GameVersion
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence, Set
 
 IncompatibleModMap = frozendict[GameVersion, frozenset[Mod]]
 

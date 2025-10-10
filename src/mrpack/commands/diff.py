@@ -1,11 +1,14 @@
 import binascii
-from collections.abc import Mapping
 from pathlib import PurePath
+from typing import TYPE_CHECKING
 
 from mrpack.moddb import ModDB
 from mrpack.modpack import Modpack
 from mrpack.mrpack import Mrpack
 from mrpack.output import Element, MissingMods, Table, UnknownDependencies
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 def _diff(old: Mapping[str, str], new: Mapping[str, str]) -> list[tuple[str, str, str]]:

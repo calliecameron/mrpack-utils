@@ -1,8 +1,12 @@
-import pytest
+from typing import TYPE_CHECKING
+
 import requests_mock
 
 from mrpack.main import main
 from tests import testdata
+
+if TYPE_CHECKING:
+    import pytest
 
 # ruff: noqa: S101
 

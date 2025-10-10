@@ -3,14 +3,16 @@ import functools
 import hashlib
 import re
 from abc import ABC, abstractmethod
-from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import PurePath, PurePosixPath, PureWindowsPath
-from typing import Any, Protocol, Self, override
+from typing import TYPE_CHECKING, Any, Protocol, Self, override
 
 import jsonschema
 from frozendict import frozendict
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
 
 
 def make_json_schema(fragment: Mapping[str, Any]) -> frozendict[str, Any]:
@@ -66,7 +68,7 @@ class GameVersion:
         return ".".join(str(segment) for segment in self._version)
 
     @staticmethod
-    def load_multiple(versions: Iterable[str]) -> "frozenset[GameVersion]":
+    def load_multiple(versions: Iterable[str]) -> frozenset[GameVersion]:
         # We deliberately skip over any versions that don't parse
         out = set()
         for version in versions:
@@ -98,12 +100,12 @@ class Requirement(Enum):
         return make_json_schema(Requirement.schema_fragment())
 
     @staticmethod
-    def from_json(s: str) -> "Requirement":
+    def from_json(s: str) -> Requirement:
         jsonschema.validate(s, Requirement._schema())
         return Requirement.from_str(s)
 
     @staticmethod
-    def from_str(s: str) -> "Requirement":
+    def from_str(s: str) -> Requirement:
         if not s:
             return Requirement.UNKNOWN
         valid = {v.lower() for v in Requirement.__members__}
@@ -137,7 +139,7 @@ class Env:
     server: Requirement
 
     @staticmethod
-    def from_json(env: Mapping[str, str]) -> "Env":
+    def from_json(env: Mapping[str, str]) -> Env:
         jsonschema.validate(env, Env._SCHEMA)
         return Env(
             client=Requirement.from_json(env["client"]),
@@ -145,7 +147,7 @@ class Env:
         )
 
     @staticmethod
-    def unknown() -> "Env":
+    def unknown() -> Env:
         return Env(
             client=Requirement.UNKNOWN,
             server=Requirement.UNKNOWN,

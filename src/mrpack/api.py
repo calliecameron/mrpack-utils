@@ -1,7 +1,6 @@
 import sys
-from collections.abc import Collection, Set
 from dataclasses import dataclass
-from typing import override
+from typing import TYPE_CHECKING, override
 
 import jsonschema
 import requests
@@ -16,6 +15,9 @@ from mrpack.types import (
     VersionID,
     make_json_schema,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Set
 
 
 @dataclass(frozen=True, kw_only=True)

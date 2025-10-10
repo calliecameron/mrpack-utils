@@ -1,7 +1,7 @@
 import csv
 import io
 from abc import ABC, abstractmethod
-from collections.abc import Sequence, Set
+from collections.abc import Sequence, Set  # noqa: TC003
 
 import tabulate
 from attrs import field, frozen

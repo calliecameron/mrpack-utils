@@ -1,14 +1,16 @@
 import json
 import zipfile
-from collections.abc import Set
 from enum import Enum, auto
-from pathlib import PurePath
-from typing import override
+from typing import TYPE_CHECKING, override
 
 from frozendict import frozendict
 
 from mrpack.index import Index
 from mrpack.types import Sha512, validated_path
+
+if TYPE_CHECKING:
+    from collections.abc import Set
+    from pathlib import PurePath
 
 
 class MrpackError(Exception):
@@ -21,7 +23,7 @@ class OverrideType(Enum):
     SERVER = auto()
 
     @staticmethod
-    def from_prefix(prefix: str) -> "OverrideType":
+    def from_prefix(prefix: str) -> OverrideType:
         general_prefix = "overrides"
         client_prefix = "client-overrides"
         server_prefix = "server-overrides"
@@ -115,7 +117,7 @@ class Mrpack:
         return self._overrides
 
     @staticmethod
-    def from_file(filename: str) -> "Mrpack":
+    def from_file(filename: str) -> Mrpack:
         try:
             with zipfile.ZipFile(filename) as z:
                 bad_file = z.testzip()

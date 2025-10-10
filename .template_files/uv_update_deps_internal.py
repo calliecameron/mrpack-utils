@@ -1,15 +1,19 @@
+from __future__ import annotations
+
 import json
 import os.path
 import subprocess
 import sys
 import tomllib
 from abc import ABC, abstractmethod
-from collections.abc import Iterator, Mapping, Sequence, Set
 from dataclasses import dataclass
-from typing import override
+from typing import TYPE_CHECKING, override
 
 from frozendict import frozendict
 from packaging import requirements
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping, Sequence, Set
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -131,7 +135,7 @@ class Packages:
             for p in sorted(ps, key=str):
                 yield (Extra(g), p)
 
-    def filter(self, names: Set[str]) -> "Packages":
+    def filter(self, names: Set[str]) -> Packages:
         def _filter(
             groups: frozendict[str, frozenset[Package]],
         ) -> frozendict[str, frozenset[Package]]:

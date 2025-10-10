@@ -1,12 +1,23 @@
+import argparse
 import json
 import re
 import subprocess
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("version_hint")
+    args = parser.parse_args()
+
     j = json.loads(
         subprocess.run(
-            ["uv", "python", "list", "--output-format=json", "cpython"],
+            [
+                "uv",
+                "python",
+                "list",
+                "--output-format=json",
+                f"cpython@{args.version_hint}",
+            ],
             capture_output=True,
             check=True,
             encoding="utf-8",

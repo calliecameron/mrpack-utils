@@ -1,5 +1,5 @@
 from collections import defaultdict
-from collections.abc import Collection, Mapping
+from typing import TYPE_CHECKING
 
 from frozendict import frozendict
 
@@ -11,8 +11,12 @@ from mrpack.api import (
     get_projects,
     get_versions,
 )
-from mrpack.mrpack import Mrpack
-from mrpack.types import ProjectID, Sha512, VersionID
+
+if TYPE_CHECKING:
+    from collections.abc import Collection, Mapping
+
+    from mrpack.mrpack import Mrpack
+    from mrpack.types import ProjectID, Sha512, VersionID
 
 
 class ModDB:
@@ -64,7 +68,7 @@ class ModDB:
         return self._project_versions.get(project_id, frozenset())
 
     @staticmethod
-    def load(mrpacks: Collection[Mrpack], *, fetch_versions: bool) -> "ModDB":
+    def load(mrpacks: Collection[Mrpack], *, fetch_versions: bool) -> ModDB:
         hashes: set[Sha512] = set()
         loaders: set[str] = set()
         for mrp in mrpacks:

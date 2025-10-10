@@ -10,10 +10,14 @@ deps: .deps-installed
 	.template_files/pre_commit_install
 	touch .deps-installed
 
+# We run each 'update_deps' step twice, before and after updating the interpreter,
+# in case existing package versions aren't compatible with the new interpreter.
 .PHONY: deps_update
 deps_update: deps
+	.template_files/uv_update_deps
 	.template_files/uv_update_python
 	.template_files/uv_update_deps
+	.template_files/npm_update_deps
 	.template_files/npm_update_node
 	.template_files/npm_update_deps
 	uv run pre-commit autoupdate
