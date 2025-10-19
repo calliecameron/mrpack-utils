@@ -162,7 +162,7 @@ class Project:
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Project):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self._project_id == other._project_id
             and self._slug == other._slug

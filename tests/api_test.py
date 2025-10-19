@@ -323,8 +323,7 @@ class TestProject:
 
         assert p1 == p1  # noqa: PLR0124
         assert p1 != p2
-        with pytest.raises(NotImplementedError):
-            assert p1 == "foo"
+        assert p1 != "foo"
 
 
 class TestGetProjects:

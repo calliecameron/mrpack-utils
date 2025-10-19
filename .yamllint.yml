@@ -2,6 +2,7 @@ extends: default
 
 ignore:
   - "/.copier-answers.yml"
+  - "/.ast_grep/tests/__snapshots__/*.yml"
 
 rules:
   braces:

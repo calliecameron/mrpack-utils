@@ -1,3 +1,5 @@
+MAKEFLAGS += --no-builtin-rules --no-builtin-variables
+
 .PHONY: all
 all: precommit
 
@@ -34,6 +36,7 @@ ci: precommit test_slow
 .PHONY: test_fast
 test_fast: deps testdata
 	uv run pytest -m 'not slow' tests
+	uv run ast-grep test --update-all
 
 # Slow tests are only run in CI
 .PHONY: test_slow

@@ -1,0 +1,64 @@
+id: special-method-raises-notimplementederror
+language: Python
+rule:
+  pattern: raise NotImplementedError
+  inside:
+    stopBy:
+      kind: function_definition
+    pattern: def $NAME($$$)
+constraints:
+  NAME:
+    any:
+      - pattern: __lt__
+      - pattern: __le__
+      - pattern: __eq__
+      - pattern: __ne__
+      - pattern: __gt__
+      - pattern: __ge__
+      - pattern: __length_hint__
+      - pattern: __add__
+      - pattern: __sub__
+      - pattern: __mul__
+      - pattern: __matmul__
+      - pattern: __truediv__
+      - pattern: __floordiv__
+      - pattern: __mod__
+      - pattern: __divmod__
+      - pattern: __pow__
+      - pattern: __lshift__
+      - pattern: __rshift__
+      - pattern: __and__
+      - pattern: __xor__
+      - pattern: __or__
+      - pattern: __radd__
+      - pattern: __rsub__
+      - pattern: __rmul__
+      - pattern: __rmatmul__
+      - pattern: __rtruediv__
+      - pattern: __rfloordiv__
+      - pattern: __rmod__
+      - pattern: __rdivmod__
+      - pattern: __rpow__
+      - pattern: __rlshift__
+      - pattern: __rrshift__
+      - pattern: __rand__
+      - pattern: __rxor__
+      - pattern: __ror__
+      - pattern: __iadd__
+      - pattern: __isub__
+      - pattern: __imul__
+      - pattern: __imatmul__
+      - pattern: __itruediv__
+      - pattern: __ifloordiv__
+      - pattern: __imod__
+      - pattern: __ipow__
+      - pattern: __ilshift__
+      - pattern: __irshift__
+      - pattern: __iand__
+      - pattern: __ixor__
+      - pattern: __ior__
+fix: return NotImplemented
+message: Special methods should not raise NotImplementedError
+note: Return NotImplemented instead
+severity: warning
+url: "https://docs.python.org/3/library/constants.html#NotImplemented"

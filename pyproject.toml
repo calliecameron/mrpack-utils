@@ -20,6 +20,7 @@ mrpack = "mrpack.main:main"
 
 [dependency-groups]
 dev = [
+  "ast-grep-cli==0.39.6",
   "bump-my-version==1.2.4",
   "cookiecutter==2.6.0",
   "copier==9.10.3",
@@ -85,21 +86,21 @@ namespace-packages = [
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-  "C90",
-  "D1",
-  "E741",
-  "EM",
-  "FIX",
-  "PLR09",
-  "PT011",
-  "PTH",
-  "PYI025",
-  "S603",
-  "S607",
-  "T20",
-  "TD",
-  "TRY003",
-  "TRY301",
+  "C90",  # mccabe:*
+  "D1",  # pydocstyle:undocumented-*
+  "E741",  # pycodestyle:ambiguous-variable-name
+  "EM",  # flake8-errmsg:*
+  "FIX",  # flake8-fixme:*
+  "PLR09",  # refactor:too-many-*
+  "PT011",  # flake8-pytest-style:pytest-raises-too-broad
+  "PTH",  # flake8-use-pathlib:*
+  "PYI025",  # flake8-pyi:unaliased-collections-abc-set-import
+  "S603",  # flake8-bandit:subprocess-without-shell-equals-true
+  "S607",  # flake8-bandit:start-process-with-partial-path
+  "T20",  # flake8-print:*
+  "TD",  # flake8-todos:*
+  "TRY003",  # tryceratops:raise-vanilla-args
+  "TRY301",  # tryceratops:raise-within-try
 ]
 
 [tool.tombi]

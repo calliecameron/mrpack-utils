@@ -94,8 +94,7 @@ class TestHashes:
 
         assert h1 == h1  # noqa: PLR0124
         assert h1 != h2
-        with pytest.raises(NotImplementedError):
-            assert h1 == "foo"
+        assert h1 != "foo"
 
     def test_from_json_invalid(self) -> None:
         # No sha1
@@ -202,8 +201,7 @@ class TestFile:
 
         assert f1 == f1  # noqa: PLR0124
         assert f1 != f2
-        with pytest.raises(NotImplementedError):
-            assert f1 == "foo"
+        assert f1 != "foo"
 
         # Bad size
         with pytest.raises(ValueError):
@@ -534,8 +532,7 @@ class TestDependencies:
 
         assert d1 == d1  # noqa: PLR0124
         assert d1 != d2
-        with pytest.raises(NotImplementedError):
-            assert d1 == "foo"
+        assert d1 != "foo"
 
     def test_from_json_invalid(self) -> None:
         # No minecraft
@@ -720,8 +717,7 @@ class TestIndex:
 
         assert i1 == i1  # noqa: PLR0124
         assert i1 != i2
-        with pytest.raises(NotImplementedError):
-            assert i1 == "foo"
+        assert i1 != "foo"
 
     def test_from_json_invalid(self) -> None:
         f1_raw = {

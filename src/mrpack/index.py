@@ -75,7 +75,7 @@ class Hashes:
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Hashes):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self._sha1 == other._sha1
             and self._sha512 == other._sha512
@@ -172,7 +172,7 @@ class File:
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, File):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self._path == other._path
             and self._hashes == other._hashes
@@ -270,7 +270,7 @@ class Dependencies:  # noqa: PLW1641
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Dependencies):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self._game_version == other._game_version and self._others == other._others
         )
@@ -371,7 +371,7 @@ class Index:  # noqa: PLW1641
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Index):
-            raise NotImplementedError
+            return NotImplemented
         return (
             self._name == other._name
             and self._version == other._version

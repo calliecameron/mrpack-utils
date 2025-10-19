@@ -1,18 +1,29 @@
+from __future__ import annotations
+
 import argparse
 import json
+import os
 import re
 import subprocess
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
-def main() -> None:
+def main(argv: Sequence[str] | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("version_hint")
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+
+    # Make sure we're calling the global uv, in case a dependency installed a
+    # different version of uv inside the virtualenv.
+    uv = os.getenv("UV", "uv")
 
     j = json.loads(
         subprocess.run(
             [
-                "uv",
+                uv,
                 "python",
                 "list",
                 "--output-format=json",
@@ -26,7 +37,7 @@ def main() -> None:
 
     versions = set()
     for version in [v["version"] for v in j]:
-        if re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", version) is None:
+        if re.fullmatch(r"[1-9][0-9]*\.[0-9]+\.[0-9]+", version) is None:
             continue
         versions.add(tuple(int(part) for part in version.split(".")))
 
@@ -37,4 +48,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main()  # pragma: no cover

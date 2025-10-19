@@ -2,10 +2,5 @@
 
 set -eu
 
-if [ ! -e package.json ]; then
-    echo 'Must be run in the root of the project' 1>&2
-    exit 1
-fi
-
-source "${NVM_DIR}/nvm.sh"
-nvm exec --silent npm install
+THIS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+"${THIS_DIR}/npm_install_deps"

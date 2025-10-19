@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import os.path
 import subprocess
 import sys
@@ -26,14 +27,20 @@ class Package:
         return self.name + (f"[{','.join(sorted(self.extras))}]" if self.extras else "")
 
 
-class Location(ABC):
+class Location(ABC):  # noqa: PLW1641
     @abstractmethod
-    def arg(self) -> str:
+    def arg(self) -> str:  # pragma: no cover
         raise NotImplementedError
 
     @override
     def __str__(self) -> str:
         return self.arg()
+
+    @override
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, self.__class__):
+            return NotImplemented
+        return self.arg() == other.arg()
 
 
 class Main(Location):
@@ -65,8 +72,12 @@ class Extra(Location):
 class UV:
     @staticmethod
     def _uv(*args: str) -> str:
+        # Make sure we're calling the global uv, in case a dependency installed
+        # a different version of uv inside the virtualenv.
+        uv = os.getenv("UV", "uv")
+
         return subprocess.run(
-            ["uv"] + [arg for arg in args if arg],
+            [uv] + [arg for arg in args if arg],
             capture_output=True,
             check=True,
             encoding="utf-8",
@@ -141,8 +152,12 @@ class Packages:
         ) -> frozendict[str, frozenset[Package]]:
             return frozendict(
                 {
-                    g: frozenset(p for p in ps if p.name in names)
-                    for (g, ps) in groups.items()
+                    group: packages
+                    for (group, packages) in {
+                        g: frozenset(p for p in ps if p.name in names)
+                        for (g, ps) in groups.items()
+                    }.items()
+                    if packages
                 },
             )
 
@@ -203,4 +218,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    main()  # pragma: no cover

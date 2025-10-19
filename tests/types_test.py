@@ -50,8 +50,7 @@ class TestGameVersion:
     def test_eq(self) -> None:
         assert GameVersion("1.19.4") == GameVersion("1.19.4")
         assert GameVersion("1.19.4") != GameVersion("1.20")
-        with pytest.raises(NotImplementedError):
-            assert GameVersion("1.20") == "1.20"
+        assert GameVersion("1.20") != "1.20"
 
     def test_hash(self) -> None:
         assert hash(GameVersion("1.19.4")) == hash(GameVersion("1.19.4"))
@@ -62,7 +61,7 @@ class TestGameVersion:
         assert GameVersion("1.2") < GameVersion("1.10")
         assert GameVersion("1.20") < GameVersion("1.20.1")
         assert GameVersion("1.20") > GameVersion("1.19.4")
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError):
             assert GameVersion("1.20") < "1.20"
 
     def test_load_multiple(self) -> None:
@@ -134,9 +133,8 @@ class TestSha1:
     def test_invalid(self) -> None:
         with pytest.raises(ValueError):
             Sha1("foo")
-        with pytest.raises(NotImplementedError):
-            assert Sha1.from_data(b"foo\n") == b"foo\n"
-        with pytest.raises(NotImplementedError):
+        assert Sha1.from_data(b"foo\n") != b"foo\n"
+        with pytest.raises(TypeError):
             assert Sha1.from_data(b"foo\n") < b"foo\n"
 
 
@@ -178,9 +176,8 @@ class TestSha512:
     def test_invalid(self) -> None:
         with pytest.raises(ValueError):
             Sha512("foo")
-        with pytest.raises(NotImplementedError):
-            assert Sha512.from_data(b"foo\n") == b"foo\n"
-        with pytest.raises(NotImplementedError):
+        assert Sha512.from_data(b"foo\n") != b"foo\n"
+        with pytest.raises(TypeError):
             assert Sha512.from_data(b"foo\n") < b"foo\n"
 
 
@@ -194,11 +191,10 @@ class TestID:
 
         assert p1 == p1  # noqa: PLR0124
         assert p1 != p2
-        with pytest.raises(NotImplementedError):
-            assert p1 == "foobarba"
+        assert p1 != "foobarba"
 
         assert p1 < p2
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError):
             assert p1 < "foo"
 
         v1 = VersionID("foobarba")
@@ -209,16 +205,14 @@ class TestID:
 
         assert v1 == v1  # noqa: PLR0124
         assert v1 != v2
-        with pytest.raises(NotImplementedError):
-            assert v1 == "foobarba"
+        assert v1 != "foobarba"
 
         assert v1 < v2
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(TypeError):
             assert v1 < "foo"
 
-        with pytest.raises(NotImplementedError):
-            assert p1 == v1
-        with pytest.raises(NotImplementedError):
+        assert p1 != v1
+        with pytest.raises(TypeError):
             assert p1 < v1
 
     def test_invalid(self) -> None:

@@ -164,6 +164,14 @@ repos:
           - "toml"
   - repo: local
     hooks:
+      - id: ast-grep
+        name: "general: custom lint"
+        language: system
+        entry: uv run ast-grep scan --color never --no-ignore hidden --update-all
+        types_or:
+          - text
+  - repo: local
+    hooks:
       - id: typos
         name: "general: spellcheck"
         language: system

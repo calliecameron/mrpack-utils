@@ -54,8 +54,7 @@ class TestOverride:
 
         assert o1 == o1  # noqa: PLR0124
         assert o1 != o2
-        with pytest.raises(NotImplementedError):
-            assert o1 == "foo"
+        assert o1 != "foo"
 
     def test_invalid(self) -> None:
         # Invalid path

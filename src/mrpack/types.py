@@ -51,7 +51,7 @@ class GameVersion:
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, GameVersion):
-            raise NotImplementedError
+            return NotImplemented
         return self._version == other._version
 
     @override
@@ -60,7 +60,7 @@ class GameVersion:
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, GameVersion):
-            raise NotImplementedError
+            return NotImplemented
         return self._version < other._version
 
     @override
@@ -184,7 +184,7 @@ class _Hash(ABC):
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError
+            return NotImplemented
         return self._hash == other._hash
 
     @override
@@ -193,7 +193,7 @@ class _Hash(ABC):
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError
+            return NotImplemented
         return self._hash < other._hash
 
     @override
@@ -232,7 +232,7 @@ class _ID:
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError
+            return NotImplemented
         return self._id == other._id
 
     @override
@@ -241,7 +241,7 @@ class _ID:
 
     def __lt__(self, other: object) -> bool:
         if not isinstance(other, self.__class__):
-            raise NotImplementedError
+            return NotImplemented
         return self._id < other._id
 
     @override

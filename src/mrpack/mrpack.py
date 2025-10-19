@@ -81,7 +81,7 @@ class Override:
     @override
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Override):
-            raise NotImplementedError
+            return NotImplemented
         return self._path == other._path and self._data == other._data
 
     @override
