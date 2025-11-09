@@ -186,7 +186,7 @@ repos:
         entry: uv run bump-my-version replace --allow-dirty '--new-version={current_version}'
         pass_filenames: false
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
+    rev: v8.29.0
     hooks:
       - id: gitleaks
         name: "general: check for committed secrets"
