@@ -186,12 +186,12 @@ repos:
         entry: uv run bump-my-version replace --allow-dirty '--new-version={current_version}'
         pass_filenames: false
   - repo: https://github.com/gitleaks/gitleaks
-    rev: v8.29.0
+    rev: v8.29.1
     hooks:
       - id: gitleaks
         name: "general: check for committed secrets"
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.7.8
+    rev: v1.7.9
     hooks:
       - id: actionlint
         name: "github actions: lint"
