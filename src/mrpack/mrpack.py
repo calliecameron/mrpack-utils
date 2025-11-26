@@ -1,16 +1,14 @@
 import json
 import zipfile
 from enum import Enum, auto
+from pathlib import PurePath
 from typing import TYPE_CHECKING, override
 
-from frozendict import frozendict
-
 from mrpack.index import Index
-from mrpack.types import Sha512, validated_path
+from mrpack.types import Map, Sha512, validated_path
 
 if TYPE_CHECKING:
-    from collections.abc import Set
-    from pathlib import PurePath
+    from collections.abc import Collection
 
 
 class MrpackError(Exception):
@@ -40,7 +38,7 @@ class OverrideType(Enum):
         )
 
 
-class Override:
+class Override:  # noqa: PLW1641
     def __init__(self, *, path: str, data: bytes) -> None:
         super().__init__()
         self._path = validated_path(path)
@@ -84,9 +82,12 @@ class Override:
             return NotImplemented
         return self._path == other._path and self._data == other._data
 
+
+class OverrideMap(Map[PurePath, Override]):
     @override
-    def __hash__(self) -> int:
-        return hash((self._path, self._data))
+    @classmethod
+    def _key(cls, item: Override) -> PurePath:
+        return item.path
 
 
 class Mrpack:
@@ -96,24 +97,18 @@ class Mrpack:
         self,
         *,
         index: Index,
-        overrides: Set[Override],
+        overrides: Collection[Override],
     ) -> None:
         super().__init__()
         self._index = index
-
-        out = {}
-        for o in overrides:
-            if o.path in out:
-                raise ValueError(f"Duplicate override path '{o.path}")
-            out[o.path] = o
-        self._overrides = frozendict(out)
+        self._overrides = OverrideMap(overrides)
 
     @property
     def index(self) -> Index:
         return self._index
 
     @property
-    def overrides(self) -> frozendict[PurePath, Override]:
+    def overrides(self) -> OverrideMap:
         return self._overrides
 
     @staticmethod
@@ -130,10 +125,11 @@ class Mrpack:
                     j = json.load(f)
                 index = Index.from_json(j)
 
-                overrides: set[Override] = set()
-                for entry in z.infolist():
-                    if entry.filename != Mrpack._INDEX_FILENAME and not entry.is_dir():
-                        overrides.add(Override(path=entry.filename, data=z.read(entry)))
+                overrides = [
+                    Override(path=entry.filename, data=z.read(entry))
+                    for entry in z.infolist()
+                    if entry.filename != Mrpack._INDEX_FILENAME and not entry.is_dir()
+                ]
 
             return Mrpack(
                 index=index,

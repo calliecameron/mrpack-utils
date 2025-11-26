@@ -4,7 +4,7 @@ import jsonschema
 import pytest
 from frozendict import frozendict
 
-from mrpack.index import Dependencies, File, Hashes, Index
+from mrpack.index import Dependencies, File, FileMap, Hashes, Index
 from mrpack.types import Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: S101
@@ -467,6 +467,34 @@ class TestFile:
             )
 
 
+class TestFileMap:
+    def test_file_map(self) -> None:
+        f = File(
+            path="a/b",
+            hashes=Hashes(
+                sha1=Sha1("a000000000000000000000000000000000000000"),
+                sha512=Sha512(
+                    "a000000000000000000000000000000000000000000000000000000000000000"
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                others={},
+            ),
+            env=Env(client=Requirement.REQUIRED, server=Requirement.OPTIONAL),
+            downloads={"foo", "bar"},
+            size=10,
+        )
+
+        assert list(FileMap([f]).items()) == [
+            (
+                Sha512(
+                    "a000000000000000000000000000000000000000000000000000000000000000"
+                    "0000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                f,
+            ),
+        ]
+
+
 class TestDependencies:
     def test_init(self) -> None:
         d = Dependencies(
@@ -607,14 +635,14 @@ class TestIndex:
             name="Test Modpack",
             version="1.0",
             summary="foo",
-            files={f1, f2},
+            files=[f1, f2],
             dependencies=d,
         )
 
         assert i.name == "Test Modpack"
         assert i.version == "1.0"
         assert i.summary == "foo"
-        assert i.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
+        assert i.files == {f1.hashes.sha512: f1, f2.hashes.sha512: f2}
         assert i.dependencies == d
 
         # Duplicate hashes
@@ -623,7 +651,7 @@ class TestIndex:
                 name="Test Modpack",
                 version="1.0",
                 summary="foo",
-                files={f1, f2_f1_hash},
+                files=[f1, f2_f1_hash],
                 dependencies=d,
             )
 
@@ -692,7 +720,7 @@ class TestIndex:
         assert i1.name == "Test Modpack"
         assert i1.version == "1.0"
         assert i1.summary == "foo"
-        assert i1.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
+        assert i1.files == {f1.hashes.sha512: f1, f2.hashes.sha512: f2}
         assert i1.dependencies == d1
 
         i2 = Index.from_json(
@@ -712,7 +740,7 @@ class TestIndex:
         assert i2.name == "Test Modpack"
         assert i2.version == "1.0"
         assert i2.summary == ""
-        assert i2.files == frozendict({f1.hashes.sha512: f1, f2.hashes.sha512: f2})
+        assert i2.files == {f1.hashes.sha512: f1, f2.hashes.sha512: f2}
         assert i2.dependencies == d2
 
         assert i1 == i1  # noqa: PLR0124

@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from pathlib import PurePath
+from typing import override
 
 import jsonschema
 import pytest
@@ -6,6 +8,7 @@ import pytest
 from mrpack.types import (
     Env,
     GameVersion,
+    Map,
     ProjectID,
     Requirement,
     Sha1,
@@ -220,3 +223,35 @@ class TestID:
             ProjectID("foo")
         with pytest.raises(ValueError):
             VersionID("foo")
+
+
+@dataclass(frozen=True)
+class FakeItem:
+    foo: str
+    bar: int
+
+
+class FakeMap(Map[str, FakeItem]):
+    @override
+    @classmethod
+    def _key(cls, item: FakeItem) -> str:
+        return item.foo
+
+
+class TestMap:
+    def test_map(self) -> None:
+        m = FakeMap()
+        assert not m.items()
+
+        m = FakeMap([])
+        assert not m.items()
+
+        a = FakeItem("a", 1)
+        b = FakeItem("b", 2)
+        b2 = FakeItem("b", 3)
+
+        m = FakeMap([a, b])
+        assert list(m.items()) == [("a", a), ("b", b)]
+
+        with pytest.raises(ValueError):
+            FakeMap([a, b, b2])

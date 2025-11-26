@@ -3,6 +3,7 @@ import functools
 import hashlib
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import Enum, auto
 from pathlib import PurePath, PurePosixPath, PureWindowsPath
@@ -12,7 +13,7 @@ import jsonschema
 from frozendict import frozendict
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable, Iterator
 
 
 def make_json_schema(fragment: Mapping[str, Any]) -> frozendict[str, Any]:
@@ -255,3 +256,32 @@ class ProjectID(_ID):
 
 class VersionID(_ID):
     pass
+
+
+class Map[K, V](Mapping[K, V]):
+    def __init__(self, items: Iterable[V] = ()) -> None:
+        super().__init__()
+        d = {}
+        for i in items:
+            k = self._key(i)
+            if k in d:
+                raise ValueError(f"Duplicate key in {self.__class__.__name__}: '{k}'")
+            d[k] = i
+        self._data = frozendict(d)
+
+    @classmethod
+    @abstractmethod
+    def _key(cls, item: V) -> K:
+        raise NotImplementedError  # pragma: no cover
+
+    @override
+    def __getitem__(self, k: K) -> V:
+        return self._data[k]
+
+    @override
+    def __iter__(self) -> Iterator[K]:
+        return iter(self._data)
+
+    @override
+    def __len__(self) -> int:
+        return len(self._data)

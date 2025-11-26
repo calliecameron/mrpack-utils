@@ -5,15 +5,18 @@ from frozendict import frozendict
 
 from mrpack.api import (
     File,
+    FileMap,
     Project,
+    ProjectMap,
     Version,
+    VersionMap,
     get_file_details,
     get_projects,
     get_versions,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Collection, Mapping
+    from collections.abc import Collection
 
     from mrpack.mrpack import Mrpack
     from mrpack.types import ProjectID, Sha512, VersionID
@@ -23,14 +26,14 @@ class ModDB:
     def __init__(
         self,
         *,
-        files: Mapping[Sha512, File],
-        projects: Mapping[ProjectID, Project],
-        versions: Mapping[VersionID, Version],
+        files: FileMap,
+        projects: ProjectMap,
+        versions: VersionMap,
     ) -> None:
         super().__init__()
-        self._files = frozendict(files)
-        self._projects = frozendict(projects)
-        self._versions = frozendict(versions)
+        self._files = files
+        self._projects = projects
+        self._versions = versions
 
         project_versions = defaultdict(set)
         for version in self._versions.values():
@@ -40,21 +43,21 @@ class ModDB:
         )
 
     @property
-    def all_files(self) -> frozendict[Sha512, File]:
+    def all_files(self) -> FileMap:
         return self._files
 
     def file(self, sha512: Sha512) -> File | None:
         return self._files.get(sha512)
 
     @property
-    def all_projects(self) -> frozendict[ProjectID, Project]:
+    def all_projects(self) -> ProjectMap:
         return self._projects
 
     def project(self, project_id: ProjectID) -> Project | None:
         return self._projects.get(project_id)
 
     @property
-    def all_versions(self) -> frozendict[VersionID, Version]:
+    def all_versions(self) -> VersionMap:
         return self._versions
 
     def version(self, version_id: VersionID) -> Version | None:
@@ -78,7 +81,7 @@ class ModDB:
         files = get_file_details(hashes)
         projects = get_projects({f.project_id for f in files.values()})
 
-        versions: frozendict[VersionID, Version] = frozendict()
+        versions = VersionMap()
         if fetch_versions:
             versions = get_versions(projects.values(), loaders)
 

@@ -185,11 +185,11 @@ def run(
             MissingMods(
                 {
                     str(PurePath(*m.index_entry.path.parts[1:]))
-                    for m in modpack.project_missing_mods
+                    for m in modpack.project_missing_mods.values()
                 }
                 | {
                     str(PurePath(*m.index_entry.path.parts[1:]))
-                    for m in modpack.file_missing_mods
+                    for m in modpack.file_missing_mods.values()
                 },
             ),
         ]

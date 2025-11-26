@@ -1,10 +1,9 @@
 from pathlib import PurePath
 
 import pytest
-from frozendict import frozendict
 
 from mrpack.index import Dependencies, File, Hashes, Index
-from mrpack.mrpack import Mrpack, MrpackError, Override, OverrideType
+from mrpack.mrpack import Mrpack, MrpackError, Override, OverrideMap, OverrideType
 from mrpack.types import Env, GameVersion, Requirement, Sha1, Sha512
 
 # ruff: noqa: S101
@@ -77,6 +76,16 @@ class TestOverride:
             )
 
 
+class TestOverrideMap:
+    def test_override_map(self) -> None:
+        o = Override(
+            path="overrides/a",
+            data=b"foo\n",
+        )
+
+        assert list(OverrideMap([o]).items()) == [(PurePath("overrides/a"), o)]
+
+
 class TestMrpack:
     def test_init(self) -> None:
         f1 = File(
@@ -111,7 +120,7 @@ class TestMrpack:
             name="Test Modpack",
             version="1.0",
             summary="foo",
-            files={f1, f2},
+            files=[f1, f2],
             dependencies=Dependencies(
                 game_version=GameVersion("1.20.1"),
                 others={"foo": "2"},
@@ -124,22 +133,20 @@ class TestMrpack:
 
         m = Mrpack(
             index=i,
-            overrides={o1, o2},
+            overrides=[o1, o2],
         )
 
         assert m.index == i
-        assert m.overrides == frozendict(
-            {
-                PurePath("overrides", "a"): o1,
-                PurePath("client-overrides", "a"): o2,
-            },
-        )
+        assert m.overrides == {
+            PurePath("overrides", "a"): o1,
+            PurePath("client-overrides", "a"): o2,
+        }
 
         # Duplicate override path
         with pytest.raises(ValueError):
             Mrpack(
                 index=i,
-                overrides={o1, o3},
+                overrides=[o1, o3],
             )
 
     def test_from_file_valid(self) -> None:
@@ -191,7 +198,7 @@ class TestMrpack:
             name="Test Modpack",
             version="1.1",
             summary="First test modpack",
-            files={f1, f2, f3},
+            files=[f1, f2, f3],
             dependencies=Dependencies(
                 game_version=GameVersion("1.19.4"),
                 others={
@@ -209,16 +216,14 @@ class TestMrpack:
         o6 = Override(path="server-overrides/mods/bar-1.0.0.jar", data=b"bar-1.0.0\n")
 
         assert m.index == i
-        assert m.overrides == frozendict(
-            {
-                PurePath("overrides", "config", "foo.txt"): o1,
-                PurePath("overrides", "mods", "foo-1.2.3.jar"): o2,
-                PurePath("client-overrides", "mods", "baz-1.0.0.jar"): o3,
-                PurePath("client-overrides", "mods", "foo-1.2.3.jar"): o4,
-                PurePath("server-overrides", "config", "bar.txt"): o5,
-                PurePath("server-overrides", "mods", "bar-1.0.0.jar"): o6,
-            },
-        )
+        assert m.overrides == {
+            PurePath("overrides", "config", "foo.txt"): o1,
+            PurePath("overrides", "mods", "foo-1.2.3.jar"): o2,
+            PurePath("client-overrides", "mods", "baz-1.0.0.jar"): o3,
+            PurePath("client-overrides", "mods", "foo-1.2.3.jar"): o4,
+            PurePath("server-overrides", "config", "bar.txt"): o5,
+            PurePath("server-overrides", "mods", "bar-1.0.0.jar"): o6,
+        }
 
     def test_from_file_invalid(self) -> None:
         # Not a zip file

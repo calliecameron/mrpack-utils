@@ -26,7 +26,7 @@ class TestModDB:
                 name="Test Modpack",
                 version="1",
                 summary="",
-                files={
+                files=[
                     File(
                         path="mods/a.jar",
                         hashes=Hashes(
@@ -66,7 +66,7 @@ class TestModDB:
                         downloads=set(),
                         size=10,
                     ),
-                },
+                ],
                 dependencies=Dependencies(
                     game_version=GameVersion("1.19.4"),
                     others={
@@ -75,14 +75,14 @@ class TestModDB:
                     },
                 ),
             ),
-            overrides=set(),
+            overrides=[],
         )
         mrpack2 = Mrpack(
             index=Index(
                 name="Test Modpack",
                 version="2",
                 summary="",
-                files={
+                files=[
                     File(
                         path="mods/a.jar",
                         hashes=Hashes(
@@ -122,7 +122,7 @@ class TestModDB:
                         downloads=set(),
                         size=10,
                     ),
-                },
+                ],
                 dependencies=Dependencies(
                     game_version=GameVersion("1.19.4"),
                     others={
@@ -130,7 +130,7 @@ class TestModDB:
                     },
                 ),
             ),
-            overrides=set(),
+            overrides=[],
         )
 
         # Fetching versions
@@ -165,46 +165,44 @@ class TestModDB:
             )
             db = ModDB.load([mrpack1, mrpack2], fetch_versions=True)
 
-        assert db.all_files == frozendict(
-            {
-                Sha512(
+        assert db.all_files == {
+            Sha512(
+                "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("a0000000"),
-                    version_number="1.2.3",
                 ),
-                Sha512(
+                project_id=ProjectID("a0000000"),
+                version_number="1.2.3",
+            ),
+            Sha512(
+                "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("a0000000"),
-                    version_number="1.2.3",
                 ),
-                Sha512(
+                project_id=ProjectID("a0000000"),
+                version_number="1.2.3",
+            ),
+            Sha512(
+                "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("b0000000"),
-                    version_number="4.5.6",
                 ),
-                Sha512(
+                project_id=ProjectID("b0000000"),
+                version_number="4.5.6",
+            ),
+            Sha512(
+                "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("b0000000"),
-                    version_number="4.5.7",
                 ),
-            },
-        )
+                project_id=ProjectID("b0000000"),
+                version_number="4.5.7",
+            ),
+        }
         assert db.file(
             Sha512(
                 "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -225,31 +223,29 @@ class TestModDB:
             is None
         )
 
-        assert db.all_projects == frozendict(
-            {
-                ProjectID("a0000000"): api.Project(
-                    project_id=ProjectID("a0000000"),
-                    slug="a",
-                    title="A",
-                    env=Env(
-                        client=Requirement.OPTIONAL,
-                        server=Requirement.REQUIRED,
-                    ),
-                    project_license="MIT",
-                    source_url="S%201",
-                    issues_url="I%201",
+        assert db.all_projects == {
+            ProjectID("a0000000"): api.Project(
+                project_id=ProjectID("a0000000"),
+                slug="a",
+                title="A",
+                env=Env(
+                    client=Requirement.OPTIONAL,
+                    server=Requirement.REQUIRED,
                 ),
-                ProjectID("b0000000"): api.Project(
-                    project_id=ProjectID("b0000000"),
-                    slug="b",
-                    title="B",
-                    env=Env.unknown(),
-                    project_license="",
-                    source_url="",
-                    issues_url="",
-                ),
-            },
-        )
+                project_license="MIT",
+                source_url="S%201",
+                issues_url="I%201",
+            ),
+            ProjectID("b0000000"): api.Project(
+                project_id=ProjectID("b0000000"),
+                slug="b",
+                title="B",
+                env=Env.unknown(),
+                project_license="",
+                source_url="",
+                issues_url="",
+            ),
+        }
         assert db.project(ProjectID("a0000000")) == api.Project(
             project_id=ProjectID("a0000000"),
             slug="a",
@@ -264,34 +260,32 @@ class TestModDB:
         )
         assert db.project(ProjectID("c0000000")) is None
 
-        assert db.all_versions == frozendict(
-            {
-                VersionID("A0000000"): api.Version(
-                    version_id=VersionID("A0000000"),
-                    project_id=ProjectID("a0000000"),
-                    loaders={"fabric"},
-                    game_versions={"1.19.2"},
-                ),
-                VersionID("A1000000"): api.Version(
-                    version_id=VersionID("A1000000"),
-                    project_id=ProjectID("a0000000"),
-                    loaders={"fabric", "minecraft"},
-                    game_versions={"1.20"},
-                ),
-                VersionID("B0000000"): api.Version(
-                    version_id=VersionID("B0000000"),
-                    project_id=ProjectID("b0000000"),
-                    loaders={"minecraft"},
-                    game_versions={"1.19.4"},
-                ),
-                VersionID("B1000000"): api.Version(
-                    version_id=VersionID("B1000000"),
-                    project_id=ProjectID("b0000000"),
-                    loaders={"forge"},
-                    game_versions={"1.20"},
-                ),
-            },
-        )
+        assert db.all_versions == {
+            VersionID("A0000000"): api.Version(
+                version_id=VersionID("A0000000"),
+                project_id=ProjectID("a0000000"),
+                loaders={"fabric"},
+                game_versions={"1.19.2"},
+            ),
+            VersionID("A1000000"): api.Version(
+                version_id=VersionID("A1000000"),
+                project_id=ProjectID("a0000000"),
+                loaders={"fabric", "minecraft"},
+                game_versions={"1.20"},
+            ),
+            VersionID("B0000000"): api.Version(
+                version_id=VersionID("B0000000"),
+                project_id=ProjectID("b0000000"),
+                loaders={"minecraft"},
+                game_versions={"1.19.4"},
+            ),
+            VersionID("B1000000"): api.Version(
+                version_id=VersionID("B1000000"),
+                project_id=ProjectID("b0000000"),
+                loaders={"forge"},
+                game_versions={"1.20"},
+            ),
+        }
         assert db.version(VersionID("A0000000")) == api.Version(
             version_id=VersionID("A0000000"),
             project_id=ProjectID("a0000000"),
@@ -340,46 +334,44 @@ class TestModDB:
             )
             db = ModDB.load([mrpack1, mrpack2], fetch_versions=False)
 
-        assert db.all_files == frozendict(
-            {
-                Sha512(
+        assert db.all_files == {
+            Sha512(
+                "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("a0000000"),
-                    version_number="1.2.3",
                 ),
-                Sha512(
+                project_id=ProjectID("a0000000"),
+                version_number="1.2.3",
+            ),
+            Sha512(
+                "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("a0000000"),
-                    version_number="1.2.3",
                 ),
-                Sha512(
+                project_id=ProjectID("a0000000"),
+                version_number="1.2.3",
+            ),
+            Sha512(
+                "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("b0000000"),
-                    version_number="4.5.6",
                 ),
-                Sha512(
+                project_id=ProjectID("b0000000"),
+                version_number="4.5.6",
+            ),
+            Sha512(
+                "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): api.File(
+                sha512=Sha512(
                     "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "b1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ),
-                    project_id=ProjectID("b0000000"),
-                    version_number="4.5.7",
                 ),
-            },
-        )
+                project_id=ProjectID("b0000000"),
+                version_number="4.5.7",
+            ),
+        }
         assert db.file(
             Sha512(
                 "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
@@ -400,31 +392,29 @@ class TestModDB:
             is None
         )
 
-        assert db.all_projects == frozendict(
-            {
-                ProjectID("a0000000"): api.Project(
-                    project_id=ProjectID("a0000000"),
-                    slug="a",
-                    title="A",
-                    env=Env(
-                        client=Requirement.OPTIONAL,
-                        server=Requirement.REQUIRED,
-                    ),
-                    project_license="MIT",
-                    source_url="S%201",
-                    issues_url="I%201",
+        assert db.all_projects == {
+            ProjectID("a0000000"): api.Project(
+                project_id=ProjectID("a0000000"),
+                slug="a",
+                title="A",
+                env=Env(
+                    client=Requirement.OPTIONAL,
+                    server=Requirement.REQUIRED,
                 ),
-                ProjectID("b0000000"): api.Project(
-                    project_id=ProjectID("b0000000"),
-                    slug="b",
-                    title="B",
-                    env=Env.unknown(),
-                    project_license="",
-                    source_url="",
-                    issues_url="",
-                ),
-            },
-        )
+                project_license="MIT",
+                source_url="S%201",
+                issues_url="I%201",
+            ),
+            ProjectID("b0000000"): api.Project(
+                project_id=ProjectID("b0000000"),
+                slug="b",
+                title="B",
+                env=Env.unknown(),
+                project_license="",
+                source_url="",
+                issues_url="",
+            ),
+        }
         assert db.project(ProjectID("a0000000")) == api.Project(
             project_id=ProjectID("a0000000"),
             slug="a",
@@ -439,7 +429,7 @@ class TestModDB:
         )
         assert db.project(ProjectID("c0000000")) is None
 
-        assert db.all_versions == frozendict()
+        assert db.all_versions == {}
         assert db.version(VersionID("A0000000")) is None
 
         assert db.all_project_versions == frozendict()

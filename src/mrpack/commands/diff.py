@@ -104,19 +104,19 @@ def run(old_file: str, new_file: str) -> tuple[Element, ...]:
         MissingMods(
             {
                 str(PurePath(*m.index_entry.path.parts[1:]))
-                for m in old.project_missing_mods
+                for m in old.project_missing_mods.values()
             }
             | {
                 str(PurePath(*m.index_entry.path.parts[1:]))
-                for m in old.file_missing_mods
+                for m in old.file_missing_mods.values()
             }
             | {
                 str(PurePath(*m.index_entry.path.parts[1:]))
-                for m in new.project_missing_mods
+                for m in new.project_missing_mods.values()
             }
             | {
                 str(PurePath(*m.index_entry.path.parts[1:]))
-                for m in new.file_missing_mods
+                for m in new.file_missing_mods.values()
             },
         ),
     )

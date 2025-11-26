@@ -1,12 +1,14 @@
 import jsonschema
 import pytest
 import requests_mock
-from frozendict import frozendict
 
 from mrpack.api import (
     File,
+    FileMap,
     Project,
+    ProjectMap,
     Version,
+    VersionMap,
     get_file_details,
     get_projects,
     get_versions,
@@ -17,10 +19,30 @@ from tests import testdata
 # ruff: noqa: S101
 
 
+class TestFileMap:
+    def test_file_map(self) -> None:
+        f = File(
+            sha512=Sha512(
+                "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ),
+            project_id=ProjectID("a0000000"),
+            version_number="1.2.3",
+        )
+
+        assert list(FileMap([f]).items()) == [
+            (
+                Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                f,
+            ),
+        ]
+
+
 class TestGetFileDetails:
     def test_valid(self) -> None:
         with requests_mock.Mocker() as m:
-            assert get_file_details(set()) == frozendict()
+            assert get_file_details(set()) == {}
 
         with requests_mock.Mocker() as m:
             m.post(
@@ -40,37 +62,35 @@ class TestGetFileDetails:
                         "c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
                     ),
                 },
-            ) == frozendict(
-                {
-                    Sha512(
+            ) == {
+                Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): File(
+                    sha512=Sha512(
                         "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): File(
-                        sha512=Sha512(
-                            "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                        ),
-                        project_id=ProjectID("a0000000"),
-                        version_number="1.2.3",
                     ),
-                    Sha512(
+                    project_id=ProjectID("a0000000"),
+                    version_number="1.2.3",
+                ),
+                Sha512(
+                    "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): File(
+                    sha512=Sha512(
                         "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): File(
-                        sha512=Sha512(
-                            "a0100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                        ),
-                        project_id=ProjectID("a0000000"),
-                        version_number="1.2.3",
                     ),
-                    Sha512(
+                    project_id=ProjectID("a0000000"),
+                    version_number="1.2.3",
+                ),
+                Sha512(
+                    "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ): File(
+                    sha512=Sha512(
                         "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                    ): File(
-                        sha512=Sha512(
-                            "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                        ),
-                        project_id=ProjectID("b0000000"),
-                        version_number="4.5.6",
                     ),
-                },
-            )
+                    project_id=ProjectID("b0000000"),
+                    version_number="4.5.6",
+                ),
+            }
 
         # Returning nothing is valid
         with requests_mock.Mocker() as m:
@@ -87,7 +107,7 @@ class TestGetFileDetails:
                         ),
                     },
                 )
-                == frozendict()
+                == {}
             )
 
         # Returning an empty file list is valid
@@ -112,7 +132,7 @@ class TestGetFileDetails:
                         ),
                     },
                 )
-                == frozendict()
+                == {}
             )
 
     def test_invalid(self) -> None:
@@ -279,6 +299,25 @@ class TestGetFileDetails:
                 )
 
 
+class TestProjectMap:
+    def test_project_map(self) -> None:
+        e = Env(
+            client=Requirement.OPTIONAL,
+            server=Requirement.REQUIRED,
+        )
+        p = Project(
+            project_id=ProjectID("a0000000"),
+            slug="a",
+            title="A",
+            env=e,
+            project_license="MIT",
+            source_url="S 1",
+            issues_url="I 1",
+        )
+
+        assert list(ProjectMap([p]).items()) == [(ProjectID("a0000000"), p)]
+
+
 class TestProject:
     def test_project(self) -> None:
         e = Env(
@@ -329,7 +368,7 @@ class TestProject:
 class TestGetProjects:
     def test_valid(self) -> None:
         with requests_mock.Mocker() as m:
-            assert get_projects(set()) == frozendict()
+            assert get_projects(set()) == {}
 
         with requests_mock.Mocker() as m:
             m.get(
@@ -342,31 +381,29 @@ class TestGetProjects:
             )
             assert get_projects(
                 {ProjectID("a0000000"), ProjectID("b0000000")},
-            ) == frozendict(
-                {
-                    ProjectID("a0000000"): Project(
-                        project_id=ProjectID("a0000000"),
-                        slug="a",
-                        title="A",
-                        env=Env(
-                            client=Requirement.OPTIONAL,
-                            server=Requirement.REQUIRED,
-                        ),
-                        project_license="MIT",
-                        source_url="S%201",
-                        issues_url="I%201",
+            ) == {
+                ProjectID("a0000000"): Project(
+                    project_id=ProjectID("a0000000"),
+                    slug="a",
+                    title="A",
+                    env=Env(
+                        client=Requirement.OPTIONAL,
+                        server=Requirement.REQUIRED,
                     ),
-                    ProjectID("b0000000"): Project(
-                        project_id=ProjectID("b0000000"),
-                        slug="b",
-                        title="B",
-                        env=Env.unknown(),
-                        project_license="",
-                        source_url="",
-                        issues_url="",
-                    ),
-                },
-            )
+                    project_license="MIT",
+                    source_url="S%201",
+                    issues_url="I%201",
+                ),
+                ProjectID("b0000000"): Project(
+                    project_id=ProjectID("b0000000"),
+                    slug="b",
+                    title="B",
+                    env=Env.unknown(),
+                    project_license="",
+                    source_url="",
+                    issues_url="",
+                ),
+            }
 
         # Returning nothing is valid
         with requests_mock.Mocker() as m:
@@ -375,10 +412,7 @@ class TestGetProjects:
                 complete_qs=True,
                 json=[],
             )
-            assert (
-                get_projects({ProjectID("a0000000"), ProjectID("b0000000")})
-                == frozendict()
-            )
+            assert get_projects({ProjectID("a0000000"), ProjectID("b0000000")}) == {}
 
         # Returning 'None' for source and issue URLs is valid
         with requests_mock.Mocker() as m:
@@ -395,19 +429,17 @@ class TestGetProjects:
                     },
                 ],
             )
-            assert get_projects({ProjectID("a0000000")}) == frozendict(
-                {
-                    ProjectID("a0000000"): Project(
-                        project_id=ProjectID("a0000000"),
-                        slug="a",
-                        title="A",
-                        env=Env.unknown(),
-                        project_license="",
-                        source_url="",
-                        issues_url="",
-                    ),
-                },
-            )
+            assert get_projects({ProjectID("a0000000")}) == {
+                ProjectID("a0000000"): Project(
+                    project_id=ProjectID("a0000000"),
+                    slug="a",
+                    title="A",
+                    env=Env.unknown(),
+                    project_license="",
+                    source_url="",
+                    issues_url="",
+                ),
+            }
 
     def test_invalid(self) -> None:
         # No ID
@@ -515,10 +547,22 @@ class TestGetProjects:
                 get_projects({ProjectID("a0000000")})
 
 
+class TestVersionMap:
+    def test_version_map(self) -> None:
+        v = Version(
+            version_id=VersionID("A0000000"),
+            project_id=ProjectID("a0000000"),
+            loaders={"fabric"},
+            game_versions={"1.19.2"},
+        )
+
+        assert list(VersionMap([v]).items()) == [(VersionID("A0000000"), v)]
+
+
 class TestGetVersions:
     def test_valid(self) -> None:
         with requests_mock.Mocker() as m:
-            assert get_versions(set(), set()) == frozendict()
+            assert get_versions(set(), set()) == {}
 
         with requests_mock.Mocker() as m:
             m.get(
@@ -563,34 +607,32 @@ class TestGetVersions:
                     "minecraft",
                     "fabric",
                 },
-            ) == frozendict(
-                {
-                    VersionID("A0000000"): Version(
-                        version_id=VersionID("A0000000"),
-                        project_id=ProjectID("a0000000"),
-                        loaders={"fabric"},
-                        game_versions={"1.19.2"},
-                    ),
-                    VersionID("A1000000"): Version(
-                        version_id=VersionID("A1000000"),
-                        project_id=ProjectID("a0000000"),
-                        loaders={"fabric", "minecraft"},
-                        game_versions={"1.20"},
-                    ),
-                    VersionID("B0000000"): Version(
-                        version_id=VersionID("B0000000"),
-                        project_id=ProjectID("b0000000"),
-                        loaders={"minecraft"},
-                        game_versions={"1.19.4"},
-                    ),
-                    VersionID("B1000000"): Version(
-                        version_id=VersionID("B1000000"),
-                        project_id=ProjectID("b0000000"),
-                        loaders=set({"forge"}),
-                        game_versions=set({"1.20"}),
-                    ),
-                },
-            )
+            ) == {
+                VersionID("A0000000"): Version(
+                    version_id=VersionID("A0000000"),
+                    project_id=ProjectID("a0000000"),
+                    loaders={"fabric"},
+                    game_versions={"1.19.2"},
+                ),
+                VersionID("A1000000"): Version(
+                    version_id=VersionID("A1000000"),
+                    project_id=ProjectID("a0000000"),
+                    loaders={"fabric", "minecraft"},
+                    game_versions={"1.20"},
+                ),
+                VersionID("B0000000"): Version(
+                    version_id=VersionID("B0000000"),
+                    project_id=ProjectID("b0000000"),
+                    loaders={"minecraft"},
+                    game_versions={"1.19.4"},
+                ),
+                VersionID("B1000000"): Version(
+                    version_id=VersionID("B1000000"),
+                    project_id=ProjectID("b0000000"),
+                    loaders=set({"forge"}),
+                    game_versions=set({"1.20"}),
+                ),
+            }
 
         # Returning nothing is valid
         with requests_mock.Mocker() as m:
@@ -616,7 +658,7 @@ class TestGetVersions:
                         "minecraft",
                     },
                 )
-                == frozendict()
+                == {}
             )
 
     def test_invalid(self) -> None:

@@ -6,6 +6,7 @@ from frozendict import frozendict
 from mrpack.types import (
     Env,
     GameVersion,
+    Map,
     Sha1,
     Sha512,
     make_json_schema,
@@ -13,11 +14,11 @@ from mrpack.types import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Set
+    from collections.abc import Collection, Mapping, Set
     from pathlib import PurePath
 
 
-class Hashes:
+class Hashes:  # noqa: PLW1641
     SCHEMA_FRAGMENT = frozendict(
         {
             "type": "object",
@@ -82,10 +83,6 @@ class Hashes:
             and self._others == other._others
         )
 
-    @override
-    def __hash__(self) -> int:
-        return hash((self._sha1, self._sha512, self._others))
-
     @staticmethod
     def from_json(data: Mapping[str, str]) -> Hashes:
         jsonschema.validate(data, Hashes._SCHEMA)
@@ -97,7 +94,7 @@ class Hashes:
         )
 
 
-class File:
+class File:  # noqa: PLW1641
     SCHEMA_FRAGMENT = frozendict(
         {
             "type": "object",
@@ -181,10 +178,6 @@ class File:
             and self._size == other._size
         )
 
-    @override
-    def __hash__(self) -> int:
-        return hash((self._path, self._hashes, self._env, self._downloads, self._size))
-
     @staticmethod
     def from_json(data: Mapping[str, Any]) -> File:
         jsonschema.validate(data, File._SCHEMA)
@@ -195,6 +188,13 @@ class File:
             downloads=frozenset(data["downloads"]),
             size=data["fileSize"],
         )
+
+
+class FileMap(Map[Sha512, File]):
+    @override
+    @classmethod
+    def _key(cls, item: File) -> Sha512:
+        return item.hashes.sha512
 
 
 class Dependencies:  # noqa: PLW1641
@@ -332,7 +332,7 @@ class Index:  # noqa: PLW1641
         name: str,
         version: str,
         summary: str,
-        files: Set[File],
+        files: Collection[File],
         dependencies: Dependencies,
     ) -> None:
         super().__init__()
@@ -340,12 +340,7 @@ class Index:  # noqa: PLW1641
         self._version = version
         self._summary = summary
 
-        fs = {}
-        for file in files:
-            if file.hashes.sha512 in fs:
-                raise ValueError(f"Duplicate file SHA512 '{file.hashes.sha512}'")
-            fs[file.hashes.sha512] = file
-        self._files = frozendict(fs)
+        self._files = FileMap(files)
         self._dependencies = dependencies
 
     @property
@@ -361,7 +356,7 @@ class Index:  # noqa: PLW1641
         return self._summary
 
     @property
-    def files(self) -> frozendict[Sha512, File]:
+    def files(self) -> FileMap:
         return self._files
 
     @property
@@ -383,11 +378,10 @@ class Index:  # noqa: PLW1641
     @staticmethod
     def from_json(data: Mapping[str, Any]) -> Index:
         jsonschema.validate(data, Index._SCHEMA)
-        files = {File.from_json(file) for file in data["files"]}
         return Index(
             name=data["name"],
             version=data["versionId"],
             summary=data.get("summary", ""),
-            files=files,
+            files=[File.from_json(file) for file in data["files"]],
             dependencies=Dependencies.from_json(data["dependencies"]),
         )

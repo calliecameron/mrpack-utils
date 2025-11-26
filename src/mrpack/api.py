@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, override
 
 import jsonschema
 import requests
-from frozendict import frozendict
 from requests.utils import requote_uri
 
 from mrpack.types import (
     Env,
+    Map,
     ProjectID,
     Requirement,
     Sha512,
@@ -25,6 +25,13 @@ class File:
     sha512: Sha512
     project_id: ProjectID
     version_number: str
+
+
+class FileMap(Map[Sha512, File]):
+    @override
+    @classmethod
+    def _key(cls, item: File) -> Sha512:
+        return item.sha512
 
 
 _GET_FILE_DETAILS_SCHEMA = make_json_schema(
@@ -78,9 +85,9 @@ _GET_FILE_DETAILS_SCHEMA = make_json_schema(
 )
 
 
-def get_file_details(hashes: Set[Sha512]) -> frozendict[Sha512, File]:
+def get_file_details(hashes: Set[Sha512]) -> FileMap:
     if not hashes:
-        return frozendict()
+        return FileMap()
 
     response = requests.post(
         "https://api.modrinth.com/v2/version_files",
@@ -94,20 +101,20 @@ def get_file_details(hashes: Set[Sha512]) -> frozendict[Sha512, File]:
     j = response.json()
     jsonschema.validate(j, _GET_FILE_DETAILS_SCHEMA)
 
-    out = {}
+    data = []
     for version in j.values():
         project_id = ProjectID(version["project_id"])
         version_number = version.get("version_number", "")
         for file in version["files"]:
             h = Sha512(file["hashes"]["sha512"])
-            if h in out:
-                raise ValueError(f"Duplicate hash in get_version_files '{h}'")
-            out[h] = File(
-                sha512=h,
-                project_id=project_id,
-                version_number=version_number,
+            data.append(
+                File(
+                    sha512=h,
+                    project_id=project_id,
+                    version_number=version_number,
+                ),
             )
-    return frozendict(out)
+    return FileMap(data)
 
 
 class Project:
@@ -188,6 +195,13 @@ class Project:
         )
 
 
+class ProjectMap(Map[ProjectID, Project]):
+    @override
+    @classmethod
+    def _key(cls, item: Project) -> ProjectID:
+        return item.project_id
+
+
 _GET_PROJECTS_SCHEMA = make_json_schema(
     {
         "type": "array",
@@ -240,9 +254,9 @@ _GET_PROJECTS_SCHEMA = make_json_schema(
 )
 
 
-def get_projects(ids: Set[ProjectID]) -> frozendict[ProjectID, Project]:
+def get_projects(ids: Set[ProjectID]) -> ProjectMap:
     if not ids:
-        return frozendict()
+        return ProjectMap()
 
     response = requests.get(
         "https://api.modrinth.com/v2/projects",
@@ -257,28 +271,28 @@ def get_projects(ids: Set[ProjectID]) -> frozendict[ProjectID, Project]:
     j = response.json()
     jsonschema.validate(j, _GET_PROJECTS_SCHEMA)
 
-    out = {}
+    data = []
     for project in j:
         project_id = ProjectID(project["id"])
-        if project_id in out:
-            raise ValueError(f"Duplicate project ID in get_projects '{project_id}'")
-        out[project_id] = Project(
-            project_id=project_id,
-            slug=project["slug"],
-            title=project["title"],
-            env=Env(
-                client=Requirement.from_str(project.get("client_side", "")),
-                server=Requirement.from_str(project.get("server_side", "")),
+        data.append(
+            Project(
+                project_id=project_id,
+                slug=project["slug"],
+                title=project["title"],
+                env=Env(
+                    client=Requirement.from_str(project.get("client_side", "")),
+                    server=Requirement.from_str(project.get("server_side", "")),
+                ),
+                project_license=""
+                if "license" not in project
+                else project["license"]["id"],
+                # Sometimes the API returns None for these - force them to be strings
+                source_url=project.get("source_url", "") or "",
+                issues_url=project.get("issues_url", "") or "",
             ),
-            project_license=""
-            if "license" not in project
-            else project["license"]["id"],
-            # Sometimes the API returns None for these - force them to be strings
-            source_url=project.get("source_url", "") or "",
-            issues_url=project.get("issues_url", "") or "",
         )
 
-    return frozendict(out)
+    return ProjectMap(data)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -287,6 +301,13 @@ class Version:
     project_id: ProjectID
     loaders: Set[str]
     game_versions: Set[str]
+
+
+class VersionMap(Map[VersionID, Version]):
+    @override
+    @classmethod
+    def _key(cls, item: Version) -> VersionID:
+        return item.version_id
 
 
 _GET_VERSIONS_SCHEMA = make_json_schema(
@@ -327,15 +348,12 @@ _GET_VERSIONS_SCHEMA = make_json_schema(
 )
 
 
-def get_versions(
-    projects: Collection[Project],
-    loaders: Set[str],
-) -> frozendict[VersionID, Version]:
+def get_versions(projects: Collection[Project], loaders: Set[str]) -> VersionMap:
     if not projects or not loaders:
-        return frozendict()
+        return VersionMap()
 
     loaders_param = "[" + ", ".join(f'"{loader}"' for loader in sorted(loaders)) + "]"
-    out = {}
+    data = []
 
     for i, project in enumerate(sorted(projects, key=lambda p: p.title.lower())):
         sys.stderr.write(
@@ -355,13 +373,13 @@ def get_versions(
 
         for version in j:
             version_id = VersionID(version["id"])
-            if version_id in out:
-                raise ValueError(f"Duplicate version ID in get_versions '{version_id}'")
-            out[version_id] = Version(
-                version_id=version_id,
-                project_id=ProjectID(version["project_id"]),
-                loaders=frozenset(version.get("loaders", [])),
-                game_versions=frozenset(version.get("game_versions", [])),
+            data.append(
+                Version(
+                    version_id=version_id,
+                    project_id=ProjectID(version["project_id"]),
+                    loaders=frozenset(version.get("loaders", [])),
+                    game_versions=frozenset(version.get("game_versions", [])),
+                ),
             )
 
-    return frozendict(out)
+    return VersionMap(data)

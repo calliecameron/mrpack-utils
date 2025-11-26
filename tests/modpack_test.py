@@ -1,11 +1,17 @@
 from pathlib import PurePath
 
-from frozendict import frozendict
-
 from mrpack import api
 from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.moddb import ModDB
-from mrpack.modpack import FileMissingMod, Mod, Modpack, ProjectMissingMod
+from mrpack.modpack import (
+    FileMissingMod,
+    FileMissingModMap,
+    Mod,
+    ModMap,
+    Modpack,
+    ProjectMissingMod,
+    ProjectMissingModMap,
+)
 from mrpack.mrpack import Mrpack, Override
 from mrpack.types import (
     Env,
@@ -18,6 +24,66 @@ from mrpack.types import (
 )
 
 # ruff: noqa: S101
+
+
+class TestFileMissingModMap:
+    def test_file_missing_mod_map(self) -> None:
+        f = File(
+            path="mods/a.jar",
+            hashes=Hashes(
+                sha1=Sha1("a000000000000000000000000000000000000000"),
+                sha512=Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                others={},
+            ),
+            env=Env(
+                client=Requirement.REQUIRED,
+                server=Requirement.REQUIRED,
+            ),
+            downloads=set(),
+            size=10,
+        )
+        m = FileMissingMod(index_entry=f)
+
+        assert list(FileMissingModMap([m]).items()) == [
+            (
+                Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                m,
+            ),
+        ]
+
+
+class TestProjectMissingModMap:
+    def test_project_missing_mod_map(self) -> None:
+        f = File(
+            path="mods/a.jar",
+            hashes=Hashes(
+                sha1=Sha1("a000000000000000000000000000000000000000"),
+                sha512=Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                others={},
+            ),
+            env=Env(
+                client=Requirement.REQUIRED,
+                server=Requirement.REQUIRED,
+            ),
+            downloads=set(),
+            size=10,
+        )
+        m = ProjectMissingMod(index_entry=f, version_number="1")
+
+        assert list(ProjectMissingModMap([m]).items()) == [
+            (
+                Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                m,
+            ),
+        ]
 
 
 class TestMod:
@@ -79,6 +145,52 @@ class TestMod:
         assert not m.compatible_with(GameVersion("1.20.1"))
 
 
+class TestModMap:
+    def test_mod_map(self) -> None:
+        f = File(
+            path="mods/a.jar",
+            hashes=Hashes(
+                sha1=Sha1("a000000000000000000000000000000000000000"),
+                sha512=Sha512(
+                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                ),
+                others={},
+            ),
+            env=Env(
+                client=Requirement.REQUIRED,
+                server=Requirement.REQUIRED,
+            ),
+            downloads=set(),
+            size=10,
+        )
+        p = api.Project(
+            project_id=ProjectID("a0000000"),
+            slug="foo bar",
+            title="Foo",
+            env=Env(
+                client=Requirement.REQUIRED,
+                server=Requirement.OPTIONAL,
+            ),
+            project_license="MIT",
+            source_url="S 1",
+            issues_url="I 1",
+        )
+
+        m = Mod(
+            index_entry=f,
+            project=p,
+            version_number="1.2",
+            game_versions=frozenset(
+                {
+                    GameVersion("1.20"),
+                    GameVersion("1.19.4"),
+                },
+            ),
+        )
+
+        assert list(ModMap([m]).items()) == [(ProjectID("a0000000"), m)]
+
+
 class TestModpack:
     def test_load(self) -> None:
         f1 = File(
@@ -138,12 +250,12 @@ class TestModpack:
             name="Test Modpack",
             version="1",
             summary="",
-            files={
+            files=[
                 f1,
                 f2,
                 f3,
                 f4,
-            },
+            ],
             dependencies=Dependencies(
                 game_version=GameVersion("1.19.4"),
                 others={
@@ -164,7 +276,7 @@ class TestModpack:
 
         m = Mrpack(
             index=i,
-            overrides={o1, o2},
+            overrides=[o1, o2],
         )
 
         p1 = api.Project(
@@ -190,65 +302,65 @@ class TestModpack:
         )
 
         db = ModDB(
-            files={
-                Sha512(
-                    "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            files=api.FileMap(
+                [
+                    api.File(
+                        sha512=Sha512(
+                            "a0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        ),
+                        project_id=ProjectID("a0000000"),
+                        version_number="1.2.3",
                     ),
-                    project_id=ProjectID("a0000000"),
-                    version_number="1.2.3",
-                ),
-                Sha512(
-                    "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    api.File(
+                        sha512=Sha512(
+                            "b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        ),
+                        project_id=ProjectID("b0000000"),
+                        version_number="4.5.6",
                     ),
-                    project_id=ProjectID("b0000000"),
-                    version_number="4.5.6",
-                ),
-                Sha512(
-                    "d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-                ): api.File(
-                    sha512=Sha512(
-                        "d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                    api.File(
+                        sha512=Sha512(
+                            "d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                        ),
+                        project_id=ProjectID("d0000000"),
+                        version_number="1.0.0",
                     ),
-                    project_id=ProjectID("d0000000"),
-                    version_number="1.0.0",
-                ),
-            },
-            projects={
-                ProjectID("a0000000"): p1,
-                ProjectID("b0000000"): p2,
-            },
-            versions={
-                VersionID("A0000000"): api.Version(
-                    version_id=VersionID("A0000000"),
-                    project_id=ProjectID("a0000000"),
-                    loaders={"fabric"},
-                    game_versions={"1.19.2"},
-                ),
-                VersionID("A1000000"): api.Version(
-                    version_id=VersionID("A1000000"),
-                    project_id=ProjectID("a0000000"),
-                    loaders={"fabric", "minecraft"},
-                    game_versions={"1.20"},
-                ),
-                VersionID("B0000000"): api.Version(
-                    version_id=VersionID("B0000000"),
-                    project_id=ProjectID("b0000000"),
-                    loaders={"minecraft"},
-                    game_versions={"1.19.4"},
-                ),
-                VersionID("B1000000"): api.Version(
-                    version_id=VersionID("B1000000"),
-                    project_id=ProjectID("b0000000"),
-                    loaders={"forge"},
-                    game_versions={"1.20"},
-                ),
-            },
+                ],
+            ),
+            projects=api.ProjectMap(
+                [
+                    p1,
+                    p2,
+                ],
+            ),
+            versions=api.VersionMap(
+                [
+                    api.Version(
+                        version_id=VersionID("A0000000"),
+                        project_id=ProjectID("a0000000"),
+                        loaders={"fabric"},
+                        game_versions={"1.19.2"},
+                    ),
+                    api.Version(
+                        version_id=VersionID("A1000000"),
+                        project_id=ProjectID("a0000000"),
+                        loaders={"fabric", "minecraft"},
+                        game_versions={"1.20"},
+                    ),
+                    api.Version(
+                        version_id=VersionID("B0000000"),
+                        project_id=ProjectID("b0000000"),
+                        loaders={"minecraft"},
+                        game_versions={"1.19.4"},
+                    ),
+                    api.Version(
+                        version_id=VersionID("B1000000"),
+                        project_id=ProjectID("b0000000"),
+                        loaders={"forge"},
+                        game_versions={"1.20"},
+                    ),
+                ],
+            ),
         )
 
         modpack = Modpack.load(m, db)
@@ -285,16 +397,18 @@ class TestModpack:
         assert mods[1].game_versions == frozenset([GameVersion("1.19.4")])
         assert mods[1].latest_game_version == GameVersion("1.19.4")
 
-        assert modpack.project_missing_mods == frozenset(
-            {ProjectMissingMod(index_entry=f4, version_number="1.0.0")},
-        )
-        assert modpack.file_missing_mods == frozenset(
-            {FileMissingMod(index_entry=f3)},
-        )
+        assert modpack.project_missing_mods == {
+            Sha512(
+                "d0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): ProjectMissingMod(index_entry=f4, version_number="1.0.0"),
+        }
+        assert modpack.file_missing_mods == {
+            Sha512(
+                "c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            ): FileMissingMod(index_entry=f3),
+        }
 
-        assert modpack.overrides == frozendict(
-            {
-                PurePath("overrides", "mods", "unknown.jar"): o1,
-                PurePath("overrides", "config", "foo.txt"): o2,
-            },
-        )
+        assert modpack.overrides == {
+            PurePath("overrides", "mods", "unknown.jar"): o1,
+            PurePath("overrides", "config", "foo.txt"): o2,
+        }

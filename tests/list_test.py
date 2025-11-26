@@ -1,5 +1,3 @@
-from pathlib import PurePath
-
 import requests_mock
 
 from mrpack.api import Project
@@ -14,7 +12,7 @@ from mrpack.commands.list import (
 )
 from mrpack.index import Dependencies, File, Hashes, Index
 from mrpack.modpack import Mod, Modpack
-from mrpack.mrpack import Override
+from mrpack.mrpack import Override, OverrideMap
 from mrpack.output import IncompatibleMods, MissingMods, Table, UnknownDependencies
 from mrpack.types import Env, GameVersion, ProjectID, Requirement, Sha1, Sha512
 from tests import testdata
@@ -89,10 +87,10 @@ class TestList:
                     others={"Foo": "1", "fabric-loader": "0.16"},
                 ),
             ),
-            mods={},
-            project_missing_mods=set(),
-            file_missing_mods=set(),
-            overrides={},
+            mods=[],
+            project_missing_mods=[],
+            file_missing_mods=[],
+            overrides=OverrideMap(),
         )
         assert _modpack_data(modpack, _headers({GameVersion("1.19.2")}, dev=False)) == [
             ["modpack: Test Modpack", "", "1", "", "", "", ""],
@@ -161,16 +159,16 @@ class TestList:
                 name="Test Modpack",
                 version="1",
                 summary="",
-                files=set(),
+                files=[],
                 dependencies=Dependencies(
                     game_version=GameVersion("1.19.4"),
                     others={"foo": "1", "fabric-loader": "0.16"},
                 ),
             ),
-            mods={ProjectID("a0000000"): foo, ProjectID("b0000000"): bar},
-            project_missing_mods=set(),
-            file_missing_mods=set(),
-            overrides={},
+            mods=[foo, bar],
+            project_missing_mods=[],
+            file_missing_mods=[],
+            overrides=OverrideMap(),
         )
 
         mods, incompatible = _mods(
@@ -253,29 +251,31 @@ class TestList:
                 name="Test Modpack",
                 version="1",
                 summary="",
-                files=set(),
+                files=[],
                 dependencies=Dependencies(
                     game_version=GameVersion("1.19.4"),
                     others={},
                 ),
             ),
-            mods={},
-            project_missing_mods=set(),
-            file_missing_mods=set(),
-            overrides={
-                PurePath("overrides", "mods", "Foo"): Override(
-                    path="overrides/mods/Foo",
-                    data=b"foo\n",
-                ),
-                PurePath("overrides", "mods", "bar"): Override(
-                    path="overrides/mods/bar",
-                    data=b"bar\n",
-                ),
-                PurePath("overrides", "config", "baz"): Override(
-                    path="overrides/config/baz",
-                    data=b"baz\n",
-                ),
-            },
+            mods=[],
+            project_missing_mods=[],
+            file_missing_mods=[],
+            overrides=OverrideMap(
+                [
+                    Override(
+                        path="overrides/mods/Foo",
+                        data=b"foo\n",
+                    ),
+                    Override(
+                        path="overrides/mods/bar",
+                        data=b"bar\n",
+                    ),
+                    Override(
+                        path="overrides/config/baz",
+                        data=b"baz\n",
+                    ),
+                ],
+            ),
         )
 
         assert _unknown_mods(modpack, {GameVersion("1.19.2")}, dev=False) == [
@@ -336,29 +336,31 @@ class TestList:
                 name="Test Modpack",
                 version="1",
                 summary="",
-                files=set(),
+                files=[],
                 dependencies=Dependencies(
                     game_version=GameVersion("1.19.4"),
                     others={},
                 ),
             ),
-            mods={},
-            project_missing_mods=set(),
-            file_missing_mods=set(),
-            overrides={
-                PurePath("overrides", "config", "Foo"): Override(
-                    path="overrides/config/Foo",
-                    data=b"foo\n",
-                ),
-                PurePath("overrides", "config", "bar"): Override(
-                    path="overrides/config/bar",
-                    data=b"bar\n",
-                ),
-                PurePath("overrides", "mods", "baz"): Override(
-                    path="overrides/mods/baz",
-                    data=b"baz\n",
-                ),
-            },
+            mods=[],
+            project_missing_mods=[],
+            file_missing_mods=[],
+            overrides=OverrideMap(
+                [
+                    Override(
+                        path="overrides/config/Foo",
+                        data=b"foo\n",
+                    ),
+                    Override(
+                        path="overrides/config/bar",
+                        data=b"bar\n",
+                    ),
+                    Override(
+                        path="overrides/mods/baz",
+                        data=b"baz\n",
+                    ),
+                ],
+            ),
         )
 
         assert _other_files(modpack, _headers({GameVersion("1.19.2")}, dev=False)) == [
