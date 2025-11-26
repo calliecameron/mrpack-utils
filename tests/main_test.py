@@ -16,7 +16,7 @@ class TestMain:
         with requests_mock.Mocker() as m:
             testdata.test1_list_calls(m)
 
-            main(["--csv", "list", "--check-version", "1.20", "testdata/test1.mrpack"])
+            main(["list", "--csv", "--check-version", "1.20", "testdata/test1.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """Name,Link,Installed version,On client,On server,Latest game version,1.19.4,1.20
@@ -75,8 +75,8 @@ For version 1.20:
 
             main(
                 [
-                    "--csv",
                     "list",
+                    "--csv",
                     "--dev",
                     "--check-version",
                     "1.20",
@@ -139,7 +139,7 @@ For version 1.20:
         with requests_mock.Mocker() as m:
             testdata.test1_test2_diff_calls(m)
 
-            main(["--csv", "diff", "testdata/test1.mrpack", "testdata/test2.mrpack"])
+            main(["diff", "--csv", "testdata/test1.mrpack", "testdata/test2.mrpack"])
             assert (
                 capsys.readouterr().out
                 == """Name,Old,New

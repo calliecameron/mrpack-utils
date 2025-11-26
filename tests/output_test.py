@@ -4,7 +4,6 @@ from mrpack.output import (
     Table,
     UnknownDependencies,
     render,
-    render_csv,
 )
 
 # ruff: noqa: S101
@@ -174,9 +173,9 @@ class TestRender:
             ),
         ]
 
-        assert render([]) == ""
+        assert render([], csv=False) == ""
         assert (
-            render(data)
+            render(data, csv=False)
             == """For version 1.19.2:
   2 out of 10 mods are incompatible with this version:
     A
@@ -193,9 +192,9 @@ Mods supposed to be on Modrinth, but not found:
 | c   | d   |"""
         )
 
-        assert render_csv([]) == ""
+        assert render([], csv=True) == ""
         assert (
-            render_csv(data)
+            render(data, csv=True)
             == """A,B
 a,b
 c,d"""

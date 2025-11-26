@@ -92,13 +92,19 @@ class IncompatibleMods(Element):
         return "\n".join(out)
 
 
-def render(elements: Sequence[Element]) -> str:
+def _render(elements: Sequence[Element]) -> str:
     items = [element.render() for element in elements]
     return "\n\n".join([item for item in items if item])
 
 
-def render_csv(elements: Sequence[Element]) -> str:
+def _render_csv(elements: Sequence[Element]) -> str:
     for element in elements:
         if isinstance(element, Table):
             return element.render_csv()
     return ""
+
+
+def render(elements: Sequence[Element], *, csv: bool) -> str:
+    if csv:
+        return _render_csv(elements)
+    return _render(elements)
