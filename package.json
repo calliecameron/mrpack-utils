@@ -1,8 +1,8 @@
 {
   "devDependencies": {
     "license-checker-rseidelsohn": "4.4.2",
-    "markdownlint-cli2": "0.19.1",
-    "prettier": "3.6.2"
+    "markdownlint-cli2": "0.20.0",
+    "prettier": "3.7.4"
   },
   "name": "mrpack",
   "prettier": {}

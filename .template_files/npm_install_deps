@@ -8,4 +8,4 @@ if [ ! -e package.json ]; then
 fi
 
 source "${NVM_DIR}/nvm.sh"
-nvm exec --silent npm install
+nvm exec --silent -- npm install

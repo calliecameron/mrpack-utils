@@ -10,10 +10,10 @@ fi
 source "${NVM_DIR}/nvm.sh"
 
 # shellcheck disable=SC2016
-nvm exec --silent npm outdated --parseable |
+nvm exec --silent -- npm outdated --parseable |
     cut -d : -f 4 |
-    xargs bash -c 'source "${NVM_DIR}/nvm.sh" && nvm exec --silent npm install --save-exact "${@}"' --
+    xargs bash -c 'source "${NVM_DIR}/nvm.sh" && nvm exec --silent -- npm install --save-exact "${@}"' --
 
 rm -f package-lock.json
 rm -rf node_modules
-nvm exec --silent npm install
+nvm exec --silent -- npm install
